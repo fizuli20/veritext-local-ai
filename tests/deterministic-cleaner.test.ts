@@ -16,6 +16,7 @@ describe('Instant Deterministic De-AI Cleaner', () => {
 
       const drop = beforeRes.aiScore - afterRes.aiScore;
       drops.push(drop);
+      console.log(`Passage ${p.id}: Before=${beforeRes.aiScore} After=${afterRes.aiScore} Drop=${drop}`);
 
       // Verify each passage sees a substantial AI score drop
       expect(drop).toBeGreaterThanOrEqual(10);

@@ -1,6 +1,8 @@
 import { tokenizeSentences, tokenizeWords, countWords, SentenceToken } from './tokenizer';
 import { scanFingerprints } from './fingerprints';
 import { calculateReadability, countSyllables, ReadabilityMetrics } from './readability';
+import { sanitizeInput, ObfuscationReport } from './sanitizer';
+import { DomainProfile, applyDomainCalibration } from './calibration';
 
 export interface SignalBreakdown {
   burstiness: number;         // w = 0.24
@@ -27,6 +29,8 @@ export interface StylometricResult {
   confidence: 'low' | 'medium' | 'high';
   signals: SignalBreakdown;
   sentences: SentenceAnalysis[];
+  obfuscationReport: ObfuscationReport;
+  domainApplied: DomainProfile;
   metrics: {
     sentenceLengthMean: number;
     sentenceLengthStdDev: number;
@@ -87,6 +91,8 @@ export function calculateMTLD(words: string[], targetTTR = 0.72): number {
   return Math.round(((forward + backward) / 2) * 10) / 10;
 }
 
+export const calculateBidirectionalMTLD = calculateMTLD;
+
 /**
  * Computes character trigram Shannon entropy.
  */
@@ -115,7 +121,14 @@ export function calculateTrigramEntropy(text: string): number {
 /**
  * Pure TypeScript Stylometric AI Detection Engine.
  */
-export function analyzeStylometrics(rawText: string): StylometricResult {
+export function analyzeStylometrics(
+  rawInput: string,
+  domain: DomainProfile = 'general'
+): StylometricResult {
+  // 1. Sanitize input for zero-width characters and confusable homoglyphs
+  const obfuscationReport = sanitizeInput(rawInput);
+  const rawText = obfuscationReport.normalizedText;
+
   const sentences = tokenizeSentences(rawText);
   const words = tokenizeWords(rawText);
   const wordCount = words.length;
@@ -124,9 +137,9 @@ export function analyzeStylometrics(rawText: string): StylometricResult {
   if (wordCount < 15 || sentenceCount === 0) {
     // Insufficient input for reliable stylometrics
     return {
-      aiScore: 10,
+      aiScore: obfuscationReport.detected ? 75 : 10,
       rawComposite: 0.1,
-      isAi: false,
+      isAi: obfuscationReport.detected,
       confidence: 'low',
       signals: {
         burstiness: 0.1,
@@ -141,9 +154,11 @@ export function analyzeStylometrics(rawText: string): StylometricResult {
         text: s.text,
         start: s.start,
         end: s.end,
-        score: 10,
-        reasons: ['Short text snippet'],
+        score: obfuscationReport.detected ? 75 : 10,
+        reasons: [obfuscationReport.detected ? 'Adversarial obfuscation detected' : 'Short text snippet'],
       })),
+      obfuscationReport,
+      domainApplied: domain,
       metrics: {
         sentenceLengthMean: wordCount,
         sentenceLengthStdDev: 0,
@@ -176,117 +191,141 @@ export function analyzeStylometrics(rawText: string): StylometricResult {
   for (let i = 1; i < lengths.length; i++) {
     const prev = lengths[i - 1]!;
     const curr = lengths[i]!;
-    adjacentJumps += Math.abs(curr - prev) / (curr + prev + 1);
+    adjacentJumps += Math.abs(curr - prev) / (curr + prev);
   }
-  const avgJump = sentenceCount > 1 ? adjacentJumps / (sentenceCount - 1) : 0.3;
+  const jumpRatio = adjacentJumps / Math.max(1, lengths.length - 1);
 
-  // Human prose: high CV (> 0.55), high jump (> 0.35)
-  // LLM prose: uniform CV (< 0.35), low jump (< 0.22)
   let burstinessAiSignal = 0;
-  if (cv < 0.25) {
-    burstinessAiSignal = 0.95;
-  } else if (cv < 0.38) {
-    burstinessAiSignal = 0.75 - (cv - 0.25) * 1.5;
-  } else if (cv < 0.55) {
-    burstinessAiSignal = 0.55 - (cv - 0.38) * 1.8;
+  if (domain === 'esl-fair') {
+    // ESL writers naturally write uniform sentence lengths (~10-15 words); do not penalize
+    burstinessAiSignal = cv < 0.10 ? 0.35 : cv < 0.22 ? 0.20 : 0.05;
+  } else if (domain === 'academic') {
+    burstinessAiSignal = cv < 0.16 ? 0.55 : cv < 0.28 ? 0.30 : 0.10;
   } else {
-    burstinessAiSignal = Math.max(0.05, 0.25 - (cv - 0.55) * 0.7);
+    if (cv < 0.22) {
+      burstinessAiSignal = 1.0;
+    } else if (cv < 0.35) {
+      burstinessAiSignal = 0.85;
+    } else if (cv < 0.48) {
+      burstinessAiSignal = 0.5;
+    } else if (cv < 0.6) {
+      burstinessAiSignal = 0.2;
+    } else {
+      burstinessAiSignal = 0.05;
+    }
   }
 
-  // Adjust for jump ratio
-  if (avgJump < 0.2) burstinessAiSignal = Math.min(1.0, burstinessAiSignal + 0.15);
-  if (avgJump > 0.45) burstinessAiSignal = Math.max(0.02, burstinessAiSignal - 0.15);
+  if (domain !== 'esl-fair') {
+    if (jumpRatio < 0.25) {
+      burstinessAiSignal = Math.min(1.0, burstinessAiSignal + 0.15);
+    } else if (jumpRatio > 0.45) {
+      burstinessAiSignal = Math.max(0.0, burstinessAiSignal - 0.15);
+    }
+  }
 
   // ========================================================
-  // Signal 2: Weighted LLM Cliché & Discourse Lexicon (w = 0.24)
+  // Signal 2: Cliché & Discourse Markers (w = 0.24)
   // ========================================================
   const fp = scanFingerprints(rawText);
-  const weightedDensityPer100 = (fp.weightedScore / Math.max(1, wordCount)) * 100;
+  const normalizedTier1Per100 = (fp.tier1Count / wordCount) * 100;
+  const normalizedTier2Per100 = (fp.tier2Count / wordCount) * 100;
 
-  // If density is high (> 2.0 weighted hits per 100 words), high AI probability
-  let clicheSignal = Math.min(1.0, weightedDensityPer100 / 2.2);
-  if (fp.tier1Count >= 2) {
-    clicheSignal = Math.min(1.0, clicheSignal + 0.25);
+  let clicheSignal = 0;
+  if (fp.tier1Count >= 3 || normalizedTier1Per100 >= 1.5) {
+    clicheSignal = 1.0;
+  } else if (fp.tier1Count === 2 || normalizedTier1Per100 >= 0.8) {
+    clicheSignal = 0.85;
+  } else if (fp.tier1Count === 1) {
+    clicheSignal = 0.65;
+  } else if (normalizedTier2Per100 >= 2.0) {
+    clicheSignal = 0.55;
+  } else if (normalizedTier2Per100 >= 1.0) {
+    clicheSignal = 0.35;
+  } else {
+    clicheSignal = 0.05;
   }
 
   // ========================================================
   // Signal 3: Syntactic Uniformity (w = 0.18)
   // ========================================================
-  // Rule-of-three: "A, B, and C"
-  const ruleOfThreeMatches = rawText.match(/\b\w+,\s+\w+,\s+and\s+\w+\b/gi) || [];
-  const ruleOfThreeRate = (ruleOfThreeMatches.length / sentenceCount) * 10;
+  let syntacticSignal = 0.2;
 
-  // Repeated consecutive starters
+  // Rule of three
+  const ruleOfThreeMatches = rawText.match(/\b\w+,\s+\w+,\s+and\s+\w+\b/gi) || [];
+  if (ruleOfThreeMatches.length >= 2) {
+    syntacticSignal += 0.35;
+  } else if (ruleOfThreeMatches.length === 1) {
+    syntacticSignal += 0.15;
+  }
+
+  // Repeated consecutive sentence starters
+  const starters = sentences
+    .map((s) => {
+      const match = s.text.trim().match(/^[A-Za-z]+/);
+      return match ? match[0].toLowerCase() : '';
+    })
+    .filter(Boolean);
+
   let repeatedStarters = 0;
-  for (let i = 1; i < sentences.length; i++) {
-    const prevStart = sentences[i - 1]!.text.trim().slice(0, 10).toLowerCase();
-    const currStart = sentences[i]!.text.trim().slice(0, 10).toLowerCase();
-    if (prevStart === currStart || (prevStart.startsWith('in ') && currStart.startsWith('in '))) {
-      repeatedStarters++;
+  for (let i = 0; i < starters.length - 1; i++) {
+    if (starters[i] === starters[i + 1]) repeatedStarters++;
+  }
+  if (repeatedStarters >= 2) syntacticSignal += 0.25;
+
+  // Contraction scarcity in informal/general text
+  const contractionCount = (rawText.match(/\b\w+['’](t|re|ve|ll|d|s|m)\b/gi) || []).length;
+  const contractionRate = (contractionCount / wordCount) * 100;
+  if (contractionRate === 0 && wordCount > 100) {
+    syntacticSignal += 0.2;
+  }
+
+  syntacticSignal = Math.min(1.0, Math.max(0.0, syntacticSignal));
+
+  // ========================================================
+  // Signal 4: Lexical Diversity — MTLD (w = 0.14)
+  // ========================================================
+  const rawWords = words.map((w) => w.text);
+  const mtld = calculateMTLD(rawWords);
+
+  let lexicalDiversitySignal = 0.5;
+  if (domain === 'academic') {
+    lexicalDiversitySignal = mtld > 160 ? 0.45 : 0.20;
+  } else if (domain === 'esl-fair') {
+    lexicalDiversitySignal = mtld > 140 ? 0.45 : mtld > 90 ? 0.30 : 0.15;
+  } else {
+    if (mtld > 140) {
+      lexicalDiversitySignal = 0.90; // LLM uniform vocabulary rotation
+    } else if (mtld > 100) {
+      lexicalDiversitySignal = 0.70;
+    } else if (mtld > 65) {
+      lexicalDiversitySignal = 0.45;
+    } else {
+      lexicalDiversitySignal = 0.15; // Natural human repetition
     }
   }
-  const starterRepetitionRate = sentenceCount > 1 ? repeatedStarters / (sentenceCount - 1) : 0;
-
-  // Passive voice heuristics: is/was/were/been/being + past participle (ending in -ed or irregular)
-  const passiveMatches = rawText.match(/\b(is|was|were|been|being|are)\s+([a-z]{3,}ed|utilized|conducted|examined|observed|implemented)\b/gi) || [];
-  const passiveRate = (passiveMatches.length / Math.max(1, wordCount)) * 100;
-
-  let syntacticSignal = 0.2;
-  if (ruleOfThreeRate > 1.2) syntacticSignal += 0.25;
-  if (starterRepetitionRate > 0.25) syntacticSignal += 0.25;
-  if (passiveRate > 1.8) syntacticSignal += 0.25;
-  syntacticSignal = Math.min(1.0, Math.max(0.05, syntacticSignal));
-
-  // ========================================================
-  // Signal 4: Lexical Diversity — Bidirectional MTLD (w = 0.14)
-  // ========================================================
-  const wordTokens = words.map((w) => w.text);
-  const mtld = calculateMTLD(wordTokens);
-
-  // Contraction scarcity check: human writing frequently uses contractions
-  const contractionMatches = rawText.match(/\b([a-zA-Z]+'(?:t|s|ve|re|ll|d|m))\b/gi) || [];
-  const contractionRate = (contractionMatches.length / Math.max(1, wordCount)) * 100;
-
-  // Raw LLMs typically exhibit moderate/inflated MTLD (65-110) while avoiding contractions entirely
-  let lexicalDiversitySignal = 0.5;
-  if (contractionRate === 0 && wordCount > 80) {
-    lexicalDiversitySignal += 0.35;
-  } else if (contractionRate > 1.2) {
-    lexicalDiversitySignal -= 0.3;
-  }
-
-  if (mtld > 55 && mtld < 85) {
-    // LLMs cluster heavily around 60-80
-    lexicalDiversitySignal += 0.15;
-  }
-  lexicalDiversitySignal = Math.min(1.0, Math.max(0.05, lexicalDiversitySignal));
 
   // ========================================================
   // Signal 5: N-Gram Entropy & Stopword Uniformity (w = 0.12)
   // ========================================================
   const trigramEntropy = calculateTrigramEntropy(rawText);
 
-  // Stopword density uniformity across sentences
   let stopwordDeviations = 0;
   for (const s of sentences) {
     const sWords = tokenizeWords(s.text);
     if (sWords.length === 0) continue;
     const stopCount = sWords.filter((w) => COMMON_STOPWORDS.has(w.text.toLowerCase())).length;
     const ratio = stopCount / sWords.length;
-    // Typical English stopword ratio is ~0.45; LLMs maintain tight 0.40-0.48 on almost every sentence
     stopwordDeviations += Math.abs(ratio - 0.44);
   }
   const avgStopwordDev = stopwordDeviations / Math.max(1, sentences.length);
 
   let entropySignal = 0.5;
-  // Natural prose has wider swings in stopword ratio across sentences
   if (avgStopwordDev < 0.08) {
     entropySignal += 0.3;
   } else if (avgStopwordDev > 0.16) {
     entropySignal -= 0.3;
   }
 
-  // Trigram entropy: LLM prose tends to sit in a narrow predictable band (4.1 - 4.4)
   if (trigramEntropy >= 4.1 && trigramEntropy <= 4.45) {
     entropySignal += 0.2;
   }
@@ -305,7 +344,6 @@ export function analyzeStylometrics(rawText: string): StylometricResult {
       paraLengths.length;
     const paraCV = avgParaLength > 0 ? Math.sqrt(paraVariance) / avgParaLength : 0;
 
-    // Symmetric paragraphs (common in LLMs generating intro + 3 uniform points + conclusion)
     if (paraCV < 0.2) {
       paraSymmetrySignal = 0.8;
     } else if (paraCV > 0.5) {
@@ -333,22 +371,30 @@ export function analyzeStylometrics(rawText: string): StylometricResult {
     entropySignal * weights.entropy +
     paraSymmetrySignal * weights.paragraphSymmetry;
 
-  // Calibrated Logistic Sigmoid mapping:
-  // Center at 0.42 with steepness k = 10.5
-  // Ensures human prose maps to 5–25% and raw LLM prose maps to 75–98%
   const sigmoid = (x: number, x0 = 0.42, k = 10.5): number => {
     return 1 / (1 + Math.exp(-k * (x - x0)));
   };
 
-  const calibratedScore = Math.max(2, Math.min(99, Math.round(sigmoid(rawComposite) * 100)));
+  let calibratedScore = Math.max(2, Math.min(99, Math.round(sigmoid(rawComposite) * 100)));
+
+  // If adversarial evasion was detected, elevate the score
+  if (obfuscationReport.detected) {
+    calibratedScore = Math.max(calibratedScore, 75);
+  }
+
+  // Apply Domain Calibration (ESL-fair, Academic, Technical, Creative)
+  calibratedScore = applyDomainCalibration(calibratedScore, domain, {
+    burstiness: burstinessAiSignal,
+    clicheLexicon: clicheSignal,
+    syntacticUniformity: syntacticSignal,
+    lexicalDiversity: lexicalDiversitySignal,
+  });
 
   // ========================================================
   // Sentence-Level Scoring & Context Smoothing
-  // Formula: 0.75 * sentenceRaw + 0.25 * docPrior
   // ========================================================
   const docPrior = calibratedScore;
   const sentenceAnalyses: SentenceAnalysis[] = sentences.map((s) => {
-    const sLower = s.text.toLowerCase();
     const sFp = scanFingerprints(s.text);
     const reasons: string[] = [];
 
@@ -360,28 +406,25 @@ export function analyzeStylometrics(rawText: string): StylometricResult {
     }
 
     if (sFp.tier2Count > 0) {
-      sentenceRawScore += sFp.tier2Count * 20;
+      const mult = domain === 'esl-fair' ? 8 : domain === 'academic' ? 10 : 20;
+      sentenceRawScore += sFp.tier2Count * mult;
       reasons.push(`Formulaic transition or hedging: "${sFp.matches.filter(m => m.tier === 2).map(m => m.phrase).join(', ')}"`);
     }
 
-    // Monotonous length penalty
     if (s.wordCount >= 18 && s.wordCount <= 26 && cv < 0.35) {
       sentenceRawScore += 15;
       reasons.push('Uniform cadence (18-26 words) matching LLM rhythm');
     }
 
-    // Short punchy natural sentences
     if (s.wordCount <= 8 && sFp.matches.length === 0) {
       sentenceRawScore = Math.max(5, sentenceRawScore - 25);
     }
 
-    // Rule of three
     if (/\b\w+,\s+\w+,\s+and\s+\w+\b/i.test(s.text)) {
       sentenceRawScore += 12;
       reasons.push('Rule-of-three enumeration');
     }
 
-    // Smooth with document prior
     const smoothedScore = Math.round(
       0.75 * Math.min(100, Math.max(0, sentenceRawScore)) + 0.25 * docPrior
     );
@@ -396,7 +439,6 @@ export function analyzeStylometrics(rawText: string): StylometricResult {
     };
   });
 
-  // Readability
   let totalSyllables = 0;
   for (const w of words) {
     totalSyllables += countSyllables(w.text);
@@ -421,6 +463,8 @@ export function analyzeStylometrics(rawText: string): StylometricResult {
       paragraphSymmetry: Math.round(paraSymmetrySignal * 100) / 100,
     },
     sentences: sentenceAnalyses,
+    obfuscationReport,
+    domainApplied: domain,
     metrics: {
       sentenceLengthMean: Math.round(meanLength * 10) / 10,
       sentenceLengthStdDev: Math.round(stdDevLength * 10) / 10,

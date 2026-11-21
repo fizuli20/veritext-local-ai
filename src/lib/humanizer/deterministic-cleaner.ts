@@ -11,6 +11,7 @@ const CLICHE_REPLACEMENTS: [RegExp, string][] = [
   [/\bdelves into\b/gi, 'examines'],
   [/\bdelved into\b/gi, 'examined'],
   [/\bdelving into\b/gi, 'examining'],
+  [/\b(?:a|the)(?:\s+\w+)?\s+tapestry of\b/gi, 'the structure of'],
   [/\ba tapestry of\b/gi, 'a network of'],
   [/\bthe tapestry of\b/gi, 'the structure of'],
   [/\bvibrant tapestry\b/gi, 'rich mix'],
@@ -186,7 +187,7 @@ export function cleanTextDeterministically(
       s = s.replace(/, fostering (?:a )?(.*?)([.!?]|$)/i, '. This builds $1$2');
       changesCount++;
     } else if (/, underscoring (?:the )?(.*?)([.!?]|$)/i.test(s)) {
-      s = s.replace(/, underscoring (?:the )?(.*?)([.!?]|$)/i, '. This underscores $1$2');
+      s = s.replace(/, underscoring (?:the )?(.*?)([.!?]|$)/i, '. This clarifies $1$2');
       changesCount++;
     }
 

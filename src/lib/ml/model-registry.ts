@@ -1,7 +1,7 @@
 export interface ModelDefinition {
   id: string;
   name: string;
-  family: 'roberta-onnx' | 'webllm';
+  family: 'roberta-onnx' | 'webllm' | 'causal-lm' | 'embedding' | 'seq2seq';
   tier: 'instant' | 'lite' | 'balanced' | 'quality';
   sizeMB: number;
   vramMB: number;
@@ -27,6 +27,51 @@ export const ONNX_DETECTOR_MODELS: Record<string, ModelDefinition> = {
     sizeMB: 125,
     vramMB: 250,
     description: 'Resilient fallback neural detector for environments with restricted WebGPU extensions.',
+  },
+};
+
+export const PERPLEXITY_MODELS: Record<string, ModelDefinition> = {
+  primary: {
+    id: 'onnx-community/gpt2-ONNX',
+    name: 'GPT-2 Causal LM (Perplexity & GLTR X-Ray)',
+    family: 'causal-lm',
+    tier: 'lite',
+    sizeMB: 130,
+    vramMB: 300,
+    description: 'Computes next-token probability distributions, sliding-window perplexity, and 4-tier GLTR rank bands.',
+  },
+  fallback: {
+    id: 'Xenova/distilgpt2',
+    name: 'DistilGPT-2 (WASM Perplexity Fallback)',
+    family: 'causal-lm',
+    tier: 'lite',
+    sizeMB: 120,
+    vramMB: 260,
+    description: 'Lightweight distilled causal language model for CPU/WASM perplexity evaluation.',
+  },
+};
+
+export const EMBEDDING_MODELS: Record<string, ModelDefinition> = {
+  primary: {
+    id: 'Xenova/all-MiniLM-L6-v2',
+    name: 'all-MiniLM-L6-v2 (Semantic Fidelity)',
+    family: 'embedding',
+    tier: 'instant',
+    sizeMB: 23,
+    vramMB: 60,
+    description: 'Compact 384-dimensional sentence transformer enforcing semantic fidelity (cosine similarity >= 0.84).',
+  },
+};
+
+export const WASM_PARAPHRASER_MODELS: Record<string, ModelDefinition> = {
+  primary: {
+    id: 'Xenova/flan-t5-small',
+    name: 'FLAN-T5 Small (Universal WASM Paraphraser)',
+    family: 'seq2seq',
+    tier: 'lite',
+    sizeMB: 110,
+    vramMB: 0,
+    description: 'Universal CPU/WASM neural humanizer for iOS Safari and devices without WebGPU support.',
   },
 };
 
