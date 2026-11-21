@@ -15,6 +15,8 @@ interface HeatmapEditorProps {
   isAnalyzing: boolean;
   onHumanizeSentence?: (sentenceText: string, index: number) => void;
   readOnly?: boolean;
+  selectedSentenceIndex?: number | null;
+  onSelectSentence?: (index: number) => void;
 }
 
 export function HeatmapEditor({
@@ -26,10 +28,19 @@ export function HeatmapEditor({
   isAnalyzing,
   onHumanizeSentence,
   readOnly = false,
+  selectedSentenceIndex,
+  onSelectSentence,
 }: HeatmapEditorProps) {
   const [selectedSentence, setSelectedSentence] = useState<SentenceAnalysis | null>(null);
   const [hoveredGltr, setHoveredGltr] = useState<GLTRToken | null>(null);
   const [viewMode, setViewMode] = useState<'heatmap' | 'gltr' | 'edit'>('heatmap');
+
+  React.useEffect(() => {
+    if (selectedSentenceIndex !== undefined && selectedSentenceIndex !== null) {
+      const match = sentences.find((s) => s.index === selectedSentenceIndex);
+      if (match) setSelectedSentence(match);
+    }
+  }, [selectedSentenceIndex, sentences]);
 
   const hasGltr = gltrTokens.length > 0;
 
@@ -199,7 +210,10 @@ export function HeatmapEditor({
                 key={`sent-${s.index}`}
                 title={`${s.score}% AI Risk`}
                 data-sentence-index={s.index}
-                onClick={() => setSelectedSentence(s)}
+                onClick={() => {
+                  setSelectedSentence(s);
+                  onSelectSentence?.(s.index);
+                }}
                 className={`cursor-pointer transition-colors px-0.5 py-0.5 rounded-sm ${bgClass} ${borderClass} ${
                   isSelected ? 'ring-2 ring-slate-900 dark:ring-slate-100' : ''
                 }`}

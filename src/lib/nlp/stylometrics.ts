@@ -3,6 +3,7 @@ import { scanFingerprints } from './fingerprints';
 import { calculateReadability, countSyllables, ReadabilityMetrics } from './readability';
 import { sanitizeInput, ObfuscationReport } from './sanitizer';
 import { DomainProfile, applyDomainCalibration } from './calibration';
+import { detectLanguage, LanguageInfo } from './language';
 
 export interface SignalBreakdown {
   burstiness: number;         // w = 0.24
@@ -31,6 +32,7 @@ export interface StylometricResult {
   sentences: SentenceAnalysis[];
   obfuscationReport: ObfuscationReport;
   domainApplied: DomainProfile;
+  language: LanguageInfo;
   metrics: {
     sentenceLengthMean: number;
     sentenceLengthStdDev: number;
@@ -128,6 +130,7 @@ export function analyzeStylometrics(
   // 1. Sanitize input for zero-width characters and confusable homoglyphs
   const obfuscationReport = sanitizeInput(rawInput);
   const rawText = obfuscationReport.normalizedText;
+  const lang = detectLanguage(rawText);
 
   const sentences = tokenizeSentences(rawText);
   const words = tokenizeWords(rawText);
@@ -159,6 +162,7 @@ export function analyzeStylometrics(
       })),
       obfuscationReport,
       domainApplied: domain,
+      language: lang,
       metrics: {
         sentenceLengthMean: wordCount,
         sentenceLengthStdDev: 0,
@@ -202,23 +206,25 @@ export function analyzeStylometrics(
   } else if (domain === 'academic') {
     burstinessAiSignal = cv < 0.16 ? 0.55 : cv < 0.28 ? 0.30 : 0.10;
   } else {
-    if (cv < 0.22) {
+    if (cv < 0.18) {
       burstinessAiSignal = 1.0;
-    } else if (cv < 0.35) {
+    } else if (cv < 0.24) {
       burstinessAiSignal = 0.85;
-    } else if (cv < 0.48) {
-      burstinessAiSignal = 0.5;
-    } else if (cv < 0.6) {
-      burstinessAiSignal = 0.2;
+    } else if (cv < 0.32) {
+      burstinessAiSignal = 0.55;
+    } else if (cv < 0.45) {
+      burstinessAiSignal = 0.30;
+    } else if (cv < 0.58) {
+      burstinessAiSignal = 0.15;
     } else {
       burstinessAiSignal = 0.05;
     }
   }
 
   if (domain !== 'esl-fair') {
-    if (jumpRatio < 0.25) {
+    if (jumpRatio < 0.22 && cv < 0.24) {
       burstinessAiSignal = Math.min(1.0, burstinessAiSignal + 0.15);
-    } else if (jumpRatio > 0.45) {
+    } else if (jumpRatio > 0.38) {
       burstinessAiSignal = Math.max(0.0, burstinessAiSignal - 0.15);
     }
   }
@@ -231,7 +237,10 @@ export function analyzeStylometrics(
   const normalizedTier2Per100 = (fp.tier2Count / wordCount) * 100;
 
   let clicheSignal = 0;
-  if (fp.tier1Count >= 3 || normalizedTier1Per100 >= 1.5) {
+  if (!lang.englishOptimized) {
+    // Zero out English cliché penalties for foreign language text
+    clicheSignal = 0.0;
+  } else if (fp.tier1Count >= 3 || normalizedTier1Per100 >= 1.5) {
     clicheSignal = 1.0;
   } else if (fp.tier1Count === 2 || normalizedTier1Per100 >= 0.8) {
     clicheSignal = 0.85;
@@ -249,6 +258,25 @@ export function analyzeStylometrics(
   // Signal 3: Syntactic Uniformity (w = 0.18)
   // ========================================================
   let syntacticSignal = 0.2;
+
+  // Punctuation and Clause Diversity Analysis
+  const expressivePunct = rawText.match(/[—–;:"\(\)\[\]\$\/%?]/g) || [];
+  const uniqueExpressivePunct = new Set(expressivePunct);
+
+  // Clause structure per sentence (via commas, dashes, semicolons, colons)
+  const clausesPerSent = sentences.map((s) => (s.text.match(/[,;—–:]/g) || []).length + 1);
+  const avgClauses = clausesPerSent.reduce((a, b) => a + b, 0) / Math.max(1, clausesPerSent.length);
+  const clauseVar = clausesPerSent.reduce((a, b) => a + Math.pow(b - avgClauses, 2), 0) / Math.max(1, clausesPerSent.length);
+  const clauseCV = avgClauses > 0 ? Math.sqrt(clauseVar) / avgClauses : 0;
+
+  // Modern subtle LLMs without clichés:
+  // - Monotonous punctuation (zero expressive punctuation: no dashes, semicolons, parens, quotes, or questions)
+  // - Uniform cadence (cv < 0.24)
+  if (expressivePunct.length === 0 && cv < 0.24 && sentences.length >= 3) {
+    syntacticSignal += 0.35; // Subtle modern LLM structural signature
+  } else if (uniqueExpressivePunct.size >= 2 || expressivePunct.length >= 2) {
+    syntacticSignal = Math.max(0.05, syntacticSignal - 0.25); // Human expressive syntax
+  }
 
   // Rule of three
   const ruleOfThreeMatches = rawText.match(/\b\w+,\s+\w+,\s+and\s+\w+\b/gi) || [];
@@ -272,11 +300,13 @@ export function analyzeStylometrics(
   }
   if (repeatedStarters >= 2) syntacticSignal += 0.25;
 
-  // Contraction scarcity in informal/general text
+  // Contraction scarcity in informal/general text (English only)
   const contractionCount = (rawText.match(/\b\w+['’](t|re|ve|ll|d|s|m)\b/gi) || []).length;
   const contractionRate = (contractionCount / wordCount) * 100;
-  if (contractionRate === 0 && wordCount > 100) {
+  if (lang.englishOptimized && contractionRate === 0 && wordCount > 100) {
     syntacticSignal += 0.2;
+  } else if (lang.englishOptimized && contractionCount > 0 && domain !== 'academic') {
+    syntacticSignal = Math.max(0.05, syntacticSignal - 0.15);
   }
 
   syntacticSignal = Math.min(1.0, Math.max(0.0, syntacticSignal));
@@ -288,17 +318,18 @@ export function analyzeStylometrics(
   const mtld = calculateMTLD(rawWords);
 
   let lexicalDiversitySignal = 0.5;
+  const shortTextDiscount = wordCount < 110;
   if (domain === 'academic') {
     lexicalDiversitySignal = mtld > 160 ? 0.45 : 0.20;
   } else if (domain === 'esl-fair') {
     lexicalDiversitySignal = mtld > 140 ? 0.45 : mtld > 90 ? 0.30 : 0.15;
   } else {
     if (mtld > 140) {
-      lexicalDiversitySignal = 0.90; // LLM uniform vocabulary rotation
+      lexicalDiversitySignal = shortTextDiscount ? 0.55 : 0.90; // LLM uniform vocabulary rotation
     } else if (mtld > 100) {
-      lexicalDiversitySignal = 0.70;
+      lexicalDiversitySignal = shortTextDiscount ? 0.45 : 0.70;
     } else if (mtld > 65) {
-      lexicalDiversitySignal = 0.45;
+      lexicalDiversitySignal = 0.40;
     } else {
       lexicalDiversitySignal = 0.15; // Natural human repetition
     }
@@ -465,6 +496,7 @@ export function analyzeStylometrics(
     sentences: sentenceAnalyses,
     obfuscationReport,
     domainApplied: domain,
+    language: lang,
     metrics: {
       sentenceLengthMean: Math.round(meanLength * 10) / 10,
       sentenceLengthStdDev: Math.round(stdDevLength * 10) / 10,

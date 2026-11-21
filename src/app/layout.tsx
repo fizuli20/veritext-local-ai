@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://veritext-local-ai.vercel.app'),
   title: 'Veritext Local AI — Zero-Token AI Detector & Humanizer',
   description:
     '100% Free, Zero-API-Key Browser-Local AI Detection & Humanization powered by Pure TypeScript Stylometrics, ONNX RoBERTa (WebGPU/WASM), and WebLLM.',

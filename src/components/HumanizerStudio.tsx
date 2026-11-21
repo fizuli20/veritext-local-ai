@@ -34,6 +34,8 @@ import { DomainProfile, DOMAIN_PROFILES } from '@/lib/nlp/calibration';
 import { parseDocumentFile, exportToDocx } from '@/lib/io/documents';
 import { runTournamentReranker, TournamentCandidate } from '@/lib/humanizer/tournament';
 import { AuthorVoiceFingerprint } from '@/lib/nlp/voice-profile';
+import { maskProtectedSpans, restoreProtectedSpans } from '@/lib/humanizer/protected-spans';
+import { computeWordDiff } from '@/lib/nlp/diff';
 
 export interface RecentRunItem {
   id: string;
@@ -99,6 +101,12 @@ export function HumanizerStudio({
   const [tournamentMode, setTournamentMode] = useState(false);
   const [preserveTerms, setPreserveTerms] = useState<string[]>([]);
   const [newTermInput, setNewTermInput] = useState('');
+
+  // Protected-Span Toggles
+  const [protectQuotes, setProtectQuotes] = useState(true);
+  const [protectCitations, setProtectCitations] = useState(true);
+  const [protectCodeAndMath, setProtectCodeAndMath] = useState(true);
+  const [protectUrlsAndEmails, setProtectUrlsAndEmails] = useState(true);
 
   const [activeTab, setActiveTab] = useState<'editor' | 'diff'>('editor');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -247,12 +255,21 @@ export function HumanizerStudio({
     const beforeRes = analyzeStylometrics(inputText, domain);
     setInputAnalysis(beforeRes);
 
+    // Surgical Protected-Span Masking before humanization passes
+    const { maskedText, spans } = maskProtectedSpans(inputText, {
+      protectQuotes,
+      protectCitations,
+      protectCodeAndMath,
+      protectUrlsAndEmails,
+      userLockedTerms: preserveTerms,
+    });
+
     try {
       if (tournamentMode) {
         setProgressStage('Tournament Mode: Generating 3 structural rewrite candidates...');
         setProgressPercent(35);
 
-        const res = await runClosedLoopHumanization(inputText, {
+        const res = await runClosedLoopHumanization(maskedText, {
           mode: selectedMode,
           intensity,
           targetMaxAiScore,
@@ -265,24 +282,26 @@ export function HumanizerStudio({
           },
         });
 
+        const restoredWinner = restoreProtectedSpans(res.rewrittenText, spans);
+
         const tournament = runTournamentReranker({
           originalText: inputText,
           candidates: [
             {
               strategy: 'punchy-active',
-              text: res.rewrittenText,
+              text: restoredWinner,
               temperature: 0.72,
               semanticSimilarity: 0.91,
             },
             {
               strategy: 'conversational-inversion',
-              text: res.rewrittenText.replace(/\bAdditionally,\b/gi, 'Plus,').replace(/\bConsequently,\b/gi, 'So,'),
+              text: restoredWinner.replace(/\bAdditionally,\b/gi, 'Plus,').replace(/\bConsequently,\b/gi, 'So,'),
               temperature: 0.85,
               semanticSimilarity: 0.89,
             },
             {
               strategy: 'concrete-compression',
-              text: res.rewrittenText.replace(/\s+/g, ' '),
+              text: restoredWinner.replace(/\s+/g, ' '),
               temperature: 0.94,
               semanticSimilarity: 0.88,
             },
@@ -294,7 +313,7 @@ export function HumanizerStudio({
         setTournamentCandidates(tournament.candidates);
         const winnerText = tournament.winner.text;
         updateOutputWithHistory(winnerText);
-        setDiffChanges(res.diff);
+        setDiffChanges(computeWordDiff(inputText, winnerText));
 
         const afterRes = analyzeStylometrics(winnerText, domain);
         setOutputAnalysis(afterRes);
@@ -307,11 +326,11 @@ export function HumanizerStudio({
           afterScore: afterRes.aiScore,
           inputText,
           outputText: winnerText,
-          diff: res.diff,
+          diff: computeWordDiff(inputText, winnerText),
         };
         setRecentRuns((prev) => [runItem, ...prev.slice(0, 9)]);
       } else {
-        const res: ClosedLoopResult = await runClosedLoopHumanization(inputText, {
+        const res: ClosedLoopResult = await runClosedLoopHumanization(maskedText, {
           mode: selectedMode,
           intensity,
           targetMaxAiScore,
@@ -324,10 +343,11 @@ export function HumanizerStudio({
           },
         });
 
-        updateOutputWithHistory(res.rewrittenText);
-        setDiffChanges(res.diff);
+        const restoredText = restoreProtectedSpans(res.rewrittenText, spans);
+        updateOutputWithHistory(restoredText);
+        setDiffChanges(computeWordDiff(inputText, restoredText));
 
-        const afterRes = analyzeStylometrics(res.rewrittenText, domain);
+        const afterRes = analyzeStylometrics(restoredText, domain);
         setOutputAnalysis(afterRes);
 
         const runItem: RecentRunItem = {
@@ -337,8 +357,8 @@ export function HumanizerStudio({
           beforeScore: beforeRes.aiScore,
           afterScore: afterRes.aiScore,
           inputText,
-          outputText: res.rewrittenText,
-          diff: res.diff,
+          outputText: restoredText,
+          diff: computeWordDiff(inputText, restoredText),
         };
         setRecentRuns((prev) => [runItem, ...prev.slice(0, 9)]);
       }
@@ -510,6 +530,47 @@ export function HumanizerStudio({
               ))}
             </div>
           )}
+        </div>
+
+        {/* Surgical Protected Spans Controls */}
+        <div className="md:col-span-4 flex flex-wrap items-center gap-4 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/60 text-xs">
+          <span className="font-semibold text-slate-700 dark:text-slate-300">Protected Spans:</span>
+          <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900">
+            <input
+              type="checkbox"
+              checked={protectQuotes}
+              onChange={(e) => setProtectQuotes(e.target.checked)}
+              className="rounded text-indigo-600 focus:ring-0"
+            />
+            <span>Direct Quotes (&quot;...&quot;)</span>
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900">
+            <input
+              type="checkbox"
+              checked={protectCitations}
+              onChange={(e) => setProtectCitations(e.target.checked)}
+              className="rounded text-indigo-600 focus:ring-0"
+            />
+            <span>Citations (Smith, 2024 / [1-3])</span>
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900">
+            <input
+              type="checkbox"
+              checked={protectCodeAndMath}
+              onChange={(e) => setProtectCodeAndMath(e.target.checked)}
+              className="rounded text-indigo-600 focus:ring-0"
+            />
+            <span>Code &amp; Math ($E=mc^2$)</span>
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900">
+            <input
+              type="checkbox"
+              checked={protectUrlsAndEmails}
+              onChange={(e) => setProtectUrlsAndEmails(e.target.checked)}
+              className="rounded text-indigo-600 focus:ring-0"
+            />
+            <span>URLs &amp; Emails</span>
+          </label>
         </div>
       </div>
 

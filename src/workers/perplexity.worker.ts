@@ -1,7 +1,8 @@
 /**
- * Veritext Local AI - Perplexity & GLTR Forensic Web Worker
+ * Veritext Local AI - Perplexity, Fast-DetectGPT Curvature & GLTR Forensic Web Worker
  * Runs client-side in browser Web Workers using @huggingface/transformers.
  * Computes exact next-token log probabilities, sliding window perplexity,
+ * Fast-DetectGPT conditional probability curvature z-score d(x),
  * perplexity burstiness, and GLTR rank distribution (top10, top100, top1000, beyond1000).
  */
 
@@ -20,6 +21,7 @@ export interface GLTRToken {
   rank: number;
   probability: number;
   bucket: 'top10' | 'top100' | 'top1000' | 'beyond1000';
+  curvatureDelta?: number;
 }
 
 export interface SentencePPL {
@@ -29,12 +31,14 @@ export interface SentencePPL {
   end: number;
   perplexity: number;
   avgLogProb: number;
+  curvature: number;
   tokenCount: number;
 }
 
 export interface PerplexityResult {
   documentPerplexity: number;
   perplexityBurstiness: number;
+  curvature: number; // Fast-DetectGPT document z-score d(x)
   gltrDistribution: {
     top10: number; // percentage
     top100: number;
@@ -101,6 +105,49 @@ function softmax(logits: Float32Array | number[]): number[] {
   return exps;
 }
 
+/**
+ * Exact analytical Fast-DetectGPT conditional probability curvature math.
+ * Computes:
+ * mu_t = sum_v p_t(v) log p_t(v)
+ * sigma_t^2 = sum_v p_t(v) (log p_t(v) - mu_t)^2
+ * d(x) = sum(ell_t - mu_t) / sqrt(sum(sigma_t^2) + eps)
+ */
+export function computeAnalyticalCurvature(
+  tokens: Array<{ prob: number; probs: number[] }>
+): { zScore: number; deltas: number[]; variances: number[] } {
+  let totalDelta = 0;
+  let totalVar = 0;
+  const deltas: number[] = [];
+  const variances: number[] = [];
+
+  for (const t of tokens) {
+    const ell_t = Math.log(Math.max(t.prob, 1e-12));
+    let mu_t = 0;
+    let sum_sq = 0;
+    const pLen = t.probs.length;
+
+    for (let v = 0; v < pLen; v++) {
+      const p = t.probs[v]!;
+      if (p > 1e-12) {
+        const logP = Math.log(p);
+        mu_t += p * logP;
+        sum_sq += p * logP * logP;
+      }
+    }
+
+    const var_t = Math.max(0, sum_sq - mu_t * mu_t);
+    const delta_t = ell_t - mu_t;
+
+    deltas.push(delta_t);
+    variances.push(var_t);
+    totalDelta += delta_t;
+    totalVar += var_t;
+  }
+
+  const zScore = totalDelta / Math.sqrt(totalVar + 1e-6);
+  return { zScore: Math.round(zScore * 100) / 100, deltas, variances };
+}
+
 async function analyzePerplexity(
   rawText: string,
   sentences: Array<{ index: number; text: string; start: number; end: number }>
@@ -123,6 +170,7 @@ async function analyzePerplexity(
     return {
       documentPerplexity: 50,
       perplexityBurstiness: 0,
+      curvature: 0,
       gltrDistribution: { top10: 50, top100: 30, top1000: 15, beyond1000: 5 },
       gltrTokens: [],
       sentencePerplexities: [],
@@ -134,11 +182,14 @@ async function analyzePerplexity(
   // Sliding window context parameters
   const maxContext = 512;
   const gltrTokens: GLTRToken[] = [];
+  const tokenDeltas: number[] = [];
+  const tokenVariances: number[] = [];
   let totalNll = 0;
+  let totalCurvatureDelta = 0;
+  let totalCurvatureVariance = 0;
   let evaluatedTokens = 0;
 
   // Process tokens
-  // For standard browser inference latency, evaluate first N tokens up to 512
   const evalIds = inputIds.slice(0, maxContext);
   const inputTensor = {
     input_ids: {
@@ -150,7 +201,6 @@ async function analyzePerplexity(
 
   // Run model forward pass
   const output = await model(inputTensor as any);
-  // Logits shape: [1, seq_len, vocab_size]
   const logitsData: Float32Array = output.logits.data;
   const vocabSize: number = output.logits.dims[2];
 
@@ -180,6 +230,26 @@ async function analyzePerplexity(
     const probs = softmax(tokenLogits);
     const prob = probs[targetTokenId] ?? 0.00001;
     const nll = -Math.log(Math.max(prob, 1e-10));
+
+    // Fast-DetectGPT Analytical Curvature calculation
+    const ell_t = Math.log(Math.max(prob, 1e-12));
+    let mu_t = 0;
+    let sum_sq = 0;
+    for (let v = 0; v < vocabSize; v++) {
+      const p = probs[v]!;
+      if (p > 1e-12) {
+        const logP = Math.log(p);
+        mu_t += p * logP;
+        sum_sq += p * logP * logP;
+      }
+    }
+    const var_t = Math.max(0, sum_sq - mu_t * mu_t);
+    const delta_t = ell_t - mu_t;
+
+    totalCurvatureDelta += delta_t;
+    totalCurvatureVariance += var_t;
+    tokenDeltas.push(delta_t);
+    tokenVariances.push(var_t);
 
     totalNll += nll;
     evaluatedTokens++;
@@ -213,13 +283,20 @@ async function analyzePerplexity(
       rank,
       probability: Math.round(prob * 10000) / 10000,
       bucket,
+      curvatureDelta: Math.round(delta_t * 100) / 100,
     });
   }
 
   // Document perplexity: exp(totalNll / evaluatedTokens)
   const docPpl = evaluatedTokens > 0 ? Math.exp(totalNll / evaluatedTokens) : 50;
 
-  // Compute Per-Sentence Perplexity
+  // Fast-DetectGPT Document Curvature z-score:
+  const documentCurvature =
+    evaluatedTokens > 0
+      ? Math.round((totalCurvatureDelta / Math.sqrt(totalCurvatureVariance + 1e-6)) * 100) / 100
+      : 0;
+
+  // Compute Per-Sentence Perplexity & Curvature
   const sentencePerplexities: SentencePPL[] = sentences.map((s) => {
     const matchingTokens = gltrTokens.filter((gt) => gt.start >= s.start && gt.end <= s.end + 5);
     if (matchingTokens.length === 0) {
@@ -230,11 +307,27 @@ async function analyzePerplexity(
         end: s.end,
         perplexity: docPpl,
         avgLogProb: -Math.log(1 / docPpl),
+        curvature: documentCurvature,
         tokenCount: 0,
       };
     }
     const sentNll = matchingTokens.reduce((sum, gt) => sum - Math.log(Math.max(gt.probability, 1e-10)), 0);
     const sentPpl = Math.exp(sentNll / matchingTokens.length);
+
+    // Per-sentence curvature z-score
+    let sentDelta = 0;
+    let sentVar = 0;
+    for (let i = 0; i < matchingTokens.length; i++) {
+      const gt = matchingTokens[i]!;
+      const tokenIdx = gltrTokens.indexOf(gt);
+      if (tokenIdx !== -1) {
+        sentDelta += tokenDeltas[tokenIdx] ?? 0;
+        sentVar += tokenVariances[tokenIdx] ?? 0;
+      }
+    }
+    const sentCurvature =
+      Math.round((sentDelta / Math.sqrt(sentVar + 1e-6)) * 100) / 100;
+
     return {
       index: s.index,
       text: s.text,
@@ -242,6 +335,7 @@ async function analyzePerplexity(
       end: s.end,
       perplexity: Math.min(Math.round(sentPpl * 10) / 10, 500),
       avgLogProb: -sentNll / matchingTokens.length,
+      curvature: sentCurvature,
       tokenCount: matchingTokens.length,
     };
   });
@@ -249,24 +343,24 @@ async function analyzePerplexity(
   // Perplexity Burstiness (Standard Deviation of sentence PPLs)
   let pplBurstiness = 0;
   if (sentencePerplexities.length > 1) {
-    const meanPpl = sentencePerplexities.reduce((sum, s) => sum + s.perplexity, 0) / sentencePerplexities.length;
-    const variance =
-      sentencePerplexities.reduce((sum, s) => sum + Math.pow(s.perplexity - meanPpl, 2), 0) /
-      sentencePerplexities.length;
+    const ppls = sentencePerplexities.map((sp) => sp.perplexity);
+    const meanPpl = ppls.reduce((a, b) => a + b, 0) / ppls.length;
+    const variance = ppls.reduce((sum, p) => sum + Math.pow(p - meanPpl, 2), 0) / ppls.length;
     pplBurstiness = Math.round(Math.sqrt(variance) * 10) / 10;
   }
 
-  const totalTokens = Math.max(evaluatedTokens, 1);
+  const totalBucketTokens = Math.max(1, evaluatedTokens);
   const gltrDistribution = {
-    top10: Math.round((top10Count / totalTokens) * 100),
-    top100: Math.round((top100Count / totalTokens) * 100),
-    top1000: Math.round((top1000Count / totalTokens) * 100),
-    beyond1000: Math.round((beyond1000Count / totalTokens) * 100),
+    top10: Math.round((top10Count / totalBucketTokens) * 1000) / 10,
+    top100: Math.round((top100Count / totalBucketTokens) * 1000) / 10,
+    top1000: Math.round((top100Count / totalBucketTokens) * 1000) / 10,
+    beyond1000: Math.round((beyond1000Count / totalBucketTokens) * 1000) / 10,
   };
 
   return {
     documentPerplexity: Math.round(docPpl * 10) / 10,
     perplexityBurstiness: pplBurstiness,
+    curvature: documentCurvature,
     gltrDistribution,
     gltrTokens,
     sentencePerplexities,
@@ -275,28 +369,29 @@ async function analyzePerplexity(
   };
 }
 
-self.onmessage = async (e: MessageEvent) => {
-  const { type, payload } = e.data;
+// Web Worker message listener
+if (typeof self !== 'undefined') {
+  self.onmessage = async (e: MessageEvent) => {
+    const { type, payload } = e.data;
 
-  try {
     if (type === 'INIT') {
-      await loadModel(payload?.useWebGPU ?? true);
-      postMessage({ type: 'INIT_COMPLETE', model: currentModelId });
-    } else if (type === 'ANALYZE_PERPLEXITY') {
-      if (!model) {
-        await loadModel(payload?.useWebGPU ?? true);
+      const useWebGPU = payload?.useWebGPU ?? true;
+      try {
+        await loadModel(useWebGPU);
+      } catch (err: any) {
+        postMessage({ type: 'ERROR', error: err.message });
       }
-      const result = await analyzePerplexity(payload.text, payload.sentences);
-      postMessage({ type: 'PERPLEXITY_RESULT', payload: result });
-    } else if (type === 'UNLOAD') {
-      model = null;
-      tokenizer = null;
-      postMessage({ type: 'UNLOAD_COMPLETE' });
+    } else if (type === 'ANALYZE_PERPLEXITY') {
+      const { text, sentences, useWebGPU } = payload;
+      try {
+        if (!model) {
+          await loadModel(useWebGPU ?? true);
+        }
+        const result = await analyzePerplexity(text, sentences);
+        postMessage({ type: 'PERPLEXITY_RESULT', payload: result });
+      } catch (err: any) {
+        postMessage({ type: 'ERROR', error: err.message });
+      }
     }
-  } catch (err: unknown) {
-    postMessage({
-      type: 'ERROR',
-      error: err instanceof Error ? err.message : String(err),
-    });
-  }
-};
+  };
+}

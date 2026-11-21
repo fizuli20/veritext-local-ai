@@ -14,6 +14,10 @@ import {
   HelpCircle,
   X,
   Activity,
+  Download,
+  Code2,
+  Layers,
+  GitCompare,
 } from 'lucide-react';
 import { probeHardwareCapabilities, HardwareCapabilities } from '@/lib/ml/capabilities';
 import {
@@ -21,7 +25,7 @@ import {
   PERPLEXITY_MODELS,
 } from '@/lib/ml/model-registry';
 import { memoryScheduler } from '@/lib/ml/scheduler';
-import { ModelLoaderCard } from './ModelLoaderCard';
+import dynamic from 'next/dynamic';
 import { HumanizerStudio } from './HumanizerStudio';
 import { ScoreGauge } from './ScoreGauge';
 import { HeatmapEditor } from './HeatmapEditor';
@@ -35,12 +39,43 @@ import {
   saveVoiceProfile,
   deleteVoiceProfile,
 } from '@/lib/nlp/voice-profile';
-import { generateForensicHtmlReport, ForensicReportData } from '@/lib/io/documents';
+import { ForensicReportData } from '@/lib/io/documents';
+
+const ModelLoaderCard = dynamic(
+  () => import('./ModelLoaderCard').then((mod) => mod.ModelLoaderCard),
+  { ssr: false }
+);
+
+const BatchAuditor = dynamic(
+  () => import('./BatchAuditor').then((mod) => mod.BatchAuditor),
+  {
+    ssr: false,
+    loading: () => <div className="h-48 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />,
+  }
+);
+
+const DraftComparator = dynamic(
+  () => import('./DraftComparator').then((mod) => mod.DraftComparator),
+  {
+    ssr: false,
+    loading: () => <div className="h-48 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />,
+  }
+);
+
+const ForensicCharts = dynamic(
+  () => import('./ForensicCharts').then((mod) => mod.ForensicCharts),
+  {
+    ssr: false,
+    loading: () => <div className="h-32 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />,
+  }
+);
 
 export function Workspace() {
-  const [activeTab, setActiveTab] = useState<'detector' | 'humanizer'>('humanizer');
+  const [activeTab, setActiveTab] = useState<'detector' | 'humanizer' | 'batch' | 'compare'>('humanizer');
   const [hardware, setHardware] = useState<HardwareCapabilities | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<DomainProfile>('general');
+  const [documentCurvature, setDocumentCurvature] = useState<number | undefined>(undefined);
+  const [selectedSentenceIndex, setSelectedSentenceIndex] = useState<number | null>(null);
 
   // Model & Scheduler States
   const [showModelManager, setShowModelManager] = useState(false);
@@ -53,7 +88,7 @@ export function Workspace() {
   const [isDetectorLoading, setIsDetectorLoading] = useState(false);
   const [detectorProgress, setDetectorProgress] = useState<{ file: string; progress: number; loaded: number; total: number } | null>(null);
   const [isDetectorReady, setIsDetectorReady] = useState(false);
-  const [, setRobertaScore] = useState<number | undefined>(undefined);
+  const [robertaScore, setRobertaScore] = useState<number | undefined>(undefined);
 
   // Perplexity & GLTR Worker States
   const [pplWorker, setPplWorker] = useState<Worker | null>(null);
@@ -194,7 +229,8 @@ export function Workspace() {
           setGltrTokens(payload.gltrTokens);
           setDocumentPpl(payload.documentPerplexity);
           setGltrDistribution(payload.gltrDistribution);
-          setDetectorEngine('3-signal-forensic-ensemble');
+          setDocumentCurvature(payload.curvature);
+          setDetectorEngine('3-signal-fast-detectgpt-ensemble');
         }
       };
 
@@ -293,8 +329,9 @@ export function Workspace() {
   };
 
   // Printable HTML Report Export
-  const handleExportForensicReport = () => {
+  const handleExportForensicReport = async () => {
     if (!detectorResult) return;
+    const { generateForensicHtmlReport } = await import('@/lib/io/documents');
 
     const reportData: ForensicReportData = {
       documentTitle: 'Authorship & AI Detection Forensic Audit',
@@ -331,7 +368,7 @@ export function Workspace() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans overflow-x-hidden w-full max-w-full">
       {/* Top Navbar */}
       <header className="sticky top-0 z-30 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -344,7 +381,7 @@ export function Workspace() {
                 Veritext
               </span>
               <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                v2.0 Max
+                v3.0 Apex
               </span>
               {isOfflineReady && (
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
@@ -360,7 +397,7 @@ export function Workspace() {
         </div>
 
         {/* Action Controls & Hardware Pill */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Hardware Capability Pill */}
           <div
             onClick={() => setShowModelManager(true)}
@@ -386,17 +423,38 @@ export function Workspace() {
           {/* Model Manager Drawer Toggle */}
           <button
             onClick={() => setShowModelManager(!showModelManager)}
-            className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
             title="Model & VRAM Manager"
           >
             <Settings className="w-4 h-4" />
             <span className="hidden sm:inline font-medium">Models</span>
           </button>
 
+          {/* Extension Download Link */}
+          <a
+            href="/downloads/veritext-chrome-extension.zip"
+            download="veritext-chrome-extension.zip"
+            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+            title="Download Companion Chrome Extension (Manifest V3)"
+          >
+            <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden lg:inline font-medium">Extension</span>
+          </a>
+
+          {/* Developers API Link */}
+          <a
+            href="/developers"
+            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+            title="Developer API &amp; OpenAPI 3.1 Specs"
+          >
+            <Code2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <span className="hidden lg:inline font-medium">API</span>
+          </a>
+
           {/* Shortcuts Help */}
           <button
             onClick={() => setShowKeyboardModal(true)}
-            className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-500 hover:text-slate-800 text-xs"
+            className="hidden sm:flex p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-500 hover:text-slate-800 text-xs items-center justify-center"
             title="Keyboard Shortcuts (?)"
           >
             <HelpCircle className="w-4 h-4" />
@@ -407,22 +465,22 @@ export function Workspace() {
             href="https://github.com/fizuli20/veritext-local-ai"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1 transition-colors shadow-xs"
+            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1 transition-colors shadow-xs"
             title="GitHub Repository"
           >
             <Github className="w-4 h-4" />
-            <span className="hidden sm:inline font-mono font-medium">v2.0.0</span>
+            <span className="hidden sm:inline font-mono font-medium">v3.0.0</span>
           </a>
         </div>
       </header>
 
       {/* Main Studio Navigation Tabs */}
       <div className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-6">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab('humanizer')}
-              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 whitespace-nowrap transition-colors ${
                 activeTab === 'humanizer'
                   ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
@@ -433,7 +491,7 @@ export function Workspace() {
             </button>
             <button
               onClick={() => setActiveTab('detector')}
-              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 whitespace-nowrap transition-colors ${
                 activeTab === 'detector'
                   ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
@@ -441,6 +499,28 @@ export function Workspace() {
             >
               <Shield className="w-3.5 h-3.5" />
               3-Signal Forensic Detector &amp; GLTR
+            </button>
+            <button
+              onClick={() => setActiveTab('batch')}
+              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 whitespace-nowrap transition-colors ${
+                activeTab === 'batch'
+                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              Batch Audit Queue
+            </button>
+            <button
+              onClick={() => setActiveTab('compare')}
+              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 whitespace-nowrap transition-colors ${
+                activeTab === 'compare'
+                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
+              }`}
+            >
+              <GitCompare className="w-3.5 h-3.5" />
+              Compare Drafts
             </button>
           </div>
         </div>
@@ -488,6 +568,15 @@ export function Workspace() {
             voiceProfileName={activeVoiceProfile?.name}
             onOpenVoiceCloning={() => setShowVoiceDrawer(true)}
           />
+        ) : activeTab === 'batch' ? (
+          <BatchAuditor
+            onInspectText={(text) => {
+              setDetectorText(text);
+              setActiveTab('detector');
+            }}
+          />
+        ) : activeTab === 'compare' ? (
+          <DraftComparator />
         ) : (
           /* Standalone 3-Signal Forensic Detector Tab */
           <div className="flex flex-col space-y-6">
@@ -577,9 +666,30 @@ export function Workspace() {
                         <span>Perplexity: {documentPpl}</span>
                       </>
                     )}
+                    {documentCurvature !== undefined && (
+                      <>
+                        <span>•</span>
+                        <span title="Fast-DetectGPT Conditional Probability Curvature">
+                          Curvature d(x): {documentCurvature > 0 ? `+${documentCurvature}` : documentCurvature}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* SVG Forensic Charts (Sparkline + Radar Matrix + GLTR Bar) */}
+            {detectorResult && (
+              <ForensicCharts
+                sentences={detectorResult.sentences}
+                signals={detectorResult.signals}
+                gltrDistribution={gltrDistribution}
+                robertaScore={robertaScore}
+                curvature={documentCurvature}
+                selectedSentenceIndex={selectedSentenceIndex}
+                onSelectSentence={(idx) => setSelectedSentenceIndex(idx)}
+              />
             )}
 
             {/* Heatmap & GLTR Token X-Ray Editor */}
@@ -591,6 +701,8 @@ export function Workspace() {
                 gltrTokens={gltrTokens}
                 obfuscationReport={detectorResult?.obfuscationReport}
                 isAnalyzing={isDetectorLoading || isPplLoading}
+                selectedSentenceIndex={selectedSentenceIndex}
+                onSelectSentence={(idx) => setSelectedSentenceIndex(idx)}
               />
             </div>
 

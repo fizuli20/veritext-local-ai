@@ -9,6 +9,9 @@
 /test-results
 /playwright-report
 
+# extension build
+/extension/dist
+
 # next.js
 /.next/
 /out/

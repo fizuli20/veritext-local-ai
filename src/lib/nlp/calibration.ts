@@ -225,14 +225,17 @@ export function fuseForensicSignals(params: {
 }
 
 /**
- * Derives an AI score [0, 100] from Document Perplexity and GLTR Top-K Distribution.
+ * Derives an AI score [0, 100] from Document Perplexity, Fast-DetectGPT Curvature, and GLTR Top-K Distribution.
+ * Full 3-signal forensic mode integrates:
+ * 0.55 Curvature + 0.25 PPL Burstiness + 0.20 GLTR Rank Ratio (when curvature is available).
  */
 export function derivePerplexityAiScore(params: {
   documentPerplexity: number;
   perplexityBurstiness: number;
   gltrDistribution: { top10: number; top100: number; top1000: number; beyond1000: number };
+  curvature?: number;
 }): number {
-  const { documentPerplexity, perplexityBurstiness, gltrDistribution } = params;
+  const { documentPerplexity, perplexityBurstiness, gltrDistribution, curvature } = params;
 
   const pplSignal = Math.max(0, Math.min(1, (85 - documentPerplexity) / 65));
   const top10Ratio = gltrDistribution.top10 / 100;
@@ -240,7 +243,15 @@ export function derivePerplexityAiScore(params: {
   const gltrSignal = Math.max(0, Math.min(1, top10Ratio * 1.1 - beyond1000Ratio * 1.5));
   const burstinessSignal = Math.max(0, Math.min(1, (40 - perplexityBurstiness) / 40));
 
-  const composite = gltrSignal * 0.45 + pplSignal * 0.35 + burstinessSignal * 0.20;
+  let composite = 0;
+  if (curvature !== undefined) {
+    // Fast-DetectGPT curvature: d(x) > 1.5 indicates AI; d(x) < 0 indicates human
+    const curvatureSignal = Math.max(0, Math.min(1, (curvature + 0.4) / 2.4));
+    composite = curvatureSignal * 0.55 + burstinessSignal * 0.25 + gltrSignal * 0.20;
+  } else {
+    composite = gltrSignal * 0.45 + pplSignal * 0.35 + burstinessSignal * 0.20;
+  }
+
   const calibrated = 1 / (1 + Math.exp(-9 * (composite - 0.48)));
   return Math.min(99, Math.max(1, Math.round(calibrated * 100)));
 }

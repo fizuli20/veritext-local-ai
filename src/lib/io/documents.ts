@@ -6,8 +6,6 @@
  * Supported Exports: .docx (docx), .md, .txt, .html (Printable Forensic Audit Report), .json
  */
 
-import mammoth from 'mammoth';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import { ObfuscationReport } from '../nlp/sanitizer';
 import { ConfidenceInterval } from '../nlp/calibration';
 
@@ -46,6 +44,8 @@ export async function parseDocumentFile(file: File): Promise<{ text: string; fil
 
   if (extension === 'docx') {
     const arrayBuffer = await file.arrayBuffer();
+    const mammothModule = await import('mammoth');
+    const mammoth = mammothModule.default || mammothModule;
     const result = await mammoth.extractRawText({ arrayBuffer });
     return { text: result.value.trim(), fileName: file.name, format: 'docx' };
   }
@@ -76,7 +76,9 @@ export async function parseDocumentFile(file: File): Promise<{ text: string; fil
 /**
  * Generates and triggers browser download of a clean .docx file.
  */
-export async function exportToDocx(text: string, filename = 'veritext-humanized.docx'): Promise<Blob> {
+export async function exportToDocx(text: string, _filename = 'veritext-humanized.docx'): Promise<Blob> {
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
+
   const paragraphs = text
     .split(/\n\s*\n/)
     .filter((p) => p.trim().length > 0)

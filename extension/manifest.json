@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Veritext Local AI - Zero-Token AI Detector & Humanizer",
+  "version": "3.0.0",
+  "description": "100% Free, zero-token, browser-local AI detector & humanizer powered by pure TypeScript stylometrics.",
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "storage",
+    "scripting"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Veritext Local AI"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
