@@ -36,6 +36,13 @@ describe("Detection evidence boundaries", () => {
     ).toBe("unsupported-language");
     expect(describeEvidence(english, 0.55).status).toBe("uncertain");
     expect(describeEvidence(english, 0.99).calibratedProbability).toBeNull();
+    expect(describeEvidence(english, 0.01).verdict).toBe(
+      "Low signal · authorship unknown",
+    );
+    expect(describeEvidence(english, NaN).status).toBe("uncertain");
+    expect(
+      reviewRewrite("The temperature was -12.5.", "The temperature was 12.5."),
+    ).toContain("Numbers or amounts changed.");
   });
   it("uses wide finite sample intervals and abstains when raw and reference signals disagree", () => {
     expect(wilsonInterval(0, 0)).toEqual({ lower: 0, upper: 1 });

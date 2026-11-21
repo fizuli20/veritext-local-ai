@@ -24,10 +24,12 @@ import {
   type DiscoveredModel,
 } from "@/lib/humanizer/local-server-client";
 import { cleanLlmOutput } from "@/lib/humanizer/output-cleaner";
+import { reviewRewrite } from "@/lib/humanizer/rewrite-review";
 import {
-  rewriteInstructions,
-  reviewRewrite,
-} from "@/lib/humanizer/rewrite-review";
+  runRewritePipeline,
+  type RewriteOutcome,
+} from "@/lib/humanizer/rewrite-pipeline";
+import { WRITING_MODELS, type WritingModelTier } from "@/lib/ml/writing-models";
 import { computeWordDiff } from "@/lib/nlp/diff";
 
 interface Scan {
@@ -35,7 +37,13 @@ interface Scan {
   evidence: DetectionEvidence;
   engine: string;
   latencyMs: number;
-  sentences: { start: number; end: number; text: string; score: number }[];
+  contextLimit?: number | null;
+  sentences: {
+    start: number;
+    end: number;
+    text: string;
+    score: number | null;
+  }[];
 }
 const sample =
   "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.";
@@ -46,6 +54,18 @@ export function Workspace() {
   const [output, setOutput] = useState("");
   const [source, setSource] = useState("");
   const [mode, setMode] = useState("standard");
+  const [outputMode, setOutputMode] = useState("standard");
+  const [writingTier, setWritingTier] = useState<WritingModelTier>("balanced");
+  const [lockedTerms, setLockedTerms] = useState("");
+  const [rewriteReport, setRewriteReport] = useState<RewriteOutcome | null>(
+    null,
+  );
+  const [previousDraft, setPreviousDraft] = useState<{
+    source: string;
+    output: string;
+    engine: string;
+    mode: string;
+  } | null>(null);
   const [scan, setScan] = useState<Scan | null>(null);
   const [busy, setBusy] = useState<"scan" | "rewrite" | "load" | null>(null);
   const [progress, setProgress] = useState("");
@@ -75,8 +95,11 @@ export function Workspace() {
         ? `Browser · ${browserName}`
         : "";
   const issues = useMemo(
-    () => (output && source ? reviewRewrite(source, output, mode) : []),
-    [source, output, mode],
+    () =>
+      output && source
+        ? reviewRewrite(source, output, outputMode, lockedTerms.split(","))
+        : [],
+    [source, output, outputMode, lockedTerms],
   );
   const changes = useMemo(
     () =>
@@ -174,7 +197,7 @@ export function Workspace() {
     }
   }
   async function loadBrowser() {
-    if (browserName) {
+    if (browserName === WRITING_MODELS[writingTier].id) {
       setUseLocal(false);
       setSettings(false);
       return;
@@ -185,11 +208,22 @@ export function Workspace() {
     setBusy("load");
     setError("");
     setProgress("Checking WebGPU…");
+    if (browserEngine.current) {
+      await browserEngine.current.unload().catch(() => {});
+      browserWorker.current?.terminate();
+      browserWorker.current = null;
+      browserEngine.current = null;
+      setBrowserName("");
+    }
     try {
       const { loadBrowserRewriter } = await import("@/lib/ml/browser-rewriter");
-      const loaded = await loadBrowserRewriter((text) => {
-        if (operation.current === id) setProgress(text);
-      }, controller.signal);
+      const loaded = await loadBrowserRewriter(
+        (text) => {
+          if (operation.current === id) setProgress(text);
+        },
+        controller.signal,
+        writingTier,
+      );
       if (operation.current !== id) {
         loaded.worker.terminate();
         return;
@@ -210,7 +244,7 @@ export function Workspace() {
       }
     }
   }
-  async function detect() {
+  async function detect(includeContexts = false) {
     const eligibility = describeEvidence(input, null);
     setError("");
     setNotice("");
@@ -286,7 +320,7 @@ export function Workspace() {
           setProgress("");
         }
       };
-      worker.postMessage({ type: "detect", text: input, id });
+      worker.postMessage({ type: "detect", text: input, id, includeContexts });
     } catch (err) {
       setError(String(err));
       setBusy(null);
@@ -300,15 +334,24 @@ export function Workspace() {
       setNotice("Connect or load a writing model to create a rewrite.");
       return;
     }
-    if (input.length > 4000) {
+    if (input.length > 12000) {
       setError(
-        "Rewrite up to 4,000 characters at a time to fit the browser model context.",
+        "Rewrite up to 12,000 characters at a time. Longer text is split into sections to fit the writing model.",
       );
       return;
     }
     const id = ++operation.current;
     const original = input;
+    if (output)
+      setPreviousDraft({
+        source,
+        output,
+        engine: engineName,
+        mode: outputMode,
+      });
     setSource(original);
+    setOutputMode(mode);
+    setRewriteReport(null);
     setOutput("");
     setDiff(false);
     setBusy("rewrite");
@@ -321,60 +364,67 @@ export function Workspace() {
         controller.abort();
         browserEngine.current?.interruptGenerate();
       }
-    }, 180000);
+    }, 600000);
     try {
-      const systemPrompt = rewriteInstructions(mode);
-      let result = "";
-      if (useLocal && modelId && connectedUrl) {
-        result = await streamChatCompletion({
-          baseUrl: connectedUrl,
-          modelId,
-          systemPrompt,
-          userPrompt: original,
-          signal: controller.signal,
-          style: mode === "academic" ? "academic" : "default",
-          onChunk: (_, text) => {
-            if (operation.current === id) setOutput(text);
-          },
-        });
-      } else if (browserEngine.current) {
-        const stream = await browserEngine.current.chat.completions.create({
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: original },
-          ],
-          stream: true,
-          temperature: 0.4,
-          max_tokens: 1800,
-        });
-        let truncated = false;
-        for await (const chunk of stream) {
-          if (chunk.choices[0]?.finish_reason === "length") truncated = true;
-          if (controller.signal.aborted || operation.current !== id)
-            throw new Error("Generation stopped.");
-          result += chunk.choices[0]?.delta.content ?? "";
-          setOutput(cleanLlmOutput(result));
-        }
-        if (truncated)
-          throw new Error(
-            "The model reached its output limit. The draft may be incomplete; shorten the input.",
-          );
-        result = cleanLlmOutput(result);
-      }
-      if (controller.signal.aborted)
-        throw new Error(
-          "Generation stopped or timed out. The draft may be incomplete.",
-        );
+      const result = await runRewritePipeline({
+        text: original,
+        mode,
+        terms: lockedTerms
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        signal: controller.signal,
+        onProgress: (message) => {
+          if (operation.current === id) setProgress(message);
+        },
+        onText: (text) => {
+          if (operation.current === id) setOutput(text);
+        },
+        generate: async ({ systemPrompt, userPrompt, onText, attempt }) => {
+          if (useLocal && modelId && connectedUrl)
+            return streamChatCompletion({
+              baseUrl: connectedUrl,
+              modelId,
+              systemPrompt,
+              userPrompt,
+              signal: controller.signal,
+              style: mode === "academic" ? "academic" : "default",
+              onChunk: (_, text) => onText(text),
+            });
+          if (!browserEngine.current)
+            throw new Error("Load a writing model before rewriting.");
+          const stream = await browserEngine.current.chat.completions.create({
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
+            ],
+            stream: true,
+            temperature: attempt ? 0.65 : 0.5,
+            max_tokens: 1800,
+          });
+          let draft = "",
+            truncated = false;
+          for await (const chunk of stream) {
+            if (controller.signal.aborted || operation.current !== id)
+              throw new Error("Generation stopped.");
+            if (chunk.choices[0]?.finish_reason === "length") truncated = true;
+            draft += chunk.choices[0]?.delta.content ?? "";
+            onText(cleanLlmOutput(draft));
+          }
+          if (truncated)
+            throw new Error(
+              "The model reached its output limit. The draft is incomplete. Try a shorter source section.",
+            );
+          return cleanLlmOutput(draft);
+        },
+      });
       if (operation.current !== id) return;
-      if (!result.trim())
-        throw new Error(
-          "The writing model returned no text. Try a different model.",
-        );
-      setOutput(result);
+      setOutput(result.text);
+      setRewriteReport(result);
       setNotice(
-        result.trim() === original.trim()
-          ? "The model returned the original text without changes."
-          : "Draft ready. Compare changes and review the meaning before using it.",
+        result.changed
+          ? `Draft ready. ${result.parts} section${result.parts === 1 ? "" : "s"} checked${result.retained ? `; ${result.retained} retained unchanged` : ""}. Review the changes before using the text.`
+          : "The model did not produce a changed draft that passed preservation checks after a retry. The original was retained. Try a larger model or another tone.",
       );
     } catch (err) {
       if (operation.current === id)
@@ -498,6 +548,25 @@ export function Workspace() {
                 : "Neural analysis · runs in your browser"}
             </span>
           </div>
+          {tab === "humanizer" && (
+            <div className="vt-lock-toolbar">
+              <label htmlFor="locked-terms">
+                Keep these names or terms exactly
+              </label>
+              <input
+                id="locked-terms"
+                disabled={!!busy}
+                maxLength={1000}
+                value={lockedTerms}
+                onChange={(e) => setLockedTerms(e.target.value)}
+                placeholder="Optional: Ana, Project Atlas (comma-separated)"
+              />
+              <span>
+                Numbers, quotes, links and citations are protected
+                automatically.
+              </span>
+            </div>
+          )}
           <div
             className={`vt-editors ${tab === "detector" ? "vt-detector-editors" : ""}`}
           >
@@ -551,7 +620,7 @@ export function Workspace() {
                   <button
                     className="vt-primary"
                     disabled={!input.trim()}
-                    onClick={tab === "humanizer" ? rewrite : detect}
+                    onClick={tab === "humanizer" ? rewrite : () => detect()}
                   >
                     {tab === "humanizer" ? (
                       <>
@@ -613,7 +682,35 @@ export function Workspace() {
                         onChange={(e) => setOutput(e.target.value)}
                       />
                     )}
-                    <p className="vt-provenance">{engineName}</p>
+                    <p className="vt-provenance">
+                      {engineName}
+                      {rewriteReport
+                        ? ` · ${(rewriteReport.elapsedMs / 1000).toFixed(1)} s · ${rewriteReport.retries} retr${rewriteReport.retries === 1 ? "y" : "ies"}`
+                        : ""}
+                    </p>
+                    {!busy && !!rewriteReport?.checks.length && (
+                      <details className="vt-reference">
+                        <summary>
+                          Rewrite checks · {rewriteReport.checks.length} retry
+                          reason{rewriteReport.checks.length === 1 ? "" : "s"}
+                        </summary>
+                        {rewriteReport.checks.map((check, i) => (
+                          <p key={i}>
+                            Section {check.section}, attempt {check.attempt}:{" "}
+                            {check.reason}
+                          </p>
+                        ))}
+                      </details>
+                    )}
+                    {!busy &&
+                      rewriteReport?.warnings.map((warning) => (
+                        <p
+                          key={warning}
+                          className="vt-review vt-review-warning"
+                        >
+                          {warning}
+                        </p>
+                      ))}
                     {!busy && (
                       <div
                         className={`vt-review ${issues.length ? "vt-review-warning" : ""}`}
@@ -636,6 +733,23 @@ export function Workspace() {
                     <div className="vt-pane-footer">
                       <span>{countWords(output)} words</span>
                       <div className="vt-actions">
+                        {previousDraft && (
+                          <button
+                            className="vt-secondary"
+                            disabled={!!busy}
+                            onClick={() => {
+                              setOutput(previousDraft.output);
+                              setSource(previousDraft.source);
+                              setEngineName(previousDraft.engine);
+                              setOutputMode(previousDraft.mode);
+                              setPreviousDraft(null);
+                              setRewriteReport(null);
+                              setNotice("Previous draft restored.");
+                            }}
+                          >
+                            Undo
+                          </button>
+                        )}
                         <button
                           className={controlClass}
                           disabled={!!busy}
@@ -674,7 +788,8 @@ export function Workspace() {
                       </button>
                     )}
                     <small>
-                      No word swaps disguised as AI. A real model is required.
+                      Real model rewrites. Automatic fact protection. Your final
+                      say.
                     </small>
                   </div>
                 )
@@ -682,6 +797,30 @@ export function Workspace() {
                 <div className="vt-scan" data-testid="detector-result">
                   <p className="vt-eyebrow">{scan.engine}</p>
                   <h2>{scan.evidence.verdict}</h2>
+                  {scan.evidence.referenceProbability !== undefined && (
+                    <details className="vt-reference">
+                      <summary>
+                        Historical reference · limited transfer to newer AI
+                      </summary>
+                      <p>
+                        HC3 reference estimate:{" "}
+                        {Math.round(scan.evidence.referenceProbability * 100)}%
+                        AI class
+                      </p>
+                      {scan.evidence.referenceBin && (
+                        <p>
+                          In the corresponding held-out score bin,{" "}
+                          {scan.evidence.referenceBin.aiCount}/
+                          {scan.evidence.referenceBin.count} examples were
+                          labelled AI. 95% bin frequency interval:{" "}
+                          {Math.round(scan.evidence.referenceBin.lower * 100)}–
+                          {Math.round(scan.evidence.referenceBin.upper * 100)}
+                          %. This interval describes that sample, not this
+                          document.
+                        </p>
+                      )}
+                    </details>
+                  )}
                   {scan.evidence.modelScore !== null && (
                     <div className="vt-score">
                       {Math.round(scan.evidence.modelScore * 100)}
@@ -691,45 +830,35 @@ export function Workspace() {
                   <p>{scan.evidence.explanation}</p>
                   <p className="vt-caution">
                     The raw model signal is not a probability of authorship.
-                    Calibration uses a small, historical HC3 sample; modern
-                    models and other writing may behave differently.
+                    This detector missed newer AI writing in our stress test.
+                    Low scores cannot establish human authorship. Historical HC3
+                    reference estimates are not reliable probabilities for
+                    current writing.
                   </p>
+                  {scan.evidence.modelScore !== null &&
+                    scan.sentences.length === 0 && (
+                      <button
+                        className="vt-secondary"
+                        disabled={!!busy}
+                        onClick={() => detect(true)}
+                      >
+                        Inspect sentence contexts <ArrowRight size={15} />
+                      </button>
+                    )}
                   {scan.sentences.length > 0 && (
                     <>
-                      {scan.evidence.referenceProbability !== undefined && (
-                        <div className="vt-reference">
-                          <p>
-                            HC3 reference estimate:{" "}
-                            {Math.round(
-                              scan.evidence.referenceProbability * 100,
-                            )}
-                            % AI class
-                          </p>
-                          {scan.evidence.referenceBin && (
-                            <p>
-                              In the corresponding held-out score bin,{" "}
-                              {scan.evidence.referenceBin.aiCount}/
-                              {scan.evidence.referenceBin.count} examples were
-                              labelled AI. 95% bin frequency interval:{" "}
-                              {Math.round(
-                                scan.evidence.referenceBin.lower * 100,
-                              )}
-                              –
-                              {Math.round(
-                                scan.evidence.referenceBin.upper * 100,
-                              )}
-                              %. This interval describes that sample, not this
-                              document.
-                            </p>
-                          )}
-                        </div>
-                      )}
                       <h3>Context highlights</h3>
                       <p className="vt-small">
                         Amber marks contexts with a model signal of 80/100 or
                         above. Sentence context scores are not calibrated
                         probabilities.
                       </p>
+                      {scan.contextLimit && (
+                        <p className="vt-small">
+                          Only the first {scan.contextLimit} contexts were
+                          scored to limit runtime. Remaining text is unscored.
+                        </p>
+                      )}
                       <div className="vt-highlights">
                         {scan.sentences.map((s, i) => (
                           <span key={i}>
@@ -743,9 +872,15 @@ export function Workspace() {
                               data-score={s.score}
                               style={{
                                 background:
-                                  s.score >= 0.8 ? "#fef08a" : "transparent",
+                                  s.score !== null && s.score >= 0.8
+                                    ? "#fef08a"
+                                    : "transparent",
                               }}
-                              title={`Neighboring context signal: ${Math.round(s.score * 100)}/100`}
+                              title={
+                                s.score === null
+                                  ? "Context not scored"
+                                  : `Neighboring context signal: ${Math.round(s.score * 100)}/100`
+                              }
                             >
                               {scan.text.slice(s.start, s.end)}
                             </mark>
@@ -753,11 +888,13 @@ export function Workspace() {
                         ))}
                         {scan.text.slice(scan.sentences.at(-1)?.end ?? 0)}
                       </div>
-                      <p className="vt-small">
-                        {(scan.latencyMs / 1000).toFixed(1)} seconds · TMR
-                        RoBERTa Q8 on CPU/WASM
-                      </p>
                     </>
+                  )}
+                  {scan.evidence.modelScore !== null && (
+                    <p className="vt-small">
+                      {(scan.latencyMs / 1000).toFixed(1)} seconds · document
+                      {scan.sentences.length ? " and contexts" : ""} · WASM Q8
+                    </p>
                   )}
                   <button
                     className="vt-secondary"
@@ -961,16 +1098,35 @@ export function Workspace() {
               <span className="vt-eyebrow">OPTION 02 · IN YOUR BROWSER</span>
               <h3>Download a small writing model</h3>
               <p>
-                About 900 MB once, plus working memory. Requires WebGPU. Small
-                models work best for simple edits; quality and speed depend on
-                your device.
+                Choose a model for your device. Requires WebGPU. Larger models
+                need more memory; useful edits are not guaranteed.
+              </p>
+              <label htmlFor="browser-writing-model">
+                Browser writing model
+              </label>
+              <select
+                id="browser-writing-model"
+                value={writingTier}
+                disabled={!!busy}
+                onChange={(e) =>
+                  setWritingTier(e.target.value as WritingModelTier)
+                }
+              >
+                {Object.entries(WRITING_MODELS).map(([tier, model]) => (
+                  <option key={tier} value={tier}>
+                    {model.label}
+                  </option>
+                ))}
+              </select>
+              <p className="vt-small">
+                {WRITING_MODELS[writingTier].description}
               </p>
               <button
                 className="vt-secondary"
                 disabled={!!busy}
                 onClick={loadBrowser}
               >
-                {browserName
+                {browserName === WRITING_MODELS[writingTier].id
                   ? "Use browser model"
                   : busy === "load"
                     ? "Loading model…"

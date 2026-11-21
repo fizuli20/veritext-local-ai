@@ -6,7 +6,7 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     product: "Veritext",
-    version: "4.1.0",
+    version: "4.2.0",
     zeroKeyMandate: true,
     externalApiKeysRequired: false,
     engines: {
@@ -25,6 +25,14 @@ export async function GET() {
         ],
         automaticRuleFallback: false,
         semanticGuarantee: false,
+        protectedSpans: true,
+        sectionRetryLimit: 1,
+        protectedSentenceRecoveryLimit: 4,
+        browserModels: [
+          "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+          "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
+          "Llama-3.2-3B-Instruct-q4f16_1-MLC",
+        ],
       },
       privacy: {
         browserWorkspaceTextUploadedToVercel: false,

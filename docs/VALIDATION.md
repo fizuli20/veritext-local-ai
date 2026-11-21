@@ -1,3 +1,49 @@
+# Veritext 4.2 — latest validation
+
+Date: 22 November 2026, Asia/Baku. Source: https://github.com/fizuli20/veritext-local-ai. Production: https://veritext-local-ai.vercel.app.
+
+## Changes verified in this release
+
+- Browser writing now defaults to Qwen 2.5 1.5B, with explicit Light/Llama 1B and Larger/Llama 3B choices resolved from the installed WebLLM registry. Switching unloads the previous model before loading another. The larger 3B option was not empirically generated with in this release; memory/device limits still apply.
+- Before inference, exact numbers (including signs/scientific notation), quotations, citations, links, code and user-locked names/terms are masked and checked. Missing, repeated or unknown markers are rejected. Only complete, known markers may be normalized for case, spacing or escaped underscores.
+- Rewriting is bounded to 12,000 input characters and split into 1,600-character masked sections. An unchanged/invalid section gets one whole-section retry. If protected markers still fail, a recovery pass keeps all fact-bearing sentences exactly intact and uses real model inference on at most four surrounding prose groups. That recovery is explicitly disclosed. If checks still fail, the original section is retained and labelled. No word-swap fallback is used.
+- One-step undo restores the prior draft. Retry reasons and elapsed time are visible. Manual edits are also checked against currently locked terms. This is an invariant check, not semantic verification.
+- Basic detection scores the document first. Context inspection is an explicit second action, limited to 60 scored contexts, with the remaining text labelled unscored. A bounded worker-memory cache avoids identical re-inference. No external detector API was added.
+- Low detector signals explicitly mean **authorship unknown** after the newer-model stress test below.
+
+## Actual browser generation, not integration fixtures
+
+Native Chrome on this computer, local development build, actual WebGPU WebLLM using `Qwen2.5-1.5B-Instruct-q4f16_1-MLC`. Test prose was authored during this task. Full before/after text and limitations: [browser-rewrite-4.2.json](validation/browser-rewrite-4.2.json).
+
+1. A factual 96-word draft became **83 words in 9.5 seconds**, with two retry/recovery calls displayed. Initial marker-based drafts lost facts such as 2024 and 15% and were rejected. The successful recovery preserved the fact-bearing sentences exactly and revised the surrounding wordy closing sentences. The UI disclosed that choice. Manual comparison retained Ana, Project Atlas, 2024, 40, 12, 15%, the short quotation, citation, URL and negative claims.
+2. An ordinary 88-word project update became **69 words in 2.7 seconds with no retry**. Manual comparison retained the feedback-review, clarification request, next-meeting questions, and practical-improvement goals.
+
+These are two observed examples, not a general quality rate or a statistically measured latency distribution. The earlier failed drafts are recorded rather than counted as successful rewrites. Actual LM Studio/Ollama generation remains unverified because no local server was running; response fixtures verify the integration behavior.
+
+## Newer-model stress test — frozen model and calibration
+
+Reproduce with `npm run verify:modern`. Full per-passage IDs, labels, source groups, SHA-256 text hashes, raw and calibrated scores: [modern-results.json](validation/modern-results.json).
+
+Source: TextSight (2026), [AI text detection control set](https://huggingface.co/datasets/textsightai/ai-text-detection-benchmark-2026), revision `423b1768f0827675295fd6dc3cd255ad2f411183`, CC-BY-SA-4.0 with individual source attribution in the dataset. All 155 pre-2022 Wikipedia and 183 PMC passages, and all 56 AI-labelled 2026 passages were evaluated. The literature negative control was excluded. Full passages are downloaded for local evaluation and are not redistributed in this score report. Generator identities/ground-truth labels are publisher assertions, not independently authenticated.
+
+The TMR model/revision and HC3 slope 3/intercept -11 were frozen before this evaluation; no fitting, threshold tuning, or score-based sample selection was performed on the stress set.
+
+| Frozen threshold 0.5 | Raw model | HC3 reference |
+| --- | ---: | ---: |
+| Human false positives | 54 / 338 | 1 / 338 |
+| AI-labelled passages detected | 45 / 56 | 28 / 56 |
+| Brier score on this imbalanced set | 0.1241 | 0.0692 |
+
+The HC3 reference missed **12/12 labelled Claude Opus 5** and **7/8 labelled Qwen 3.8** passages. It detected 10/12 GPT-4.1, 6/12 gpt-oss-120b, and 11/12 Claude Haiku 4.5 passages. Low scores therefore cannot establish human authorship. The UI does not expose these fixed-threshold counts as its abstaining decision rule, and does not claim parity with proprietary detectors. This is a small vendor-authored two-genre stress test; article/prompt correlation, sample imbalance, generator identity uncertainty, and unknown training overlap limit any generalization. The historical HC3 result below remains an experiment, not modern-model validation.
+
+## Automated and production checks
+
+Typecheck and lint passed. Vitest: **20 files / 91 tests passed**. Playwright: **10 tests passed against the production build**. Production build passed; homepage First Load JS: **125 kB**. `git diff --check` passed. These checks were run after the final recovery changes. Development verification already covers long inputs above the previous 4,000-character cap, paragraph preservation, protected-marker failure, retry/recovery limits, explicit retained-source output, local Gemma compatibility fixtures, undo, and current detector limitations. Response-fixture tests do not establish actual local LLM quality. Production HTTP/model smoke checks are performed only after deployment is ready.
+
+---
+
+## Archived 4.1 baseline
+
 # Veritext 4.1 validation ledger
 
 Date: 21 November 2026 (Asia/Baku). Repository: https://github.com/fizuli20/veritext-local-ai. Production target: https://veritext-local-ai.vercel.app.

@@ -14,6 +14,7 @@ env.useBrowserCache = true;
 // A single WASM thread also works without cross-origin isolation.
 env.backends.onnx.wasm!.numThreads = 1;
 let classifier: any = null;
+const scoreCache = new Map<string, number>();
 let initialization: Promise<void> | null = null;
 
 async function initialize() {
@@ -34,6 +35,8 @@ async function initialize() {
   await initialization;
 }
 async function scoreText(text: string) {
+  const cached = scoreCache.get(text);
+  if (cached !== undefined) return cached;
   const ids = classifier.tokenizer.encode(text, { add_special_tokens: false });
   const windows = tokenWindows(ids);
   let weighted = 0;
@@ -54,7 +57,11 @@ async function scoreText(text: string) {
     weighted += score * weight;
     total += weight;
   }
-  return total ? weighted / total : 0.5;
+  const result = total ? weighted / total : 0.5;
+  if (scoreCache.size >= 120)
+    scoreCache.delete(scoreCache.keys().next().value!);
+  scoreCache.set(text, result);
+  return result;
 }
 self.onmessage = async ({ data }: MessageEvent) => {
   if (data.type === "PING") {
@@ -103,7 +110,7 @@ self.onmessage = async ({ data }: MessageEvent) => {
         message: "Model ready. Scoring the document…",
       });
       const score = await scoreText(text);
-      const sentences = tokenizeSentences(text);
+      const sentences = data.includeContexts ? tokenizeSentences(text) : [];
       const results = [];
       // Context windows are clearly labelled, never represented as isolated sentence probabilities.
       for (let i = 0; i < sentences.length; i++) {
@@ -112,13 +119,16 @@ self.onmessage = async ({ data }: MessageEvent) => {
           sentences[Math.max(0, i - 1)]!.start,
           sentences[Math.min(sentences.length - 1, i + 1)]!.end,
         );
-        results.push({ ...current, score: await scoreText(context) });
-        self.postMessage({
-          type: "analysis-progress",
-          id: data.id,
-          completed: i + 1,
-          total: sentences.length,
-        });
+        if (i < 60)
+          results.push({ ...current, score: await scoreText(context) });
+        else results.push({ ...current, score: null });
+        if (i < 60)
+          self.postMessage({
+            type: "analysis-progress",
+            id: data.id,
+            completed: i + 1,
+            total: Math.min(60, sentences.length),
+          });
       }
       self.postMessage({
         type: "result",
@@ -127,6 +137,7 @@ self.onmessage = async ({ data }: MessageEvent) => {
         evidence: describeEvidence(text, score),
         sentences: results,
         engine: "TMR RoBERTa · WASM Q8",
+        contextLimit: data.includeContexts && sentences.length > 60 ? 60 : null,
         model: DETECTOR_MODEL,
         revision: DETECTOR_REVISION,
         latencyMs: Math.round(performance.now() - started),

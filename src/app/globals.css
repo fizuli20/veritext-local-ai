@@ -682,3 +682,5 @@ body {
     flex-wrap: wrap;
   }
 }
+.vt-lock-toolbar{display:flex;align-items:center;gap:10px;padding:11px 22px;border-bottom:1px solid #e5e9e1;font-size:11px;color:#6a7c69;flex-wrap:wrap}.vt-lock-toolbar input{min-width:160px;flex:1;border:1px solid #dce4d7;border-radius:5px;padding:7px 10px;background:#fdfefa;font-size:11px}.vt-lock-toolbar span{font-size:10px;color:#8c9784}.vt-pane-footer .vt-actions{flex-wrap:wrap}
+.vt-reference{border:1px solid #e5e9df;padding:11px;border-radius:6px;margin:12px 0;font-size:11px;color:#6c7c65}.vt-reference summary{cursor:pointer;list-style:revert;font-size:11px}.vt-reference p{font-size:10px}

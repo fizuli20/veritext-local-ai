@@ -1,7 +1,9 @@
 import type { WebWorkerMLCEngine } from "@mlc-ai/web-llm";
+import { resolveWritingModel, type WritingModelTier } from "./writing-models";
 export async function loadBrowserRewriter(
   onProgress: (text: string) => void,
   signal?: AbortSignal,
+  tier: WritingModelTier = "balanced",
 ): Promise<{ engine: WebWorkerMLCEngine; worker: Worker; modelId: string }> {
   const gpu = (
     navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } }
@@ -14,17 +16,7 @@ export async function loadBrowserRewriter(
   const { CreateWebWorkerMLCEngine, prebuiltAppConfig } = await import(
     "@mlc-ai/web-llm"
   );
-  const record =
-    prebuiltAppConfig.model_list.find(
-      (item) => item.model_id === "Llama-3.2-1B-Instruct-q4f16_1-MLC",
-    ) ??
-    prebuiltAppConfig.model_list.find((item) =>
-      item.model_id.startsWith("Llama-3.2-1B-Instruct-"),
-    );
-  if (!record)
-    throw new Error(
-      "No supported 1B writing model in this runtime. Connect a local model instead.",
-    );
+  const record = resolveWritingModel(prebuiltAppConfig.model_list, tier);
   const worker = new Worker(
     new URL("../../workers/humanizer.worker.ts", import.meta.url),
     { type: "module" },

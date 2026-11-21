@@ -82,6 +82,9 @@ export function describeEvidence(
     };
   if (
     score === null ||
+    !Number.isFinite(score) ||
+    score < 0 ||
+    score > 1 ||
     !calibration.active ||
     calibration.revision !== DETECTOR_REVISION
   )
@@ -103,6 +106,8 @@ export function describeEvidence(
     referenceProbability,
     referenceBin: { count: bin.count, aiCount: bin.aiCount, ...interval },
   };
+  // Newer labelled AI samples scored low in the external stress test.
+  // Low signal therefore cannot justify a human-authorship conclusion.
   const high =
     score >= 0.8 && referenceProbability >= 0.8 && interval.lower > 0.5;
   const low =
@@ -118,9 +123,12 @@ export function describeEvidence(
   return {
     ...evidence,
     status: "signal",
-    verdict: high ? "AI-like patterns" : "Human-like patterns",
-    explanation:
-      "Both signals agree on a writing pattern. This is not proof of authorship. Newer models, edited text, and different domains can still be misclassified.",
+    verdict: high
+      ? "Elevated AI-like signal"
+      : "Low signal · authorship unknown",
+    explanation: high
+      ? "The model found a strong pattern associated with AI in its historical reference data. This is not proof of authorship; human writing can receive high scores."
+      : "The model found little signal, but newer AI text also received low scores in our stress test. Human authorship cannot be established.",
   };
 }
 

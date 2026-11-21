@@ -5,15 +5,23 @@ export function reviewRewrite(
   original: string,
   candidate: string,
   mode = "standard",
+  lockedTerms: string[] = [],
 ): string[] {
   const issues: string[] = [];
   const numbers = (text: string) =>
-    text.match(/(?:[$€£])?\b\d[\d,.]*(?:\s?%|\b)/g) ?? [];
+    text.match(
+      /(?<![\p{L}\p{N}_])(?:[$€£])?[+-]?\d+(?:[,.]\d+)*(?:[eE][+-]?\d+)?(?:\s?%)?/gu,
+    ) ?? [];
   const frequency = (items: string[]) =>
     items.reduce<Record<string, number>>(
       (a, s) => ({ ...a, [s]: (a[s] ?? 0) + 1 }),
       {},
     );
+  for (const term of lockedTerms.map((t) => t.trim()).filter(Boolean)) {
+    const count = original.split(term).length - 1;
+    if (count && candidate.split(term).length - 1 !== count)
+      issues.push(`Locked term changed: ${term}`);
+  }
   const before = frequency(numbers(original));
   const after = frequency(numbers(candidate));
   if (
@@ -52,7 +60,8 @@ export function reviewRewrite(
 
 export function rewriteInstructions(mode: string) {
   const style: Record<string, string> = {
-    standard: "Improve clarity and natural phrasing with minimal edits.",
+    standard:
+      "Rewrite the passage in clear, natural English. Recast awkward sentences and simplify wordy phrases. Make useful changes to phrasing and structure while preserving all substantive information.",
     academic: "Use precise academic English and preserve qualifications.",
     casual: "Use natural conversational English without adding anecdotes.",
     professional: "Use direct, courteous professional English.",

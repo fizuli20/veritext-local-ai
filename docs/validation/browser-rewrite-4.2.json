@@ -1,0 +1,47 @@
+{
+  "observedDate": "2026-11-22",
+  "environment": "Native Chrome UI, localhost Next.js development build; actual WebGPU WebLLM, no inference mocks. Browser connector was unavailable, so native accessibility controls were used.",
+  "model": "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
+  "mode": "standard",
+  "provenance": "All test prose authored in this task; no private user writing.",
+  "cases": [
+    {
+      "name": "protected-facts recovery",
+      "source": "In 2024, Ana reviewed 40 applications for Project Atlas and approved 12 for further study. She said \"wait\" before the team made any public announcement. The pilot did not reduce costs by 15%, so the team needs to review the records before deciding whether to expand the program (Smith, 2024). The report is available at https://example.com/report. At the present moment in time, it is important to note that no final decision has been made. The purpose of the next meeting is to discuss the results and make a decision about the next steps.",
+      "output": "In 2024, Ana reviewed 40 applications for Project Atlas and approved 12 for further study. She said \"wait\" before the team made any public announcement. The pilot did not reduce costs by 15%, so the team needs to review the records before deciding whether to expand the program (Smith, 2024). The report is available at https://example.com/report. The current situation is that no final decision has been made. The next meeting's purpose is to review results and decide the next steps.",
+      "sourceWordsDisplayed": 96,
+      "outputWordsDisplayed": 83,
+      "elapsedSecondsDisplayed": 9.5,
+      "retryCountDisplayed": 2,
+      "lockedTerms": [
+        "Ana",
+        "Project Atlas"
+      ],
+      "observations": [
+        "Earlier marker-based attempts lost protected facts and were rejected.",
+        "Recovery kept fact-bearing sentences intact and edited only surrounding prose.",
+        "The UI explicitly disclosed the recovery rather than claiming all sentences were rewritten.",
+        "Manual review found all tracked numbers, names, quote, citation, URL and negative claims retained."
+      ]
+    },
+    {
+      "name": "ordinary wordy prose",
+      "source": "The purpose of this message is to provide you with an update regarding the status of the project. At this point in time, the team is in the process of reviewing the feedback that was received from the participants. Due to the fact that some comments require additional clarification, we would like to ask everyone to send any questions before the next meeting. It is our intention to use the discussion to identify practical changes that can be made in order to improve the experience for future participants.",
+      "output": "The purpose of this message is to provide you with an update on the project status. The team is currently reviewing feedback from participants, and some comments need clarification before the next meeting. We'd like everyone to send any questions ahead of time so we can discuss them during our next session. Our goal is to use these discussions to identify practical changes that can improve future participant experiences.",
+      "sourceWordsDisplayed": 88,
+      "outputWordsDisplayed": 69,
+      "elapsedSecondsDisplayed": 2.7,
+      "retryCountDisplayed": 0,
+      "observations": [
+        "Actual changed rewrite completed without a retry.",
+        "Manual review found the status-update, feedback review, clarification request, next-meeting questions and practical-improvement goals retained."
+      ]
+    }
+  ],
+  "limitations": [
+    "Two task-authored examples do not establish a general meaning-preservation or quality rate.",
+    "Timing is what the product displayed for each generation, not an aggregate performance benchmark.",
+    "Llama 3B is available in the registry but was not empirically run in this release.",
+    "LM Studio/Ollama integration uses automated response fixtures; no local inference server was running."
+  ]
+}

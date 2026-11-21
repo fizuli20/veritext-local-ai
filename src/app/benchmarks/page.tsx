@@ -1,4 +1,5 @@
 import Link from "next/link";
+import modern from "../../../docs/validation/modern-results.json";
 import report from "../../../docs/validation/neural-results.json";
 export default function BenchmarksPage() {
   const raw = report.evaluationRaw,
@@ -21,7 +22,57 @@ export default function BenchmarksPage() {
           </p>
         </div>
         <section className="vt-studio" style={{ padding: 28 }}>
-          <h2 className="text-xl mb-3">What was actually tested</h2>
+          <h2 className="text-xl mb-3">Newer-model stress test</h2>
+          <p className="text-sm leading-7">
+            We ran the unchanged model and historical HC3 calibration on 394
+            passages from{" "}
+            <a className="underline" href={modern.sourceUrl}>
+              TextSight’s public 2026 control set
+            </a>
+            : 338 human-source passages and 56 passages labelled as outputs from
+            five newer models. The dataset labels and generator identities are
+            publisher assertions. This vendor-authored, two-genre set is a
+            stress test, not a representative accuracy benchmark.
+          </p>
+          <div className="overflow-x-auto my-6">
+            <table className="w-full text-sm text-left leading-8">
+              <thead>
+                <tr>
+                  <th>At the frozen 0.5 threshold</th>
+                  <th>Raw model</th>
+                  <th>HC3 reference</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Human false positives</td>
+                  <td>54 / 338</td>
+                  <td>1 / 338</td>
+                </tr>
+                <tr>
+                  <td>AI texts detected</td>
+                  <td>45 / 56</td>
+                  <td>28 / 56</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="vt-message vt-error">
+            The HC3 calibration missed all 12 passages labelled Claude Opus 5
+            and 7 of 8 labelled Qwen 3.8. We therefore never interpret a low
+            score as evidence of human authorship. This exposes a real
+            limitation; we did not refit on the stress-test examples to hide the
+            misses.
+          </p>
+          <p className="text-sm mb-8">
+            <a
+              className="underline"
+              href="https://github.com/fizuli20/veritext-local-ai/blob/main/docs/validation/modern-results.json"
+            >
+              Inspect every stress-test score and protocol
+            </a>
+          </p>
+          <h2 className="text-xl mb-3">Historical calibration experiment</h2>
           <p className="text-sm leading-7">
             TMR RoBERTa ONNX Q8, pinned revision {report.revision.slice(0, 12)},
             evaluated on {report.results.length} source-labelled passages from
@@ -103,11 +154,12 @@ export default function BenchmarksPage() {
           <h3 className="text-lg mt-6 mb-2">Rewriting and preservation</h3>
           <p className="text-sm leading-7">
             The editor uses a real language model and never silently replaces it
-            with word swaps. Output remains an editable draft. Checks compare
-            numbers, quotations, citations, protected spans, negation and
-            length; they cannot prove semantic equivalence. Review names,
-            claims, relationships and omissions yourself. No output is
-            guaranteed to evade detectors.
+            with word swaps. Numbers, quotations, citations, links, code and
+            user-locked terms are protected before inference. The editor retries
+            unchanged or invalid sections once, then labels sections retained
+            from the original. Output remains an editable draft. Checks cannot
+            prove semantic equivalence; review names, claims, relationships and
+            omissions yourself. No output is guaranteed to evade detectors.
           </p>
           <p className="mt-6 text-sm">
             <a

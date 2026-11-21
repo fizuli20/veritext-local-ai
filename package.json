@@ -1,6 +1,6 @@
 {
   "name": "veritext-local-ai",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,7 +13,8 @@
     "test:e2e": "playwright test",
     "build:extension": "node scripts/build-extension.mjs",
     "typecheck": "tsc --noEmit",
-    "verify:detector": "node scripts/verify-detector.mjs"
+    "verify:detector": "node scripts/verify-detector.mjs",
+    "verify:modern": "node scripts/verify-modern-detector.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.3.3",
