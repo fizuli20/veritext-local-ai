@@ -34,7 +34,7 @@ export default function DevelopersPage() {
   }),
 });
 const data = await res.json();
-console.log('AI Risk:', data.aiScore, '%');`
+console.log('Legacy style index (not a probability):', data.aiScore);`
       : `const res = await fetch('https://veritext-local-ai.vercel.app/api/batch-detect', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -101,6 +101,7 @@ print(response.json())`;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200">
+      <aside className="p-5 bg-amber-100 text-amber-950 text-sm">Legacy style signals only. These API routes do not run the neural detector. aiScore is an uncalibrated style index, not an authorship probability. API requests send your text to Vercel. Browser model inference stays on your device. Batch limit: 10 items.</aside>
       <header className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link

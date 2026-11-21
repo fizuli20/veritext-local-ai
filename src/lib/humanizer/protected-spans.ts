@@ -159,7 +159,7 @@ export function restoreProtectedSpans(
   let restored = rewrittenText;
 
   // Restore in reverse order or by placeholder
-  for (const span of spans) {
+  for (const span of [...spans].reverse()) {
     // Exact placeholder match
     if (restored.includes(span.placeholder)) {
       restored = restored.replaceAll(span.placeholder, span.original);

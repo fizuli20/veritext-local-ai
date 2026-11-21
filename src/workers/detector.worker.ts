@@ -1,200 +1,137 @@
 /// <reference lib="webworker" />
+import { pipeline, env } from "@huggingface/transformers";
+import {
+  DETECTOR_MODEL,
+  DETECTOR_REVISION,
+  parseAiScore,
+  tokenWindows,
+  describeEvidence,
+} from "../lib/detector/evidence";
+import { tokenizeSentences } from "../lib/nlp/tokenizer";
 
-import { pipeline, env } from '@huggingface/transformers';
-import { analyzeStylometrics } from '../lib/nlp/stylometrics';
-
-// Configure transformers.js for browser client execution
 env.allowLocalModels = false;
 env.useBrowserCache = true;
-
+// A single WASM thread also works without cross-origin isolation.
+env.backends.onnx.wasm!.numThreads = 1;
 let classifier: any = null;
-let currentDevice: 'webgpu' | 'wasm' = 'wasm';
-let isInitializing = false;
+let initialization: Promise<void> | null = null;
 
-const PRIMARY_MODEL = 'onnx-community/chatgpt-detector-roberta-ONNX';
-const FALLBACK_MODEL = 'onnx-community/roberta-base-openai-detector-ONNX';
-
-async function initClassifier(devicePreference?: 'webgpu' | 'wasm') {
-  if (classifier) return classifier;
-  if (isInitializing) return;
-  isInitializing = true;
-
-  // Determine device
-  if (devicePreference) {
-    currentDevice = devicePreference;
-  } else if (typeof navigator !== 'undefined' && 'gpu' in navigator && (navigator as any).gpu) {
-    currentDevice = 'webgpu';
-  } else {
-    currentDevice = 'wasm';
-  }
-
-  self.postMessage({
-    type: 'status',
-    message: `Initializing neural detector on ${currentDevice.toUpperCase()}...`,
-  });
-
-  const progressCallback = (info: any) => {
-    if (info.status === 'progress') {
-      self.postMessage({
-        type: 'download-progress',
-        file: info.file || 'model.onnx',
-        loaded: info.loaded || 0,
-        total: info.total || 0,
-        progress: Math.round(info.progress || 0),
+async function initialize() {
+  if (classifier) return;
+  if (!initialization)
+    initialization = (async () => {
+      classifier = await pipeline("text-classification", DETECTOR_MODEL, {
+        revision: DETECTOR_REVISION,
+        device: "wasm",
+        dtype: "q8",
+        progress_callback: (progress: any) =>
+          self.postMessage({ type: "progress", progress }),
       });
-    }
-  };
-
-  try {
-    classifier = await pipeline('text-classification', PRIMARY_MODEL, {
-      device: currentDevice,
-      dtype: 'q8',
-      progress_callback: progressCallback,
+    })().catch((err) => {
+      initialization = null;
+      throw err;
     });
-    self.postMessage({
-      type: 'ready',
-      model: PRIMARY_MODEL,
-      device: currentDevice,
-    });
-  } catch (err: any) {
-    self.postMessage({
-      type: 'warning',
-      message: `Primary model/WebGPU load failed: ${err?.message || err}. Falling back to WASM...`,
-    });
-    currentDevice = 'wasm';
-    try {
-      classifier = await pipeline('text-classification', FALLBACK_MODEL, {
-        device: 'wasm',
-        progress_callback: progressCallback,
-      });
-      self.postMessage({
-        type: 'ready',
-        model: FALLBACK_MODEL,
-        device: 'wasm',
-      });
-    } catch (fallbackErr: any) {
-      self.postMessage({
-        type: 'error',
-        error: `Neural detector failed to load: ${fallbackErr?.message || fallbackErr}`,
-      });
-    }
-  } finally {
-    isInitializing = false;
-  }
+  await initialization;
 }
-
-async function runDetection(text: string, id: string) {
-  // Always compute instant pure TS stylometrics
-  const stylometricResult = analyzeStylometrics(text);
-
-  if (!classifier) {
-    // If neural model not loaded yet, return stylometric-instant
-    self.postMessage({
-      type: 'result',
-      id,
-      engine: 'stylometric-instant',
-      score: stylometricResult.aiScore,
-      isAi: stylometricResult.isAi,
-      stylometricResult,
-      neuralScore: null,
-      ensembleScore: stylometricResult.aiScore,
+async function scoreText(text: string) {
+  const ids = classifier.tokenizer.encode(text, { add_special_tokens: false });
+  const windows = tokenWindows(ids);
+  let weighted = 0;
+  let total = 0;
+  for (let i = 0; i < windows.length; i++) {
+    const window = windows[i]!;
+    const piece = classifier.tokenizer.decode(window, {
+      skip_special_tokens: true,
     });
-    return;
+    const score = parseAiScore(
+      await classifier(piece, {
+        top_k: null,
+        truncation: true,
+        max_length: 512,
+      }),
+    );
+    const weight = window.length - (i ? 64 : 0);
+    weighted += score * weight;
+    total += weight;
   }
-
-  try {
-    // Neural model scoring
-    // Split into overlapping chunks if > 350 words
-    const words = text.split(/\s+/);
-    let rawNeuralProb = 0.5;
-
-    if (words.length <= 350) {
-      const output = await classifier(text);
-      rawNeuralProb = parseModelScore(output);
-    } else {
-      // Chunking with 50-word overlap
-      const chunkSize = 300;
-      const overlap = 50;
-      let totalProb = 0;
-      let chunkCount = 0;
-
-      for (let i = 0; i < words.length; i += chunkSize - overlap) {
-        const slice = words.slice(i, i + chunkSize).join(' ');
-        if (slice.trim().length > 0) {
-          const out = await classifier(slice);
-          totalProb += parseModelScore(out);
-          chunkCount++;
-        }
-      }
-      rawNeuralProb = chunkCount > 0 ? totalProb / chunkCount : 0.5;
-    }
-
-    const neuralAiScore = Math.round(rawNeuralProb * 100);
-
-    // Hybrid ensemble blend: 0.65 * neuralScore + 0.35 * stylometricScore
-    const ensembleScore = Math.round(0.65 * neuralAiScore + 0.35 * stylometricResult.aiScore);
-
-    self.postMessage({
-      type: 'result',
-      id,
-      engine: 'browser-hybrid-neural',
-      device: currentDevice,
-      score: ensembleScore,
-      isAi: ensembleScore >= 50,
-      neuralScore: neuralAiScore,
-      stylometricResult,
-      ensembleScore,
-    });
-  } catch (err: any) {
-    // Graceful fallback to stylometric engine on any inference error
-    self.postMessage({
-      type: 'result',
-      id,
-      engine: 'stylometric-instant',
-      score: stylometricResult.aiScore,
-      isAi: stylometricResult.isAi,
-      stylometricResult,
-      neuralScore: null,
-      ensembleScore: stylometricResult.aiScore,
-      warning: `Inference warning: ${err?.message || err}. Reverted to Pure TS Stylometrics.`,
-    });
-  }
+  return total ? weighted / total : 0.5;
 }
-
-function parseModelScore(output: any): number {
-  if (Array.isArray(output) && output.length > 0) {
-    const item = output[0];
-    if (item && typeof item.score === 'number') {
-      const label = String(item.label || '').toLowerCase();
-      if (label.includes('fake') || label.includes('ai') || label.includes('label_1')) {
-        return item.score;
-      } else {
-        return 1 - item.score;
-      }
-    }
-  }
-  return 0.5;
-}
-
-self.onmessage = async (e: MessageEvent) => {
-  const { type, text, id, device } = e.data || {};
-
-  if (type === 'PING') {
+self.onmessage = async ({ data }: MessageEvent) => {
+  if (data.type === "PING") {
     self.postMessage({
-      type: 'PONG',
-      worker: 'detector',
+      type: "PONG",
       ready: !!classifier,
-      loadedModelId: classifier ? PRIMARY_MODEL : null,
-      backend: currentDevice,
-      webgpuAvailable: typeof navigator !== 'undefined' && 'gpu' in navigator && !!(navigator as any).gpu,
-      timestamp: Date.now(),
+      loadedModelId: classifier ? DETECTOR_MODEL : null,
+      backend: "wasm",
     });
     return;
   }
-
-  if (type === 'init') {
-    await initClassifier(device);
-  } else if (type === 'detect') {
-    await runDetection(text, id);
+  try {
+    if (data.type === "init") {
+      await initialize();
+      self.postMessage({
+        type: "ready",
+        model: DETECTOR_MODEL,
+        device: "wasm",
+      });
+    }
+    if (data.type === "detect") {
+      const started = performance.now();
+      const text = String(data.text ?? "");
+      if (text.length > 20000)
+        throw new Error("Maximum detector input is 20,000 characters.");
+      const eligibility = describeEvidence(text, null);
+      if (
+        eligibility.status === "unsupported-language" ||
+        eligibility.status === "insufficient-text"
+      ) {
+        self.postMessage({
+          type: "result",
+          id: data.id,
+          text,
+          evidence: eligibility,
+          sentences: [],
+          latencyMs: 0,
+          engine: "input-check",
+        });
+        return;
+      }
+      await initialize();
+      const score = await scoreText(text);
+      const sentences = tokenizeSentences(text);
+      const results = [];
+      // Context windows are clearly labelled, never represented as isolated sentence probabilities.
+      for (let i = 0; i < sentences.length; i++) {
+        const current = sentences[i]!;
+        const context = text.slice(
+          sentences[Math.max(0, i - 1)]!.start,
+          sentences[Math.min(sentences.length - 1, i + 1)]!.end,
+        );
+        results.push({ ...current, score: await scoreText(context) });
+        self.postMessage({
+          type: "analysis-progress",
+          id: data.id,
+          completed: i + 1,
+          total: sentences.length,
+        });
+      }
+      self.postMessage({
+        type: "result",
+        id: data.id,
+        text,
+        evidence: describeEvidence(text, score),
+        sentences: results,
+        engine: "TMR RoBERTa · WASM Q8",
+        model: DETECTOR_MODEL,
+        revision: DETECTOR_REVISION,
+        latencyMs: Math.round(performance.now() - started),
+      });
+    }
+  } catch (error) {
+    self.postMessage({
+      type: "error",
+      id: data.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 };

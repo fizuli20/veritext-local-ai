@@ -3,9 +3,9 @@ import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://veritext-local-ai.vercel.app'),
-  title: 'Veritext Local AI — Zero-Token AI Detector & Humanizer',
+  title: 'Veritext — Private Writing Editor & AI Text Signals',
   description:
-    '100% Free, Zero-API-Key Browser-Local AI Detection & Humanization powered by Pure TypeScript Stylometrics, ONNX RoBERTa (WebGPU/WASM), and WebLLM.',
+    'Refine writing with local models and explore uncertain AI text signals. No paid API key required.',
   keywords: [
     'AI detector',
     'AI humanizer',

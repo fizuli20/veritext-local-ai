@@ -1,0 +1,50 @@
+{
+  "model": "onnx-community/tmr-ai-text-detector-ONNX",
+  "revision": "b9aa251e5bcda7e429fcc936767d921435945b60",
+  "dataset": "Hello-SimpleAI/HC3",
+  "datasetRevision": "4d0ff18143b5a7e1b1e79beb540c04549d1e59d3",
+  "created": "2026-11-21T18:32:57.844Z",
+  "active": true,
+  "slope": 3,
+  "intercept": -11,
+  "calibrationCount": 82,
+  "evaluationCount": 80,
+  "bins": [
+    {
+      "lower": 0,
+      "upper": 0.2,
+      "count": 36,
+      "aiCount": 0,
+      "meanScore": 0.011163475096817012
+    },
+    {
+      "lower": 0.2,
+      "upper": 0.4,
+      "count": 2,
+      "aiCount": 0,
+      "meanScore": 0.30256167690628677
+    },
+    {
+      "lower": 0.4,
+      "upper": 0.6,
+      "count": 1,
+      "aiCount": 0,
+      "meanScore": 0.4309097818229158
+    },
+    {
+      "lower": 0.6,
+      "upper": 0.8,
+      "count": 4,
+      "aiCount": 3,
+      "meanScore": 0.7521073843792156
+    },
+    {
+      "lower": 0.8,
+      "upper": 1,
+      "count": 37,
+      "aiCount": 37,
+      "meanScore": 0.8683588491637443
+    }
+  ],
+  "scope": "Balanced historical HC3 English answers; not a validated probability of authorship for arbitrary text."
+}

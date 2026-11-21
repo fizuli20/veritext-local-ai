@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'Veritext Local AI - 100% Zero-Token AI Detector & Humanizer';
+export const alt = 'Veritext - Private Writing Editor & AI Text Signals';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -46,7 +46,7 @@ export default function Image() {
             V
           </div>
           <h1 style={{ fontSize: '48px', fontWeight: 'bold', margin: 0 }}>
-            Veritext Local AI v3.0 Apex
+            Veritext
           </h1>
         </div>
         <p
@@ -58,8 +58,8 @@ export default function Image() {
             lineHeight: 1.4,
           }}
         >
-          100% Free, Zero-Token In-Browser AI Forensics &amp; Tournament Humanizer.
-          WebGPU, WASM &amp; Pure TypeScript Stylometrics.
+          Private writing editor and uncertain AI text signals.
+          Local models. No paid inference API key.
         </p>
         <div
           style={{
@@ -79,7 +79,7 @@ export default function Image() {
               color: '#a5b4fc',
             }}
           >
-            Fast-DetectGPT Curvature
+            Open Neural Model
           </span>
           <span
             style={{
@@ -90,7 +90,7 @@ export default function Image() {
               color: '#6ee7b7',
             }}
           >
-            Zero External API Keys
+            Local Writing AI
           </span>
           <span
             style={{

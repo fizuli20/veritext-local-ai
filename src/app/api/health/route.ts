@@ -1,57 +1,36 @@
-import { NextResponse } from 'next/server';
-import {
-  ONNX_DETECTOR_MODELS,
-  PERPLEXITY_MODELS,
-  EMBEDDING_MODELS,
-  WASM_PARAPHRASER_MODELS,
-  WEBLLM_HUMANIZER_MODELS,
-} from '@/lib/ml/model-registry';
-
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
+import { NextResponse } from "next/server";
+import { DETECTOR_MODEL, DETECTOR_REVISION } from "@/lib/detector/evidence";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export async function GET() {
   return NextResponse.json({
-    status: 'ok',
-    product: 'Veritext Local AI',
-    version: '4.0.0',
-    mode: 'zero-token-local-ai-max',
+    status: "ok",
+    product: "Veritext",
+    version: "4.1.0",
     zeroKeyMandate: true,
     externalApiKeysRequired: false,
     engines: {
       detector: {
-        signal1: 'Pure TypeScript Stylometrics (<30ms, Zero Download, 6 Normalized Signals)',
-        signal2: 'In-Browser RoBERTa ONNX Classifier (WebGPU + WASM)',
-        signal3: 'Causal LM Perplexity & GLTR Token X-Ray (sliding window, top-k rank distribution)',
-        adversarialDefense: 'Zero-Width Stripper & Cyrillic/Greek Homoglyph Normalizer',
-        domainCalibration: ['general', 'academic', 'technical', 'creative', 'esl-fair'],
-        models: {
-          roberta: ONNX_DETECTOR_MODELS,
-          perplexity: PERPLEXITY_MODELS,
-        },
+        model: DETECTOR_MODEL,
+        revision: DETECTOR_REVISION,
+        backend: "browser WASM Q8",
+        readiness:
+          "Client must load model; server health does not prove client inference works.",
+        calibration: "Provisional HC3 reference; see /benchmarks",
       },
       humanizer: {
-        tier1: 'Deterministic De-AI Rule-Engine (Instant, Zero Download)',
-        tier2: 'Universal WASM Seq2Seq Paraphraser (CPU / iOS Safari / Non-WebGPU)',
-        tier3: 'In-Browser WebGPU Local LLM (@mlc-ai/web-llm)',
-        tournament: 'Best-of-N Multi-Objective Reranker (AI% + Semantic Sim + Guardrail + Voice Distance)',
-        semanticFidelity: {
-          model: EMBEDDING_MODELS.primary,
-          hardFloor: 0.84,
-        },
-        models: {
-          wasmSeq2Seq: WASM_PARAPHRASER_MODELS,
-          webLlm: WEBLLM_HUMANIZER_MODELS,
-        },
-      },
-      scheduler: {
-        memoryBudgeting: 'Automatic sequential execution on <8GB RAM / constrained GPUs',
-        panicUnloadAvailable: true,
+        engines: [
+          "Browser WebLLM (WebGPU required)",
+          "User-connected LM Studio/Ollama",
+        ],
+        automaticRuleFallback: false,
+        semanticGuarantee: false,
       },
       privacy: {
-        zeroDataEgress: true,
-        textLeavesBrowser: false,
-        gdprCompliant: true,
+        browserWorkspaceTextUploadedToVercel: false,
+        localServerReceivesRewriteText: true,
+        legacyApiReceivesSubmittedText: true,
+        modelDownloads: "Hugging Face and MLC model hosts",
       },
     },
     timestamp: new Date().toISOString(),

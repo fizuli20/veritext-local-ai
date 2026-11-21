@@ -27,40 +27,42 @@ const POSTAMBLE_REGEXES = [
  * and introductory/concluding chat conversational filler.
  */
 export function cleanLlmOutput(rawText: string): string {
-  if (!rawText) return '';
+  if (!rawText) return "";
 
   let cleaned = rawText.trim();
 
   // 1. Strip thinking tags
   for (const regex of THINKING_TAG_REGEXES) {
-    cleaned = cleaned.replace(regex, '').trim();
+    cleaned = cleaned.replace(regex, "").trim();
   }
 
   // 2. Strip unclosed leading thinking tags (e.g. if streaming cutoff)
-  cleaned = cleaned.replace(/^(?:<think>|<thought>|<\|thought\|>)[\s\S]*?(?:<\/think>|<\/thought>|<\|thought\|>)?/i, '').trim();
+  cleaned = cleaned
+    .replace(/(?:<think>|<thought>|<\|thought\|>)[\s\S]*$/i, "")
+    .trim();
 
   // 3. Strip code fence blocks if LLM wrapped whole prose in ```...```
-  if (cleaned.startsWith('```') && cleaned.endsWith('```')) {
-    const lines = cleaned.split('\n');
+  if (cleaned.startsWith("```") && cleaned.endsWith("```")) {
+    const lines = cleaned.split("\n");
     if (lines.length >= 2) {
-      cleaned = lines.slice(1, -1).join('\n').trim();
+      cleaned = lines.slice(1, -1).join("\n").trim();
     }
   }
 
   // 4. Strip conversational preambles
   for (const regex of PREAMBLE_REGEXES) {
-    cleaned = cleaned.replace(regex, '').trim();
+    cleaned = cleaned.replace(regex, "").trim();
   }
 
   // 5. Strip trailing conversational postambles
   for (const regex of POSTAMBLE_REGEXES) {
-    cleaned = cleaned.replace(regex, '').trim();
+    cleaned = cleaned.replace(regex, "").trim();
   }
 
   // 6. Strip leading/trailing matching quotes if the LLM quoted the whole output
   if (
     (cleaned.startsWith('"') && cleaned.endsWith('"') && cleaned.length > 2) ||
-    (cleaned.startsWith('“') && cleaned.endsWith('”') && cleaned.length > 2)
+    (cleaned.startsWith("“") && cleaned.endsWith("”") && cleaned.length > 2)
   ) {
     // Only strip if there are no internal unescaped matching quotes
     const quoteCount = (cleaned.match(/"/g) || []).length;
@@ -77,10 +79,7 @@ export function cleanLlmOutput(rawText: string): string {
  * Skips reasoning_content or reasoning deltas, and accumulates content deltas.
  */
 export function extractDeltaContent(choiceDelta: any): string {
-  if (!choiceDelta) return '';
+  if (!choiceDelta) return "";
   // Ignore reasoning deltas from thinking models (DeepSeek-R1, Qwen-Thinking, etc.)
-  if (choiceDelta.reasoning_content || choiceDelta.reasoning) {
-    return '';
-  }
-  return typeof choiceDelta.content === 'string' ? choiceDelta.content : '';
+  return typeof choiceDelta.content === "string" ? choiceDelta.content : "";
 }

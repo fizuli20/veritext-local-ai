@@ -1,885 +1,999 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+"use client";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { WebWorkerMLCEngine } from "@mlc-ai/web-llm";
 import {
-  Shield,
-  Cpu,
-  Sparkles,
-  Settings,
-  Github,
-  CheckCircle2,
-  UserCheck,
-  FileCheck,
-  Trash2,
-  HelpCircle,
-  X,
-  Activity,
+  ArrowRight,
+  Check,
+  Copy,
   Download,
-  Code2,
-  Layers,
-  GitCompare,
-  BarChart3,
-} from 'lucide-react';
-import { probeHardwareCapabilities, HardwareCapabilities } from '@/lib/ml/capabilities';
+  Loader2,
+  Settings2,
+  ShieldCheck,
+  Sparkles,
+  X,
+} from "lucide-react";
+import { countWords } from "@/lib/nlp/tokenizer";
 import {
-  ONNX_DETECTOR_MODELS,
-  PERPLEXITY_MODELS,
-} from '@/lib/ml/model-registry';
-import { memoryScheduler } from '@/lib/ml/scheduler';
-import dynamic from 'next/dynamic';
-import { HumanizerStudio } from './HumanizerStudio';
-import { ScoreGauge } from './ScoreGauge';
-import { HeatmapEditor } from './HeatmapEditor';
-import { MetricsBar } from './MetricsBar';
-import { analyzeStylometrics, StylometricResult } from '@/lib/nlp/stylometrics';
-import { DomainProfile, DOMAIN_PROFILES } from '@/lib/nlp/calibration';
-import { GLTRToken } from '@/workers/perplexity.worker';
+  describeEvidence,
+  type DetectionEvidence,
+} from "@/lib/detector/evidence";
 import {
-  VoiceProfile,
-  loadStoredVoiceProfiles,
-  saveVoiceProfile,
-  deleteVoiceProfile,
-} from '@/lib/nlp/voice-profile';
-import { ForensicReportData } from '@/lib/io/documents';
+  discoverLocalModels,
+  streamChatCompletion,
+  type DiscoveredModel,
+} from "@/lib/humanizer/local-server-client";
+import { cleanLlmOutput } from "@/lib/humanizer/output-cleaner";
+import {
+  rewriteInstructions,
+  reviewRewrite,
+} from "@/lib/humanizer/rewrite-review";
+import { computeWordDiff } from "@/lib/nlp/diff";
 
-const ModelLoaderCard = dynamic(
-  () => import('./ModelLoaderCard').then((mod) => mod.ModelLoaderCard),
-  { ssr: false }
-);
-
-const BatchAuditor = dynamic(
-  () => import('./BatchAuditor').then((mod) => mod.BatchAuditor),
-  {
-    ssr: false,
-    loading: () => <div className="h-48 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />,
-  }
-);
-
-const DraftComparator = dynamic(
-  () => import('./DraftComparator').then((mod) => mod.DraftComparator),
-  {
-    ssr: false,
-    loading: () => <div className="h-48 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />,
-  }
-);
-
-const ForensicCharts = dynamic(
-  () => import('./ForensicCharts').then((mod) => mod.ForensicCharts),
-  {
-    ssr: false,
-    loading: () => <div className="h-32 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />,
-  }
-);
-
-const ProofStudio = dynamic(
-  () => import('./ProofStudio').then((mod) => mod.default),
-  {
-    ssr: false,
-    loading: () => <div className="h-64 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />,
-  }
-);
+interface Scan {
+  text: string;
+  evidence: DetectionEvidence;
+  engine: string;
+  latencyMs: number;
+  sentences: { start: number; end: number; text: string; score: number }[];
+}
+const sample =
+  "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.";
 
 export function Workspace() {
-  const [activeTab, setActiveTab] = useState<'detector' | 'humanizer' | 'batch' | 'compare' | 'proof'>('humanizer');
-  const [hardware, setHardware] = useState<HardwareCapabilities | null>(null);
-  const [selectedDomain, setSelectedDomain] = useState<DomainProfile>('general');
-  const [documentCurvature, setDocumentCurvature] = useState<number | undefined>(undefined);
-  const [selectedSentenceIndex, setSelectedSentenceIndex] = useState<number | null>(null);
-
-  // Model & Scheduler States
-  const [showModelManager, setShowModelManager] = useState(false);
-  const [showVoiceDrawer, setShowVoiceDrawer] = useState(false);
-  const [showKeyboardModal, setShowKeyboardModal] = useState(false);
-  const [humanizerTier, setHumanizerTier] = useState<'lite' | 'balanced' | 'quality'>('lite');
-
-  // Detector Worker States
-  const [detectorWorker, setDetectorWorker] = useState<Worker | null>(null);
-  const [isDetectorLoading, setIsDetectorLoading] = useState(false);
-  const [detectorProgress, setDetectorProgress] = useState<{ file: string; progress: number; loaded: number; total: number } | null>(null);
-  const [isDetectorReady, setIsDetectorReady] = useState(false);
-  const [robertaScore, setRobertaScore] = useState<number | undefined>(undefined);
-
-  // Perplexity & GLTR Worker States
-  const [pplWorker, setPplWorker] = useState<Worker | null>(null);
-  const [isPplLoading, setIsPplLoading] = useState(false);
-  const [isPplReady, setIsPplReady] = useState(false);
-  const [gltrTokens, setGltrTokens] = useState<GLTRToken[]>([]);
-  const [documentPpl, setDocumentPpl] = useState<number | null>(null);
-  const [gltrDistribution, setGltrDistribution] = useState<{ top10: number; top100: number; top1000: number; beyond1000: number } | null>(null);
-
-  // Humanizer Worker States
-  const [humanizerWorker, setHumanizerWorker] = useState<Worker | null>(null);
-  const [isHumanizerLoading, setIsHumanizerLoading] = useState(false);
-  const [humanizerProgress, setHumanizerProgress] = useState<{ text: string; progress: number } | null>(null);
-  const [isHumanizerReady, setIsHumanizerReady] = useState(false);
-
-  // Voice Profiles
-  const [voiceProfiles, setVoiceProfiles] = useState<VoiceProfile[]>([]);
-  const [activeVoiceProfile, setActiveVoiceProfile] = useState<VoiceProfile | null>(null);
-  const [newVoiceName, setNewVoiceName] = useState('');
-  const [newVoiceSample, setNewVoiceSample] = useState('');
-
-  // Offline PWA State
-  const [isOfflineReady, setIsOfflineReady] = useState(false);
-
-  // Standalone Detector Tab States
-  const [detectorText, setDetectorText] = useState(
-    `In today's fast-paced world, artificial intelligence plays a pivotal role in transforming modern education. It is worth noting that adaptive learning platforms delve into student performance metrics to provide a comprehensive overview of academic progress. Furthermore, navigating the complexities of digital classrooms highlights the multifaceted nature of contemporary pedagogy.`
+  const [tab, setTab] = useState<"detector" | "humanizer">("humanizer");
+  const [input, setInput] = useState("");
+  const [output, setOutput] = useState("");
+  const [source, setSource] = useState("");
+  const [mode, setMode] = useState("standard");
+  const [scan, setScan] = useState<Scan | null>(null);
+  const [busy, setBusy] = useState<"scan" | "rewrite" | "load" | null>(null);
+  const [progress, setProgress] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [engineName, setEngineName] = useState("");
+  const [settings, setSettings] = useState(false);
+  const [baseUrl, setBaseUrl] = useState("http://localhost:1234/v1");
+  const [models, setModels] = useState<DiscoveredModel[]>([]);
+  const [modelId, setModelId] = useState("");
+  const [connectedUrl, setConnectedUrl] = useState("");
+  const [connecting, setConnecting] = useState(false);
+  const [browserName, setBrowserName] = useState("");
+  const [useLocal, setUseLocal] = useState(true);
+  const [diff, setDiff] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const detector = useRef<Worker | null>(null);
+  const browserEngine = useRef<WebWorkerMLCEngine | null>(null);
+  const browserWorker = useRef<Worker | null>(null);
+  const abort = useRef<AbortController | null>(null);
+  const operation = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeName =
+    useLocal && modelId && connectedUrl
+      ? `Local model · ${modelId}`
+      : browserName
+        ? `Browser · ${browserName}`
+        : "";
+  const issues = useMemo(
+    () => (output && source ? reviewRewrite(source, output, mode) : []),
+    [source, output, mode],
   );
-  const [detectorResult, setDetectorResult] = useState<StylometricResult | null>(null);
-  const [detectorLatency, setDetectorLatency] = useState<number>(0);
-  const [detectorEngine, setDetectorEngine] = useState<string>('stylometric-instant');
+  const changes = useMemo(
+    () =>
+      diff && output && output.length <= 12000
+        ? computeWordDiff(source, output)
+        : [],
+    [diff, source, output],
+  );
 
-  // Register PWA Service Worker & Probe hardware on mount
   useEffect(() => {
-    probeHardwareCapabilities().then((cap) => {
-      setHardware(cap);
-    });
-
-    if (typeof window !== 'undefined') {
-      setVoiceProfiles(loadStoredVoiceProfiles());
-
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker
-          .register('/sw.js')
-          .then(() => setIsOfflineReady(true))
-          .catch(() => setIsOfflineReady(false));
-      }
-    }
+    // Retire the old cache-first shell so deployed fixes cannot be hidden by it.
+    navigator.serviceWorker
+      ?.getRegistrations()
+      .then((regs) =>
+        regs.forEach((reg) => {
+          if (reg.active?.scriptURL === `${location.origin}/sw.js`)
+            void reg.unregister();
+        }),
+      )
+      .catch(() => {});
+    return () => {
+      detector.current?.terminate();
+      browserWorker.current?.terminate();
+      abort.current?.abort();
+      if (timer.current) clearTimeout(timer.current);
+    };
   }, []);
 
-  // Global Keyboard Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
-        e.preventDefault();
-        setShowKeyboardModal(true);
+  function stop() {
+    operation.current++;
+    abort.current?.abort();
+    browserEngine.current?.interruptGenerate();
+    if (busy === "scan") {
+      detector.current?.terminate();
+      detector.current = null;
+    }
+    if (timer.current) clearTimeout(timer.current);
+    setBusy(null);
+    setProgress("");
+    setNotice("Stopped. Any partial rewrite is an unfinished draft.");
+  }
+  function editInput(value: string) {
+    setInput(value);
+    setScan(null);
+    setError("");
+  }
+  async function paste() {
+    try {
+      editInput(await navigator.clipboard.readText());
+    } catch {
+      setError(
+        "Clipboard access is unavailable. Paste directly into the editor.",
+      );
+    }
+  }
+  async function connect() {
+    setConnecting(true);
+    setError("");
+    setModels([]);
+    setModelId("");
+    setConnectedUrl("");
+    try {
+      const url = new URL(baseUrl);
+      if (
+        !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ||
+        !["http:", "https:"].includes(url.protocol) ||
+        url.username ||
+        url.password
+      )
+        throw new Error("Use a local server on localhost or 127.0.0.1.");
+      const result = await discoverLocalModels(baseUrl);
+      if (result.error) throw new Error(result.error);
+      if (!result.models.length)
+        throw new Error(
+          "No writing model is loaded. Load a chat model in LM Studio or Ollama first.",
+        );
+      setModels(result.models);
+      setModelId(result.models[0]!.id);
+      setConnectedUrl(baseUrl);
+      setUseLocal(true);
+      setNotice(
+        "Local model connected. Your text is sent only to this selected local server when you rewrite.",
+      );
+    } catch (err) {
+      setError(
+        `${err instanceof Error ? err.message : err} In LM Studio, open Developer → Server Settings → Enable CORS, then start the server. Allow local network access if your browser asks. You can also run Veritext locally.`,
+      );
+    } finally {
+      setConnecting(false);
+    }
+  }
+  async function loadBrowser() {
+    if (browserName) {
+      setUseLocal(false);
+      setSettings(false);
+      return;
+    }
+    const id = ++operation.current;
+    const controller = new AbortController();
+    abort.current = controller;
+    setBusy("load");
+    setError("");
+    setProgress("Checking WebGPU…");
+    try {
+      const { loadBrowserRewriter } = await import("@/lib/ml/browser-rewriter");
+      const loaded = await loadBrowserRewriter((text) => {
+        if (operation.current === id) setProgress(text);
+      }, controller.signal);
+      if (operation.current !== id) {
+        loaded.worker.terminate();
+        return;
       }
-      if (e.altKey && e.key === '1') {
-        setActiveTab('detector');
-      } else if (e.altKey && e.key === '2') {
-        setActiveTab('humanizer');
+      browserEngine.current = loaded.engine;
+      browserWorker.current = loaded.worker;
+      setBrowserName(loaded.modelId);
+      setUseLocal(false);
+      setSettings(false);
+      setNotice("Browser writing model is ready.");
+    } catch (err) {
+      if (operation.current === id)
+        setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      if (operation.current === id) {
+        setBusy(null);
+        setProgress("");
       }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Compute detector tab results on change
-  useEffect(() => {
-    if (detectorText.trim().length >= 15) {
-      const start = performance.now();
-      const res = analyzeStylometrics(detectorText, selectedDomain);
-      setDetectorLatency(Math.round((performance.now() - start) * 10) / 10);
-      setDetectorResult(res);
-      setDetectorEngine('stylometric-instant');
-    } else {
-      setDetectorResult(null);
     }
-  }, [detectorText, selectedDomain]);
-
-  // Load Neural RoBERTa Worker
-  const handleLoadDetector = () => {
-    if (typeof window === 'undefined' || detectorWorker || isDetectorLoading) return;
-    setIsDetectorLoading(true);
-
-    try {
-      const worker = new Worker(new URL('../workers/detector.worker.ts', import.meta.url), {
-        type: 'module',
+  }
+  async function detect() {
+    const eligibility = describeEvidence(input, null);
+    setError("");
+    setNotice("");
+    if (
+      eligibility.status === "insufficient-text" ||
+      eligibility.status === "unsupported-language"
+    ) {
+      setScan({
+        text: input,
+        evidence: eligibility,
+        engine: "Input check",
+        latencyMs: 0,
+        sentences: [],
       });
-
-      worker.onmessage = (e) => {
-        const { type } = e.data;
-        if (type === 'download-progress') {
-          setDetectorProgress({
-            file: e.data.file,
-            progress: e.data.progress,
-            loaded: e.data.loaded ?? 0,
-            total: e.data.total ?? 100,
-          });
-        } else if (type === 'ready') {
-          setIsDetectorReady(true);
-          setIsDetectorLoading(false);
-        } else if (type === 'result') {
-          const neuralScore = e.data.neuralScore;
-          setRobertaScore(neuralScore);
-          setDetectorResult(e.data.stylometricResult);
-          setDetectorLatency(e.data.latencyMs);
-          setDetectorEngine('neural-roberta-ensemble');
+      return;
+    }
+    if (input.length > 20000) {
+      setError("Use at most 20,000 characters per scan.");
+      return;
+    }
+    const id = String(++operation.current);
+    setBusy("scan");
+    setProgress("Loading neural detector (about 125 MB on first use)…");
+    setScan(null);
+    try {
+      if (!detector.current) {
+        const worker = new Worker(
+          new URL("../workers/detector.worker.ts", import.meta.url),
+          { type: "module" },
+        );
+        detector.current = worker;
+      }
+      const worker = detector.current;
+      const fail = (message: string) => {
+        if (String(operation.current) !== id) return;
+        if (timer.current) clearTimeout(timer.current);
+        worker.terminate();
+        detector.current = null;
+        setError(message);
+        setBusy(null);
+        setProgress("");
+      };
+      timer.current = setTimeout(
+        () =>
+          fail(
+            "Detector timed out after 3 minutes. Check your connection and retry. No fallback score was substituted.",
+          ),
+        180000,
+      );
+      worker.onerror = (event) =>
+        fail(
+          `The detector could not run: ${event.message}. Retry or use a different browser.`,
+        );
+      worker.onmessage = ({ data }) => {
+        if (String(operation.current) !== id) return;
+        if (data.type === "progress" && data.progress.status === "progress") {
+          const p = data.progress;
+          setProgress(
+            `Loading ${p.file}: ${Math.round((p.loaded ?? 0) / 1048576)} MB${p.progress ? ` · ${Math.round(p.progress)}%` : ""}`,
+          );
+        }
+        if (data.type === "analysis-progress" && data.id === id)
+          setProgress(`Checking context ${data.completed} of ${data.total}…`);
+        if (data.type === "error")
+          fail(
+            `Neural detector unavailable: ${data.error}. No fallback score was substituted.`,
+          );
+        if (data.type === "result" && data.id === id) {
+          if (timer.current) clearTimeout(timer.current);
+          setScan(data);
+          setBusy(null);
+          setProgress("");
         }
       };
-
-      const primaryId = ONNX_DETECTOR_MODELS.primary?.id ?? 'onnx-community/chatgpt-detector-roberta-ONNX';
-      worker.postMessage({ type: 'init', modelId: primaryId });
-      setDetectorWorker(worker);
-      memoryScheduler.registerWorker('detector', worker, primaryId);
+      worker.postMessage({ type: "detect", text: input, id });
     } catch (err) {
-      console.error('Failed to instantiate detector worker:', err);
-      setIsDetectorLoading(false);
+      setError(String(err));
+      setBusy(null);
     }
-  };
-
-  // Load Perplexity & GLTR Worker
-  const handleLoadPerplexity = () => {
-    if (typeof window === 'undefined' || pplWorker || isPplLoading) return;
-    setIsPplLoading(true);
-
+  }
+  async function rewrite() {
+    setError("");
+    setNotice("");
+    if (!activeName) {
+      setSettings(true);
+      setNotice("Connect or load a writing model to create a rewrite.");
+      return;
+    }
+    if (input.length > 4000) {
+      setError(
+        "Rewrite up to 4,000 characters at a time to fit the browser model context.",
+      );
+      return;
+    }
+    const id = ++operation.current;
+    const original = input;
+    setSource(original);
+    setOutput("");
+    setDiff(false);
+    setBusy("rewrite");
+    setEngineName(activeName);
+    setProgress("Writing a draft…");
+    const controller = new AbortController();
+    abort.current = controller;
+    timer.current = setTimeout(() => {
+      if (operation.current === id) {
+        controller.abort();
+        browserEngine.current?.interruptGenerate();
+      }
+    }, 180000);
     try {
-      const worker = new Worker(new URL('../workers/perplexity.worker.ts', import.meta.url), {
-        type: 'module',
-      });
-
-      worker.onmessage = (e) => {
-        const { type, payload } = e.data;
-        if (type === 'INIT_COMPLETE' || (type === 'STATUS' && payload?.status === 'ready')) {
-          setIsPplReady(true);
-          setIsPplLoading(false);
-        } else if (type === 'PERPLEXITY_RESULT') {
-          setGltrTokens(payload.gltrTokens);
-          setDocumentPpl(payload.documentPerplexity);
-          setGltrDistribution(payload.gltrDistribution);
-          setDocumentCurvature(payload.curvature);
-          setDetectorEngine('3-signal-fast-detectgpt-ensemble');
+      const systemPrompt = rewriteInstructions(mode);
+      let result = "";
+      if (useLocal && modelId && connectedUrl) {
+        result = await streamChatCompletion({
+          baseUrl: connectedUrl,
+          modelId,
+          systemPrompt,
+          userPrompt: original,
+          signal: controller.signal,
+          style: mode === "academic" ? "academic" : "default",
+          onChunk: (_, text) => {
+            if (operation.current === id) setOutput(text);
+          },
+        });
+      } else if (browserEngine.current) {
+        const stream = await browserEngine.current.chat.completions.create({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: original },
+          ],
+          stream: true,
+          temperature: 0.4,
+          max_tokens: 1800,
+        });
+        let truncated = false;
+        for await (const chunk of stream) {
+          if (chunk.choices[0]?.finish_reason === "length") truncated = true;
+          if (controller.signal.aborted || operation.current !== id)
+            throw new Error("Generation stopped.");
+          result += chunk.choices[0]?.delta.content ?? "";
+          setOutput(cleanLlmOutput(result));
         }
-      };
-
-      const primaryPplId = PERPLEXITY_MODELS.primary?.id ?? 'onnx-community/gpt2-ONNX';
-      worker.postMessage({ type: 'INIT', payload: { useWebGPU: hardware?.hasWebGPU ?? true } });
-      setPplWorker(worker);
-      memoryScheduler.registerWorker('perplexity', worker, primaryPplId);
+        if (truncated)
+          throw new Error(
+            "The model reached its output limit. The draft may be incomplete; shorten the input.",
+          );
+        result = cleanLlmOutput(result);
+      }
+      if (controller.signal.aborted)
+        throw new Error(
+          "Generation stopped or timed out. The draft may be incomplete.",
+        );
+      if (operation.current !== id) return;
+      if (!result.trim())
+        throw new Error(
+          "The writing model returned no text. Try a different model.",
+        );
+      setOutput(result);
+      setNotice(
+        result.trim() === original.trim()
+          ? "The model returned the original text without changes."
+          : "Draft ready. Compare changes and review the meaning before using it.",
+      );
     } catch (err) {
-      console.error('Failed to load perplexity worker:', err);
-      setIsPplLoading(false);
+      if (operation.current === id)
+        setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      if (operation.current === id) {
+        if (timer.current) clearTimeout(timer.current);
+        setBusy(null);
+        setProgress("");
+      }
     }
-  };
-
-  const handleLoadHumanizer = () => {
-    if (typeof window === 'undefined' || humanizerWorker || isHumanizerLoading) return;
-    setIsHumanizerLoading(true);
-    try {
-      const worker = new Worker(new URL('../workers/humanizer.worker.ts', import.meta.url), {
-        type: 'module',
-      });
-      worker.onmessage = (e) => {
-        const { type } = e.data;
-        if (type === 'init-progress') {
-          setHumanizerProgress({ text: e.data.text, progress: e.data.progress });
-        } else if (type === 'ready') {
-          setIsHumanizerReady(true);
-          setIsHumanizerLoading(false);
-        }
-      };
-      setHumanizerWorker(worker);
-      memoryScheduler.registerWorker('humanizer', worker);
-    } catch (err) {
-      console.error('Failed to load humanizer worker:', err);
-      setIsHumanizerLoading(false);
-    }
-  };
-
-  // Run 3-Signal Forensic Scan
-  const handleRunFullForensicScan = () => {
-    if (!detectorText.trim()) return;
-
-    if (detectorWorker && isDetectorReady) {
-      detectorWorker.postMessage({
-        type: 'classify',
-        text: detectorText,
-        stylometricResult: analyzeStylometrics(detectorText, selectedDomain),
-      });
-    }
-
-    if (pplWorker && isPplReady) {
-      const stylo = analyzeStylometrics(detectorText, selectedDomain);
-      pplWorker.postMessage({
-        type: 'ANALYZE_PERPLEXITY',
-        payload: {
-          text: detectorText,
-          sentences: stylo.sentences,
-          useWebGPU: hardware?.hasWebGPU ?? true,
-        },
-      });
-    } else {
-      handleLoadPerplexity();
-    }
-  };
-
-  // Unload Models Panic Button
-  const handlePanicUnload = () => {
-    memoryScheduler.unloadAllModels();
-    setDetectorWorker(null);
-    setIsDetectorReady(false);
-    setIsDetectorLoading(false);
-    setPplWorker(null);
-    setIsPplReady(false);
-    setIsPplLoading(false);
-    setHumanizerWorker(null);
-    setIsHumanizerReady(false);
-    setIsHumanizerLoading(false);
-    setGltrTokens([]);
-    setDocumentPpl(null);
-    setRobertaScore(undefined);
-  };
-
-  // Voice Profile Handlers
-  const handleSaveVoice = () => {
-    if (!newVoiceName.trim() || newVoiceSample.trim().length < 80) return;
-    const profile = saveVoiceProfile(newVoiceName.trim(), 'Personal custom style', newVoiceSample.trim());
-    setVoiceProfiles(loadStoredVoiceProfiles());
-    setActiveVoiceProfile(profile);
-    setNewVoiceName('');
-    setNewVoiceSample('');
-  };
-
-  const handleDeleteVoice = (id: string) => {
-    deleteVoiceProfile(id);
-    setVoiceProfiles(loadStoredVoiceProfiles());
-    if (activeVoiceProfile?.id === id) setActiveVoiceProfile(null);
-  };
-
-  // Printable HTML Report Export
-  const handleExportForensicReport = async () => {
-    if (!detectorResult) return;
-    const { generateForensicHtmlReport } = await import('@/lib/io/documents');
-
-    const reportData: ForensicReportData = {
-      documentTitle: 'Authorship & AI Detection Forensic Audit',
-      timestamp: new Date().toISOString(),
-      overallAiScore: detectorResult.aiScore,
-      confidenceInterval: {
-        score: detectorResult.aiScore,
-        margin: 5,
-        lower: Math.max(0, detectorResult.aiScore - 5),
-        upper: Math.min(100, detectorResult.aiScore + 5),
-        reliability: 'high',
-        mixedOrEdited: detectorResult.aiScore >= 40 && detectorResult.aiScore <= 65,
-      },
-      isAi: detectorResult.isAi,
-      domainProfile: DOMAIN_PROFILES[selectedDomain]?.name ?? 'General',
-      wordCount: detectorResult.metrics.wordCount,
-      sentenceCount: detectorResult.metrics.sentenceCount,
-      burstinessCV: detectorResult.metrics.sentenceLengthCV,
-      mtld: detectorResult.metrics.mtld,
-      fleschKincaidGrade: detectorResult.metrics.readability.fleschKincaidGrade,
-      gltrDistribution: gltrDistribution ?? undefined,
-      obfuscationReport: detectorResult.obfuscationReport,
-      sentences: detectorResult.sentences,
-    };
-
-    const html = generateForensicHtmlReport(reportData);
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+  }
+  function exportText() {
+    const url = URL.createObjectURL(
+      new Blob([output], { type: "text/plain;charset=utf-8" }),
+    );
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `veritext-audit-report-${Date.now()}.html`;
+    a.download = "veritext-edited-draft.txt";
     a.click();
     URL.revokeObjectURL(url);
-  };
-
+  }
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(output);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setError("Select and copy the output directly.");
+    }
+  }
+  const controlClass = "vt-secondary";
   return (
-    <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans overflow-x-hidden w-full max-w-full">
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-30 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-100 flex items-center justify-center text-white dark:text-slate-900 font-bold font-mono text-sm shadow-sm">
-            Vx
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-base tracking-tight text-slate-900 dark:text-slate-100">
-                Veritext
-              </span>
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                v3.0 Apex
-              </span>
-              {isOfflineReady && (
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                  <CheckCircle2 className="w-2.5 h-2.5" />
-                  Offline-Ready
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] text-slate-500 hidden sm:block">
-              100% Zero-Token, Zero-API-Key Forensic AI Detector &amp; Tournament Humanizer
-            </p>
-          </div>
-        </div>
-
-        {/* Action Controls & Hardware Pill */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Hardware Capability Pill */}
-          <div
-            onClick={() => setShowModelManager(true)}
-            className="cursor-pointer hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 hover:border-slate-400 dark:hover:border-slate-600 text-xs transition-colors"
-            title="Click to view hardware details and manage cached model weights"
+    <div className="vt-app">
+      <header className="vt-header">
+        <Link href="/" className="vt-brand">
+          <span className="vt-logo">v</span>veritext
+          <span className="vt-beta">LOCAL AI</span>
+        </Link>
+        <nav aria-label="Writing tools" className="vt-tabs">
+          <button
+            aria-pressed={tab === "detector"}
+            onClick={() => {
+              if (!busy) setTab("detector");
+            }}
           >
-            <div className="flex items-center gap-1 font-mono text-[11px]">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  hardware?.hasWebGPU ? 'bg-emerald-500' : 'bg-amber-500'
-                }`}
-              />
-              <span className="text-slate-700 dark:text-slate-300">
-                {hardware?.hasWebGPU ? 'WebGPU Active' : 'WASM Only'}
+            AI Detector
+          </button>
+          <button
+            aria-pressed={tab === "humanizer"}
+            onClick={() => {
+              if (!busy) setTab("humanizer");
+            }}
+          >
+            AI Humanizer
+          </button>
+        </nav>
+        <button className="vt-engine" onClick={() => setSettings(true)}>
+          <span className={activeName ? "vt-dot ready" : "vt-dot"} />
+          <span>{activeName ? "Model ready" : "Set up AI"}</span>
+          <Settings2 size={15} />
+        </button>
+      </header>
+      <main className="vt-main">
+        <div className="vt-intro">
+          <p className="vt-eyebrow">YOUR WORDS. A LITTLE CLEARER.</p>
+          <h1>
+            {tab === "humanizer"
+              ? "Good writing, in your own voice."
+              : "A closer look at your text."}
+          </h1>
+          <p>
+            {tab === "humanizer"
+              ? "Refine a draft without losing what you meant. Private, local, and free of API keys."
+              : "Explore AI-like patterns with an open model. A signal to consider, never proof of authorship."}
+          </p>
+        </div>
+        {error && (
+          <div role="alert" className="vt-message vt-error">
+            {error}
+          </div>
+        )}
+        {notice && (
+          <div role="status" className="vt-message">
+            {notice}
+          </div>
+        )}
+        <section
+          className="vt-studio"
+          aria-label={tab === "humanizer" ? "Rewrite editor" : "Text detector"}
+        >
+          <div className="vt-toolbar">
+            {tab === "humanizer" ? (
+              <div className="vt-modes" aria-label="Rewrite tone">
+                {[
+                  ["standard", "Standard"],
+                  ["academic", "Academic"],
+                  ["casual", "Casual"],
+                  ["professional", "Professional"],
+                  ["concise", "Shorten"],
+                  ["expand", "Expand"],
+                ].map(([id, label]) => (
+                  <button
+                    key={id}
+                    disabled={!!busy}
+                    aria-pressed={mode === id}
+                    onClick={() => setMode(id!)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span className="vt-tool-label">
+                <ShieldCheck size={17} /> English prose · 80+ words
               </span>
-            </div>
-            <span className="text-slate-300 dark:text-slate-700">|</span>
-            <span className="text-slate-500 text-[11px] font-mono">
-              3-Signal Forensic
+            )}
+            <span className="vt-protection">
+              {tab === "humanizer"
+                ? "Facts & quotations checked after rewriting"
+                : "Neural analysis · runs in your browser"}
             </span>
           </div>
-
-          {/* Model Manager Drawer Toggle */}
-          <button
-            onClick={() => setShowModelManager(!showModelManager)}
-            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
-            title="Model & VRAM Manager"
+          <div
+            className={`vt-editors ${tab === "detector" ? "vt-detector-editors" : ""}`}
           >
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline font-medium">Models</span>
-          </button>
-
-          {/* Extension Download Link */}
-          <a
-            href="/downloads/veritext-chrome-extension.zip"
-            download="veritext-chrome-extension.zip"
-            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
-            title="Download Companion Chrome Extension (Manifest V3)"
-          >
-            <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="hidden lg:inline font-medium">Extension</span>
-          </a>
-
-          {/* Benchmarks Link */}
-          <a
-            href="/benchmarks"
-            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
-            title="Empirical Calibration & ROC Benchmarks"
-          >
-            <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="hidden lg:inline font-medium">Benchmarks</span>
-          </a>
-
-          {/* Proof Verifier Link */}
-          <a
-            href="/verify"
-            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
-            title="Offline Proof-of-Human Verifier"
-          >
-            <FileCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <span className="hidden lg:inline font-medium">Verifier</span>
-          </a>
-
-          {/* Developers API Link */}
-          <a
-            href="/developers"
-            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
-            title="Developer API &amp; OpenAPI 3.1 Specs"
-          >
-            <Code2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <span className="hidden lg:inline font-medium">API</span>
-          </a>
-
-          {/* Shortcuts Help */}
-          <button
-            onClick={() => setShowKeyboardModal(true)}
-            className="hidden sm:flex p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-500 hover:text-slate-800 text-xs items-center justify-center"
-            title="Keyboard Shortcuts (?)"
-          >
-            <HelpCircle className="w-4 h-4" />
-          </button>
-
-          {/* GitHub Link */}
-          <a
-            href="https://github.com/fizuli20/veritext-local-ai"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1 transition-colors shadow-xs"
-            title="GitHub Repository"
-          >
-            <Github className="w-4 h-4" />
-            <span className="hidden sm:inline font-mono font-medium">v4.0.0</span>
-          </a>
-        </div>
-      </header>
-
-      {/* Main Studio Navigation Tabs */}
-      <div className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-6">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('humanizer')}
-              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 whitespace-nowrap transition-colors ${
-                activeTab === 'humanizer'
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Humanizer Studio &amp; Tournament
-            </button>
-            <button
-              onClick={() => setActiveTab('detector')}
-              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 whitespace-nowrap transition-colors ${
-                activeTab === 'detector'
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
-              }`}
-            >
-              <Shield className="w-3.5 h-3.5" />
-              3-Signal Forensic Detector &amp; GLTR
-            </button>
-            <button
-              onClick={() => setActiveTab('batch')}
-              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 whitespace-nowrap transition-colors ${
-                activeTab === 'batch'
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              Batch Audit Queue
-            </button>
-            <button
-              onClick={() => setActiveTab('compare')}
-              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 whitespace-nowrap transition-colors ${
-                activeTab === 'compare'
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
-              }`}
-            >
-              <GitCompare className="w-3.5 h-3.5" />
-              Compare Drafts
-            </button>
-            <button
-              onClick={() => setActiveTab('proof')}
-              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 whitespace-nowrap transition-colors ${
-                activeTab === 'proof'
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
-              }`}
-            >
-              <FileCheck className="w-3.5 h-3.5" />
-              Proof-of-Human Studio
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Workspace Body */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 lg:px-8 py-6">
-        {/* Model Manager Drawer / Card */}
-        {showModelManager && (
-          <div className="mb-6">
-            <ModelLoaderCard
-              hasWebGPU={hardware?.hasWebGPU ?? false}
-              activeDetectorModel={ONNX_DETECTOR_MODELS.primary!}
-              activeHumanizerTier={humanizerTier}
-              onSelectHumanizerTier={setHumanizerTier}
-              isDetectorLoading={isDetectorLoading}
-              detectorProgress={detectorProgress}
-              isDetectorReady={isDetectorReady}
-              onLoadDetector={handleLoadDetector}
-              isHumanizerLoading={isHumanizerLoading}
-              humanizerProgress={humanizerProgress}
-              isHumanizerReady={isHumanizerReady}
-              onLoadHumanizer={handleLoadHumanizer}
-            />
-            <div className="mt-2 flex justify-end">
-              <button
-                onClick={handlePanicUnload}
-                className="py-1.5 px-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 text-xs font-medium flex items-center gap-1.5 transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Unload Models from VRAM
-              </button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'humanizer' ? (
-          <HumanizerStudio
-            onOpenModelManager={() => setShowModelManager(true)}
-            isWebLlmReady={isHumanizerReady}
-            activeLlmTier={humanizerTier}
-            domain={selectedDomain}
-            onChangeDomain={setSelectedDomain}
-            activeVoiceProfile={activeVoiceProfile?.fingerprint}
-            voiceProfileName={activeVoiceProfile?.name}
-            onOpenVoiceCloning={() => setShowVoiceDrawer(true)}
-          />
-        ) : activeTab === 'batch' ? (
-          <BatchAuditor
-            onInspectText={(text) => {
-              setDetectorText(text);
-              setActiveTab('detector');
-            }}
-          />
-        ) : activeTab === 'compare' ? (
-          <DraftComparator />
-        ) : activeTab === 'proof' ? (
-          <ProofStudio />
-        ) : (
-          /* Standalone 3-Signal Forensic Detector Tab */
-          <div className="flex flex-col space-y-6">
-            {/* Top Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                  Domain Profile:
-                </span>
-                <select
-                  value={selectedDomain}
-                  onChange={(e) => setSelectedDomain(e.target.value as DomainProfile)}
-                  className="text-xs py-1 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium"
-                >
-                  {Object.values(DOMAIN_PROFILES).map((dp) => (
-                    <option key={dp.id} value={dp.id}>
-                      {dp.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleRunFullForensicScan}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-medium text-xs flex items-center gap-1.5 shadow-xs transition-colors"
-                >
-                  <Activity className="w-3.5 h-3.5" />
-                  Run 3-Signal Forensic Scan (RoBERTa + GLTR)
-                </button>
-                <button
-                  onClick={handleExportForensicReport}
-                  disabled={!detectorResult}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-700 dark:text-slate-300 font-medium text-xs flex items-center gap-1.5 disabled:opacity-40"
-                >
-                  <FileCheck className="w-3.5 h-3.5" />
-                  Export Audit Report (.html)
-                </button>
-              </div>
-            </div>
-
-            {/* Score & Gauge Section */}
-            {detectorResult && (
-              <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                <div className="flex justify-center">
-                  <ScoreGauge
-                    score={detectorResult.aiScore}
-                    label="Composite AI Probability"
-                    size={170}
-                  />
-                </div>
-                <div className="md:col-span-2 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                        detectorResult.aiScore >= 70
-                          ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 border border-rose-300 dark:border-rose-800'
-                          : detectorResult.aiScore >= 35
-                            ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-800'
-                            : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800'
-                      }`}
-                    >
-                      {detectorResult.aiScore >= 70
-                        ? 'Likely AI-Generated'
-                        : detectorResult.aiScore >= 35
-                          ? 'Mixed / Heavily Edited'
-                          : 'Human Written'}
-                    </span>
-                    <span className="font-mono text-xs text-slate-500">
-                      Confidence: {detectorResult.confidence} (±5%)
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Evaluated under the{' '}
-                    <strong>{DOMAIN_PROFILES[selectedDomain]?.name}</strong> profile.
-                    Stylometric variance, sentence burstiness ({detectorResult.metrics.sentenceLengthCV} CV), and lexical diversity ({detectorResult.metrics.mtld} MTLD) were synthesized with local token distributions.
-                  </p>
-
-                  <div className="flex flex-wrap gap-2 pt-1 font-mono text-[11px] text-slate-500">
-                    <span>Engine: {detectorEngine}</span>
-                    <span>•</span>
-                    <span>Latency: {detectorLatency}ms</span>
-                    {documentPpl && (
-                      <>
-                        <span>•</span>
-                        <span>Perplexity: {documentPpl}</span>
-                      </>
-                    )}
-                    {documentCurvature !== undefined && (
-                      <>
-                        <span>•</span>
-                        <span title="Fast-DetectGPT Conditional Probability Curvature">
-                          Curvature d(x): {documentCurvature > 0 ? `+${documentCurvature}` : documentCurvature}
-                        </span>
-                      </>
-                    )}
-                  </div>
+            <div className="vt-pane">
+              <div className="vt-pane-heading">
+                <label htmlFor="source-text">
+                  {tab === "humanizer" ? "Original text" : "Text to check"}
+                </label>
+                <div>
+                  <button
+                    className="vt-text-button"
+                    disabled={!!busy}
+                    onClick={paste}
+                  >
+                    Paste
+                  </button>
+                  <button
+                    className="vt-text-button"
+                    disabled={!!busy}
+                    onClick={() => editInput("")}
+                  >
+                    Clear
+                  </button>
                 </div>
               </div>
-            )}
-
-            {/* SVG Forensic Charts (Sparkline + Radar Matrix + GLTR Bar) */}
-            {detectorResult && (
-              <ForensicCharts
-                sentences={detectorResult.sentences}
-                signals={detectorResult.signals}
-                gltrDistribution={gltrDistribution}
-                robertaScore={robertaScore}
-                curvature={documentCurvature}
-                selectedSentenceIndex={selectedSentenceIndex}
-                onSelectSentence={(idx) => setSelectedSentenceIndex(idx)}
-              />
-            )}
-
-            {/* Heatmap & GLTR Token X-Ray Editor */}
-            <div className="space-y-2">
-              <HeatmapEditor
-                rawText={detectorText}
-                onChangeText={setDetectorText}
-                sentences={detectorResult?.sentences ?? []}
-                gltrTokens={gltrTokens}
-                obfuscationReport={detectorResult?.obfuscationReport}
-                isAnalyzing={isDetectorLoading || isPplLoading}
-                selectedSentenceIndex={selectedSentenceIndex}
-                onSelectSentence={(idx) => setSelectedSentenceIndex(idx)}
-              />
-            </div>
-
-            {/* Metrics Bar */}
-            {detectorResult && (
-              <MetricsBar
-                result={detectorResult}
-                latencyMs={detectorLatency}
-                engine={detectorEngine}
-              />
-            )}
-          </div>
-        )}
-      </main>
-
-      {/* Voice Cloning Drawer ("Match My Style") */}
-      {showVoiceDrawer && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/50 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 h-full p-6 shadow-2xl overflow-y-auto space-y-5 border-l border-slate-200 dark:border-slate-800 text-xs">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-emerald-500" />
-                <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                  Personal Voice Profiles
-                </h3>
-              </div>
-              <button onClick={() => setShowVoiceDrawer(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-xs">
-              Paste 150–600 words of your own authentic writing to extract your quantitative rhythm, burstiness, and contraction profile. The tournament humanizer will mirror your exact voice.
-            </p>
-
-            {/* Form */}
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={newVoiceName}
-                onChange={(e) => setNewVoiceName(e.target.value)}
-                placeholder="Profile Name (e.g. My Personal Essay Voice)"
-                className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
-              />
               <textarea
-                value={newVoiceSample}
-                onChange={(e) => setNewVoiceSample(e.target.value)}
-                placeholder="Paste your writing sample here (minimum 80 words)..."
-                className="w-full h-32 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs resize-none"
+                id="source-text"
+                aria-label="Original text"
+                value={input}
+                disabled={!!busy}
+                onChange={(e) => editInput(e.target.value)}
+                maxLength={20000}
+                placeholder={
+                  tab === "humanizer"
+                    ? "Paste your draft here. Keep the ideas. Find the right words."
+                    : "Paste at least 80 words of English text to explore its writing patterns."
+                }
               />
-              <button
-                onClick={handleSaveVoice}
-                disabled={!newVoiceName.trim() || newVoiceSample.trim().length < 80}
-                className="w-full py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg font-medium text-xs disabled:opacity-40"
-              >
-                Extract Fingerprint &amp; Save Profile
-              </button>
+              <div className="vt-pane-footer">
+                <span>
+                  {countWords(input)} words{" "}
+                  <span className="vt-count-detail">
+                    · {input.length.toLocaleString()} characters
+                  </span>
+                </span>
+                {busy ? (
+                  <button className="vt-primary" onClick={stop}>
+                    Stop
+                  </button>
+                ) : (
+                  <button
+                    className="vt-primary"
+                    disabled={!input.trim()}
+                    onClick={tab === "humanizer" ? rewrite : detect}
+                  >
+                    {tab === "humanizer" ? (
+                      <>
+                        <Sparkles size={16} /> Rewrite
+                      </>
+                    ) : (
+                      <>
+                        Detect text <ArrowRight size={16} />
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
-
-            {/* Saved Profiles */}
-            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
-              <span className="font-semibold text-slate-500 uppercase tracking-wider block text-[11px]">
-                Saved Voice Profiles ({voiceProfiles.length})
-              </span>
-              {voiceProfiles.map((vp) => (
-                <div
-                  key={vp.id}
-                  className={`p-3 rounded-lg border flex justify-between items-start ${
-                    activeVoiceProfile?.id === vp.id
-                      ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20'
-                      : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40'
-                  }`}
-                >
-                  <div className="space-y-1">
-                    <div className="font-bold text-slate-800 dark:text-slate-200">{vp.name}</div>
-                    <div className="text-[10px] font-mono text-slate-500">
-                      Mean: {vp.fingerprint.meanSentenceLength}w • CV: {vp.fingerprint.sentenceLengthCV} • Contractions: {vp.fingerprint.contractionRate}%
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => setActiveVoiceProfile(vp)}
-                      className="px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 hover:bg-emerald-600 hover:text-white text-[10px] font-medium"
-                    >
-                      {activeVoiceProfile?.id === vp.id ? 'Active' : 'Select'}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteVoice(vp.id)}
-                      className="p-1 text-slate-400 hover:text-rose-500"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
+            <div className="vt-pane vt-output">
+              <div className="vt-pane-heading">
+                <span>{tab === "humanizer" ? "Edited draft" : "Analysis"}</span>
+                {tab === "humanizer" && output && (
+                  <button
+                    className="vt-text-button"
+                    onClick={() => {
+                      if (output.length > 12000) {
+                        setError("Use a shorter draft to compare changes.");
+                        return;
+                      }
+                      setDiff(!diff);
+                    }}
+                  >
+                    {diff ? "Edit draft" : "Show changes"}
+                  </button>
+                )}
+              </div>
+              {busy && (
+                <div role="status" className="vt-progress">
+                  <Loader2 size={16} className="animate-spin" />
+                  {progress}
                 </div>
-              ))}
+              )}
+              {tab === "humanizer" ? (
+                output ? (
+                  <>
+                    {diff ? (
+                      <div className="vt-diff" aria-label="Rewrite changes">
+                        {changes.map((c, i) =>
+                          c.type === "insert" ? (
+                            <ins key={i}>{c.value}</ins>
+                          ) : c.type === "delete" ? (
+                            <del key={i}>{c.value}</del>
+                          ) : (
+                            <span key={i}>{c.value}</span>
+                          ),
+                        )}
+                      </div>
+                    ) : (
+                      <textarea
+                        aria-label="Edited draft"
+                        value={output}
+                        disabled={!!busy}
+                        onChange={(e) => setOutput(e.target.value)}
+                      />
+                    )}
+                    <p className="vt-provenance">{engineName}</p>
+                    {!busy && (
+                      <div
+                        className={`vt-review ${issues.length ? "vt-review-warning" : ""}`}
+                        data-testid="rewrite-review"
+                      >
+                        {issues.length ? (
+                          <>
+                            <strong>Review needed</strong>
+                            <ul>
+                              {issues.map((issue) => (
+                                <li key={issue}>{issue}</li>
+                              ))}
+                            </ul>
+                          </>
+                        ) : (
+                          "No changes to tracked numbers, quotes, or protected spans found. This check cannot verify every claim or guarantee meaning."
+                        )}
+                      </div>
+                    )}
+                    <div className="vt-pane-footer">
+                      <span>{countWords(output)} words</span>
+                      <div className="vt-actions">
+                        <button
+                          className={controlClass}
+                          disabled={!!busy}
+                          onClick={exportText}
+                        >
+                          <Download size={15} /> Save
+                        </button>
+                        <button
+                          className={controlClass}
+                          disabled={!!busy}
+                          onClick={copy}
+                        >
+                          {copied ? <Check size={15} /> : <Copy size={15} />}{" "}
+                          {copied ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="vt-empty">
+                    <div className="vt-empty-icon">
+                      <Sparkles size={25} />
+                    </div>
+                    <h2>A thoughtful edit starts here.</h2>
+                    <p>
+                      {activeName
+                        ? "Your writing model is ready. Add your draft and choose Rewrite."
+                        : "Choose where your writing AI runs. Your draft stays on your device."}
+                    </p>
+                    {!activeName && (
+                      <button
+                        className="vt-secondary"
+                        onClick={() => setSettings(true)}
+                      >
+                        Set up a free writing model <ArrowRight size={15} />
+                      </button>
+                    )}
+                    <small>
+                      No word swaps disguised as AI. A real model is required.
+                    </small>
+                  </div>
+                )
+              ) : scan ? (
+                <div className="vt-scan" data-testid="detector-result">
+                  <p className="vt-eyebrow">{scan.engine}</p>
+                  <h2>{scan.evidence.verdict}</h2>
+                  {scan.evidence.modelScore !== null && (
+                    <div className="vt-score">
+                      {Math.round(scan.evidence.modelScore * 100)}
+                      <span>/100 model signal</span>
+                    </div>
+                  )}
+                  <p>{scan.evidence.explanation}</p>
+                  <p className="vt-caution">
+                    The raw model signal is not a probability of authorship.
+                    Calibration uses a small, historical HC3 sample; modern
+                    models and other writing may behave differently.
+                  </p>
+                  {scan.sentences.length > 0 && (
+                    <>
+                      {scan.evidence.referenceProbability !== undefined && (
+                        <div className="vt-reference">
+                          <p>
+                            HC3 reference estimate:{" "}
+                            {Math.round(
+                              scan.evidence.referenceProbability * 100,
+                            )}
+                            % AI class
+                          </p>
+                          {scan.evidence.referenceBin && (
+                            <p>
+                              In the corresponding held-out score bin,{" "}
+                              {scan.evidence.referenceBin.aiCount}/
+                              {scan.evidence.referenceBin.count} examples were
+                              labelled AI. 95% bin frequency interval:{" "}
+                              {Math.round(
+                                scan.evidence.referenceBin.lower * 100,
+                              )}
+                              –
+                              {Math.round(
+                                scan.evidence.referenceBin.upper * 100,
+                              )}
+                              %. This interval describes that sample, not this
+                              document.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      <h3>Context highlights</h3>
+                      <p className="vt-small">
+                        Amber marks contexts with a model signal of 80/100 or
+                        above. Sentence context scores are not calibrated
+                        probabilities.
+                      </p>
+                      <div className="vt-highlights">
+                        {scan.sentences.map((s, i) => (
+                          <span key={i}>
+                            <span>
+                              {scan.text.slice(
+                                i ? scan.sentences[i - 1]!.end : 0,
+                                s.start,
+                              )}
+                            </span>
+                            <mark
+                              data-score={s.score}
+                              style={{
+                                background:
+                                  s.score >= 0.8 ? "#fef08a" : "transparent",
+                              }}
+                              title={`Neighboring context signal: ${Math.round(s.score * 100)}/100`}
+                            >
+                              {scan.text.slice(s.start, s.end)}
+                            </mark>
+                          </span>
+                        ))}
+                        {scan.text.slice(scan.sentences.at(-1)?.end ?? 0)}
+                      </div>
+                      <p className="vt-small">
+                        {(scan.latencyMs / 1000).toFixed(1)} seconds · TMR
+                        RoBERTa Q8 on CPU/WASM
+                      </p>
+                    </>
+                  )}
+                  <button
+                    className="vt-secondary"
+                    onClick={() => setTab("humanizer")}
+                  >
+                    Edit this text <ArrowRight size={15} />
+                  </button>
+                </div>
+              ) : (
+                <div className="vt-empty">
+                  <div className="vt-empty-icon">
+                    <ShieldCheck size={26} />
+                  </div>
+                  <h2>Evidence, with room for uncertainty.</h2>
+                  <p>
+                    The first scan downloads an open neural model, about 125 MB.
+                    Later scans reuse your browser cache when available.
+                  </p>
+                  <small>
+                    Short or unsupported text receives no authorship verdict.
+                  </small>
+                </div>
+              )}
             </div>
           </div>
+        </section>
+        <div className="vt-below">
+          <button
+            className="vt-text-button"
+            disabled={!!busy}
+            onClick={() => editInput(sample)}
+          >
+            Try a sample <ArrowRight size={14} />
+          </button>
+          <span>
+            <ShieldCheck size={15} />{" "}
+            {tab === "humanizer"
+              ? "Browser AI or your local server. No paid API."
+              : "Text is processed on this device. Model files download from Hugging Face."}
+          </span>
         </div>
-      )}
-
-      {/* Keyboard Shortcuts Modal */}
-      {showKeyboardModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fadeIn">
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-sm w-full p-5 space-y-4 text-xs">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
-              <span className="font-bold text-sm text-slate-900 dark:text-slate-100">Keyboard Shortcuts</span>
-              <button onClick={() => setShowKeyboardModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="space-y-2 font-mono text-slate-700 dark:text-slate-300">
-              <div className="flex justify-between">
-                <span>Alt + 1</span>
-                <span>Switch to Detector</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Alt + 2</span>
-                <span>Switch to Humanizer</span>
-              </div>
-              <div className="flex justify-between">
-                <span>?</span>
-                <span>Open this help dialog</span>
-              </div>
-            </div>
+        <div className="vt-notes">
+          <div>
+            <h3>Keep your meaning</h3>
+            <p>
+              Compare edits, check names and facts, and make the final draft
+              yours.
+            </p>
+          </div>
+          <div>
+            <h3>Know the limits</h3>
+            <p>
+              AI detection can be wrong. Never use a score alone to judge
+              someone’s work.
+            </p>
+          </div>
+          <div>
+            <h3>Choose your engine</h3>
+            <p>
+              Use a browser model or connect the model you already run on your
+              computer.
+            </p>
           </div>
         </div>
-      )}
-
-      {/* Footer */}
-      <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 py-4 px-4 lg:px-8 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <p>© 2026 Veritext Local AI v4.0 Titan. 100% Free, Zero-Token Architecture.</p>
-        <div className="flex items-center gap-4 font-mono text-[11px]">
-          <span>Privacy: No text leaves browser RAM</span>
+      </main>
+      <footer className="vt-footer">
+        <span>veritext · local by choice</span>
+        <div>
+          <a href="/benchmarks">Validation & limits</a>
+          <a href="https://github.com/fizuli20/veritext-local-ai">
+            Source code
+          </a>
+          <a href="/developers">API</a>
         </div>
       </footer>
+      {settings && (
+        <div
+          className="vt-modal-backdrop"
+          onClick={() => {
+            if (!busy) setSettings(false);
+          }}
+        >
+          <section
+            role="dialog"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                if (busy === "load") stop();
+                setSettings(false);
+              }
+              if (event.key === "Tab") {
+                const items = Array.from(
+                  event.currentTarget.querySelectorAll<HTMLElement>(
+                    "button:not(:disabled),input:not(:disabled),select:not(:disabled),a[href]",
+                  ),
+                );
+                const first = items[0],
+                  last = items.at(-1);
+                if (event.shiftKey && document.activeElement === first) {
+                  event.preventDefault();
+                  last?.focus();
+                }
+                if (!event.shiftKey && document.activeElement === last) {
+                  event.preventDefault();
+                  first?.focus();
+                }
+              }
+            }}
+            aria-modal="true"
+            aria-label="Writing model setup"
+            className="vt-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="vt-pane-heading">
+              <h2>Your writing engine</h2>
+              <button
+                autoFocus
+                aria-label="Close setup"
+                className="vt-text-button"
+                onClick={() => {
+                  if (busy === "load") stop();
+                  setSettings(false);
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p>Free of API keys. Pick the engine that fits your device.</p>
+            <div className="vt-setup-section">
+              <span className="vt-eyebrow">OPTION 01 · LOCAL SERVER</span>
+              <h3>Use LM Studio or Ollama</h3>
+              <p>
+                Start a chat model on this computer. In LM Studio, enable CORS
+                in Developer → Server Settings.
+              </p>
+              <div className="vt-preset">
+                <button
+                  disabled={connecting}
+                  className="vt-text-button"
+                  onClick={() => setBaseUrl("http://localhost:1234/v1")}
+                >
+                  LM Studio
+                </button>
+                <button
+                  disabled={connecting}
+                  className="vt-text-button"
+                  onClick={() => setBaseUrl("http://localhost:11434/v1")}
+                >
+                  Ollama
+                </button>
+              </div>
+              <label htmlFor="server-url">Local server address</label>
+              <div className="vt-connect">
+                <input
+                  id="server-url"
+                  value={baseUrl}
+                  disabled={connecting || !!busy}
+                  onChange={(e) => {
+                    setBaseUrl(e.target.value);
+                    setModelId("");
+                    setConnectedUrl("");
+                  }}
+                />
+                <button
+                  className="vt-primary"
+                  disabled={connecting || !!busy}
+                  onClick={connect}
+                >
+                  {connecting ? "Connecting…" : "Connect"}
+                </button>
+              </div>
+              {models.length > 0 && (
+                <>
+                  <label htmlFor="writing-model">Writing model</label>
+                  <select
+                    id="writing-model"
+                    value={modelId}
+                    onChange={(e) => {
+                      setModelId(e.target.value);
+                      setUseLocal(true);
+                    }}
+                  >
+                    {models.map((m) => (
+                      <option key={m.id}>{m.id}</option>
+                    ))}
+                  </select>
+                  <p className="vt-connected">Connected · {modelId}</p>
+                  <button
+                    className="vt-secondary"
+                    disabled={!!busy}
+                    onClick={() => {
+                      setUseLocal(true);
+                      setSettings(false);
+                    }}
+                  >
+                    Use local model
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="vt-setup-section">
+              <span className="vt-eyebrow">OPTION 02 · IN YOUR BROWSER</span>
+              <h3>Download a small writing model</h3>
+              <p>
+                About 900 MB once, plus working memory. Requires WebGPU. Small
+                models work best for simple edits; quality and speed depend on
+                your device.
+              </p>
+              <button
+                className="vt-secondary"
+                disabled={!!busy}
+                onClick={loadBrowser}
+              >
+                {browserName
+                  ? "Use browser model"
+                  : busy === "load"
+                    ? "Loading model…"
+                    : "Load browser AI"}
+              </button>
+              {busy === "load" && (
+                <>
+                  <p role="status" className="vt-small">
+                    {progress}
+                  </p>
+                  <button className="vt-text-button" onClick={stop}>
+                    Stop download
+                  </button>
+                </>
+              )}
+            </div>
+            {error && (
+              <p role="alert" className="vt-message vt-error">
+                {error}
+              </p>
+            )}
+            {activeName && (
+              <button className="vt-primary" onClick={() => setSettings(false)}>
+                Return to editor <ArrowRight size={16} />
+              </button>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }

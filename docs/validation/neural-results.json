@@ -1,0 +1,1631 @@
+{
+  "created": "2026-11-21T18:32:57.844Z",
+  "model": "onnx-community/tmr-ai-text-detector-ONNX",
+  "revision": "b9aa251e5bcda7e429fcc936767d921435945b60",
+  "backend": "Node ONNX CPU Q8 (not browser timings)",
+  "loadingMs": 257,
+  "corpus": {
+    "source": "Hello-SimpleAI/HC3",
+    "revision": "4d0ff18143b5a7e1b1e79beb540c04549d1e59d3",
+    "retrieved": "2026-11-21",
+    "url": "https://huggingface.co/datasets/Hello-SimpleAI/HC3",
+    "selection": "For each of 5 domain configs, rows 100–199: first 20 paired first answers with 80–600 whitespace words. First 10 questions per domain for calibration, remaining 10 evaluation. No score-based selection."
+  },
+  "split": "First 10 eligible questions per domain calibration, remaining 10 evaluation; open_qa contained only 1 eligible pair and contributes calibration only. No question overlap.",
+  "limitations": [
+    "Small historical ChatGPT/HC3 sample across 5 domain configs (4 have evaluation data); not current models or representative user text.",
+    "Possible training contamination is unknown. These are diagnostic results, not an independent broad accuracy claim.",
+    "Model performance claims in its card are not reproduced here.",
+    "Calibration is provisional and specific to the balanced historical HC3 reference sample. Unknown base rates, new models and domains can invalidate it."
+  ],
+  "plattFit": {
+    "slope": 3,
+    "intercept": -11,
+    "regularization": 0.005
+  },
+  "calibration": {
+    "count": 82,
+    "brier": 0.0641372211215807,
+    "auc": 0.9869125520523498,
+    "falsePositiveRate": 0.14634146341463414,
+    "truePositiveRate": 0.9512195121951219,
+    "coverage": 0.34146341463414637,
+    "selectiveAccuracy": 1,
+    "ece": 0.10273886335845075,
+    "bins": [
+      {
+        "lower": 0,
+        "upper": 0.2,
+        "count": 30,
+        "aiCount": 0,
+        "meanScore": 0.018775921861788072
+      },
+      {
+        "lower": 0.2,
+        "upper": 0.4,
+        "count": 5,
+        "aiCount": 1,
+        "meanScore": 0.301820962147867
+      },
+      {
+        "lower": 0.4,
+        "upper": 0.6,
+        "count": 3,
+        "aiCount": 1,
+        "meanScore": 0.48356754510012506
+      },
+      {
+        "lower": 0.6,
+        "upper": 0.8,
+        "count": 5,
+        "aiCount": 1,
+        "meanScore": 0.7135082289912899
+      },
+      {
+        "lower": 0.8,
+        "upper": 1,
+        "count": 39,
+        "aiCount": 38,
+        "meanScore": 0.8632317808065856
+      }
+    ]
+  },
+  "evaluationRaw": {
+    "count": 80,
+    "brier": 0.16828848038012706,
+    "auc": 0.999375,
+    "falsePositiveRate": 0.425,
+    "truePositiveRate": 1,
+    "coverage": 0.8625,
+    "selectiveAccuracy": 0.855072463768116,
+    "ece": 0.1966253026481607,
+    "bins": [
+      {
+        "lower": 0,
+        "upper": 0.2,
+        "count": 22,
+        "aiCount": 0,
+        "meanScore": 0.04728320778601549
+      },
+      {
+        "lower": 0.2,
+        "upper": 0.4,
+        "count": 1,
+        "aiCount": 0,
+        "meanScore": 0.3622735738754272
+      },
+      {
+        "lower": 0.4,
+        "upper": 0.6,
+        "count": 1,
+        "aiCount": 0,
+        "meanScore": 0.5498959422111511
+      },
+      {
+        "lower": 0.6,
+        "upper": 0.8,
+        "count": 2,
+        "aiCount": 0,
+        "meanScore": 0.7393860381684806
+      },
+      {
+        "lower": 0.8,
+        "upper": 1,
+        "count": 54,
+        "aiCount": 40,
+        "meanScore": 0.9684972601506847
+      }
+    ]
+  },
+  "evaluationFitted": {
+    "count": 80,
+    "brier": 0.022825950433959383,
+    "auc": 0.999375,
+    "falsePositiveRate": 0.025,
+    "truePositiveRate": 1,
+    "coverage": 0.425,
+    "selectiveAccuracy": 1,
+    "ece": 0.07896337946974033,
+    "bins": [
+      {
+        "lower": 0,
+        "upper": 0.2,
+        "count": 36,
+        "aiCount": 0,
+        "meanScore": 0.011163475096817012
+      },
+      {
+        "lower": 0.2,
+        "upper": 0.4,
+        "count": 2,
+        "aiCount": 0,
+        "meanScore": 0.30256167690628677
+      },
+      {
+        "lower": 0.4,
+        "upper": 0.6,
+        "count": 1,
+        "aiCount": 0,
+        "meanScore": 0.4309097818229158
+      },
+      {
+        "lower": 0.6,
+        "upper": 0.8,
+        "count": 4,
+        "aiCount": 3,
+        "meanScore": 0.7521073843792156
+      },
+      {
+        "lower": 0.8,
+        "upper": 1,
+        "count": 37,
+        "aiCount": 37,
+        "meanScore": 0.8683588491637443
+      }
+    ]
+  },
+  "latencyMs": {
+    "p50": 62,
+    "p95": 135
+  },
+  "results": [
+    {
+      "id": "finance-101-0",
+      "questionId": "finance-101",
+      "source": "finance",
+      "label": 0,
+      "sha256": "b9a002701ce61da7461cd954b64b8dd7955fe6558c587eda089b21ae7cae7a52",
+      "score": 0.024301746860146523,
+      "latencyMs": 57
+    },
+    {
+      "id": "finance-101-1",
+      "questionId": "finance-101",
+      "source": "finance",
+      "label": 1,
+      "sha256": "87567a17b3203883e1c8a6431e7b719b9f0419c6eba65b0ed932c48070021588",
+      "score": 0.9632265567779541,
+      "latencyMs": 59
+    },
+    {
+      "id": "finance-102-0",
+      "questionId": "finance-102",
+      "source": "finance",
+      "label": 0,
+      "sha256": "4127a6fca96f7d5d81e65140c442f05185f591455affde98766e1429094a6fdf",
+      "score": 0.0669729933142662,
+      "latencyMs": 38
+    },
+    {
+      "id": "finance-102-1",
+      "questionId": "finance-102",
+      "source": "finance",
+      "label": 1,
+      "sha256": "cc31fe92e439d2d294d5d7a56bd374169732e52c8e5f30572e8e68411bb47347",
+      "score": 0.9732242822647095,
+      "latencyMs": 45
+    },
+    {
+      "id": "finance-103-0",
+      "questionId": "finance-103",
+      "source": "finance",
+      "label": 0,
+      "sha256": "f3dc63011b219cd5ed33cc50a6f3690957275d26702adf354ed6f60c453b231a",
+      "score": 0.9243079423904419,
+      "latencyMs": 100
+    },
+    {
+      "id": "finance-103-1",
+      "questionId": "finance-103",
+      "source": "finance",
+      "label": 1,
+      "sha256": "d9a70a45fa2972ecd086b7f81ebd7a4a007eb306336ea627b47a1cd618b4809f",
+      "score": 0.9861929416656494,
+      "latencyMs": 32
+    },
+    {
+      "id": "finance-104-0",
+      "questionId": "finance-104",
+      "source": "finance",
+      "label": 0,
+      "sha256": "ab36e9d3221084b89e39dadb643e9aab16d265339702a6771c8205d92c237a29",
+      "score": 0.013826015405356884,
+      "latencyMs": 66
+    },
+    {
+      "id": "finance-104-1",
+      "questionId": "finance-104",
+      "source": "finance",
+      "label": 1,
+      "sha256": "df14158c785dbdcc5cfa1a3aa094e6c4775d95c76a8503e32a982bcfab8c6998",
+      "score": 0.9872028827667236,
+      "latencyMs": 62
+    },
+    {
+      "id": "finance-107-0",
+      "questionId": "finance-107",
+      "source": "finance",
+      "label": 0,
+      "sha256": "711df855f7b62dae4bd82b34f9fb457865eda0cbb5cde54814607938d551fad8",
+      "score": 0.9455780430702166,
+      "latencyMs": 188
+    },
+    {
+      "id": "finance-107-1",
+      "questionId": "finance-107",
+      "source": "finance",
+      "label": 1,
+      "sha256": "48c4305f52704a036abe72f6b93f4b94e175fbfb367e5eeada241b116e0c0cdd",
+      "score": 0.9857840538024902,
+      "latencyMs": 83
+    },
+    {
+      "id": "finance-108-0",
+      "questionId": "finance-108",
+      "source": "finance",
+      "label": 0,
+      "sha256": "b93696f92b2ada4102d35b36e2f5609bc64bcc8a86b8982f5a3a798e0c0c3453",
+      "score": 0.010085229761898518,
+      "latencyMs": 57
+    },
+    {
+      "id": "finance-108-1",
+      "questionId": "finance-108",
+      "source": "finance",
+      "label": 1,
+      "sha256": "ac003e800b1048f7731d4879dcb43c692d6f4f3d53a0a85f6e220ea726bf30f5",
+      "score": 0.9861078262329102,
+      "latencyMs": 65
+    },
+    {
+      "id": "finance-111-0",
+      "questionId": "finance-111",
+      "source": "finance",
+      "label": 0,
+      "sha256": "baadad50a5438d28929ef10d4558cd44d626161cb7d6a938957e9cca86792573",
+      "score": 0.013998742215335369,
+      "latencyMs": 55
+    },
+    {
+      "id": "finance-111-1",
+      "questionId": "finance-111",
+      "source": "finance",
+      "label": 1,
+      "sha256": "7c1c6bd0184d75e7e05452100ff5303a63ab71e1acbab8f2f8757c044fe38b73",
+      "score": 0.9859714508056641,
+      "latencyMs": 39
+    },
+    {
+      "id": "finance-112-0",
+      "questionId": "finance-112",
+      "source": "finance",
+      "label": 0,
+      "sha256": "2cf1d6fbb47de2b8dfe9b84b498ae927a781d9ec52e5eaf6175c0128e285d5a5",
+      "score": 0.05676377937197685,
+      "latencyMs": 73
+    },
+    {
+      "id": "finance-112-1",
+      "questionId": "finance-112",
+      "source": "finance",
+      "label": 1,
+      "sha256": "aebdfe41cea55f9a41a4f9bec2b05fb51ebd6c6f30f809ac8014d9c603bef3c1",
+      "score": 0.9848328232765198,
+      "latencyMs": 76
+    },
+    {
+      "id": "finance-113-0",
+      "questionId": "finance-113",
+      "source": "finance",
+      "label": 0,
+      "sha256": "a8d54699e69933dc5573e71fca233d36863fc067aad5ac0845ac9a27c5e7c693",
+      "score": 0.6950569152832031,
+      "latencyMs": 43
+    },
+    {
+      "id": "finance-113-1",
+      "questionId": "finance-113",
+      "source": "finance",
+      "label": 1,
+      "sha256": "23f00eb37883e6677c93a3c73c724c8b5021a64ef3ead220b26bea5a345860d8",
+      "score": 0.9844809770584106,
+      "latencyMs": 50
+    },
+    {
+      "id": "finance-115-0",
+      "questionId": "finance-115",
+      "source": "finance",
+      "label": 0,
+      "sha256": "83ca1e91ba3bd7103b47944be9d05b602a90a6d88d07f96fcd614082b4c29bcb",
+      "score": 0.9549939632415771,
+      "latencyMs": 32
+    },
+    {
+      "id": "finance-115-1",
+      "questionId": "finance-115",
+      "source": "finance",
+      "label": 1,
+      "sha256": "947ed5b2a79ab647a5ddefd4a822718fdd22011d945c4564dcd6625ac8e6a5dd",
+      "score": 0.9867734909057617,
+      "latencyMs": 67
+    },
+    {
+      "id": "finance-116-0",
+      "questionId": "finance-116",
+      "source": "finance",
+      "label": 0,
+      "sha256": "4fa58ac900c300bdb6d2e870e2d6154f498ced4decf10444c95d23d7a92e017f",
+      "score": 0.016187941655516624,
+      "latencyMs": 122
+    },
+    {
+      "id": "finance-116-1",
+      "questionId": "finance-116",
+      "source": "finance",
+      "label": 1,
+      "sha256": "bf2581951218abadc95f276f8f918626ddfa8608c86369065911ad4014686dfc",
+      "score": 0.9855831861495972,
+      "latencyMs": 85
+    },
+    {
+      "id": "finance-117-0",
+      "questionId": "finance-117",
+      "source": "finance",
+      "label": 0,
+      "sha256": "528bd323f70ab2f881778003846acba0cd8a506c82f02cd911828dd443ad0b96",
+      "score": 0.029553307220339775,
+      "latencyMs": 96
+    },
+    {
+      "id": "finance-117-1",
+      "questionId": "finance-117",
+      "source": "finance",
+      "label": 1,
+      "sha256": "b8726fd59e38a9031997a2337ba1fa6d02ff3bd32fab9989d76e885d98bf1ff8",
+      "score": 0.9872716665267944,
+      "latencyMs": 75
+    },
+    {
+      "id": "finance-118-0",
+      "questionId": "finance-118",
+      "source": "finance",
+      "label": 0,
+      "sha256": "68ec2ae99562754e410e4307f03c8db00cf9d839504bf8b41364c1cee9b3e02a",
+      "score": 0.950644850730896,
+      "latencyMs": 28
+    },
+    {
+      "id": "finance-118-1",
+      "questionId": "finance-118",
+      "source": "finance",
+      "label": 1,
+      "sha256": "ac00fbbf4ca333507f829a3c4922c03b6011160a4bc54101893b1fe833907cfa",
+      "score": 0.9871469140052795,
+      "latencyMs": 75
+    },
+    {
+      "id": "finance-122-0",
+      "questionId": "finance-122",
+      "source": "finance",
+      "label": 0,
+      "sha256": "a19e667edbcaa9dd87936f4af2111e5e0d74bf9db51d0f79a92328b46992470c",
+      "score": 0.015088936313986778,
+      "latencyMs": 44
+    },
+    {
+      "id": "finance-122-1",
+      "questionId": "finance-122",
+      "source": "finance",
+      "label": 1,
+      "sha256": "7cd1ebd3529527dbf3c4b56c8876bda417e1d44cf2058cbb2600e2a2a05970a7",
+      "score": 0.9860172271728516,
+      "latencyMs": 32
+    },
+    {
+      "id": "finance-125-0",
+      "questionId": "finance-125",
+      "source": "finance",
+      "label": 0,
+      "sha256": "67780990b20ddc1eaabc8d0436d089dacbce99e3cf902e95813ce9fa82847045",
+      "score": 0.01757010817527771,
+      "latencyMs": 61
+    },
+    {
+      "id": "finance-125-1",
+      "questionId": "finance-125",
+      "source": "finance",
+      "label": 1,
+      "sha256": "099ec610d84679345de87ad3ca9576f586c54fcd0fcd08c5c68a8c3321e1c375",
+      "score": 0.9863752722740173,
+      "latencyMs": 74
+    },
+    {
+      "id": "finance-129-0",
+      "questionId": "finance-129",
+      "source": "finance",
+      "label": 0,
+      "sha256": "03f7e886d2d2cc3cee8cf51a4b4b26db4791039fd8d35ee36ebaa368be230ca3",
+      "score": 0.09630721807479858,
+      "latencyMs": 115
+    },
+    {
+      "id": "finance-129-1",
+      "questionId": "finance-129",
+      "source": "finance",
+      "label": 1,
+      "sha256": "37d43d33212af3b0b3bc04756ab6788e26e4dbf332414058abcf33ec78622b7c",
+      "score": 0.9836430549621582,
+      "latencyMs": 61
+    },
+    {
+      "id": "finance-130-0",
+      "questionId": "finance-130",
+      "source": "finance",
+      "label": 0,
+      "sha256": "8a34fba96998d12b80e5724bc899562274419c954ca1dfecbf5d4475e4c643fa",
+      "score": 0.017047898843884468,
+      "latencyMs": 47
+    },
+    {
+      "id": "finance-130-1",
+      "questionId": "finance-130",
+      "source": "finance",
+      "label": 1,
+      "sha256": "f960e089357fcf03360aeeb032d303fead2c5fb85c8d25b96d9971338cd0eaeb",
+      "score": 0.9867151975631714,
+      "latencyMs": 91
+    },
+    {
+      "id": "finance-131-0",
+      "questionId": "finance-131",
+      "source": "finance",
+      "label": 0,
+      "sha256": "49e27ddf76f9f0561d52ace38fb832b65ea696c6e40065d65393928a10a43c2c",
+      "score": 0.903863251209259,
+      "latencyMs": 45
+    },
+    {
+      "id": "finance-131-1",
+      "questionId": "finance-131",
+      "source": "finance",
+      "label": 1,
+      "sha256": "8ace8787098a25f420f9bf68f8de7fc1e0c9cbe80ff98b810da42b5d81925f19",
+      "score": 0.9868878722190857,
+      "latencyMs": 46
+    },
+    {
+      "id": "finance-133-0",
+      "questionId": "finance-133",
+      "source": "finance",
+      "label": 0,
+      "sha256": "dbaf1fef79bc9d599d72434342270030771d94f33541338e2039ec86edb8cb66",
+      "score": 0.02167586423456669,
+      "latencyMs": 72
+    },
+    {
+      "id": "finance-133-1",
+      "questionId": "finance-133",
+      "source": "finance",
+      "label": 1,
+      "sha256": "458f83b3cc9bce48dc42b0eba599442c9bec8449885308613ee5f0c6cccc7e90",
+      "score": 0.9870629906654358,
+      "latencyMs": 71
+    },
+    {
+      "id": "finance-134-0",
+      "questionId": "finance-134",
+      "source": "finance",
+      "label": 0,
+      "sha256": "c26e4abbd1f805ba4e8a01631d90a3fe1f37a865f370f63e1ca6ae6970f279e7",
+      "score": 0.972720287062905,
+      "latencyMs": 208
+    },
+    {
+      "id": "finance-134-1",
+      "questionId": "finance-134",
+      "source": "finance",
+      "label": 1,
+      "sha256": "fc33383f35ddf46c585ad8d137c51b1904271b3683f906b032641733470f15cf",
+      "score": 0.9869699478149414,
+      "latencyMs": 72
+    },
+    {
+      "id": "medicine-102-0",
+      "questionId": "medicine-102",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "c66396f8fa1500bfcafa28cc023a2a472480fc548a305c62a3b3b1e97083d939",
+      "score": 0.03762034326791763,
+      "latencyMs": 79
+    },
+    {
+      "id": "medicine-102-1",
+      "questionId": "medicine-102",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "4606d37629a90c3b0f5a849578ceeac1a9d2211eed36a7ede9ee60d81af7b8e1",
+      "score": 0.9874415993690491,
+      "latencyMs": 44
+    },
+    {
+      "id": "medicine-105-0",
+      "questionId": "medicine-105",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "b6093f1c278b941337792d607c7b170f1dbb71f2e718d3e74797b30b25e09965",
+      "score": 0.8636820912361145,
+      "latencyMs": 34
+    },
+    {
+      "id": "medicine-105-1",
+      "questionId": "medicine-105",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "bfdeb4d1a68dde814b7fd550af7e833aaeeb24b7ac64fa1d66dca9f3a31fb7d6",
+      "score": 0.9872378706932068,
+      "latencyMs": 41
+    },
+    {
+      "id": "medicine-106-0",
+      "questionId": "medicine-106",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "ed973c8f24ae362e3c9b07318c3b384e469c11b6ef54b9d50845016fd1062ea4",
+      "score": 0.01958107389509678,
+      "latencyMs": 67
+    },
+    {
+      "id": "medicine-106-1",
+      "questionId": "medicine-106",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "8d553bd2ca37560bb62a943b4b3dc9b436593164c60e237006126fc4a2fcdd4e",
+      "score": 0.9862313866615295,
+      "latencyMs": 80
+    },
+    {
+      "id": "medicine-109-0",
+      "questionId": "medicine-109",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "a1552f22d4385458191c1a60603f0d25e9527340cedfe99fc99be928d0f4ad5f",
+      "score": 0.010393011383712292,
+      "latencyMs": 40
+    },
+    {
+      "id": "medicine-109-1",
+      "questionId": "medicine-109",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "99d93637b0bbbbbb3a8eb638d15601b733ab1a5c0d8a165424f2fb64309c1b46",
+      "score": 0.9873488545417786,
+      "latencyMs": 79
+    },
+    {
+      "id": "medicine-110-0",
+      "questionId": "medicine-110",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "9d3ff968dd2f9129c512c636c8c6f9f9e033a445500d3a828bb754110a2cc146",
+      "score": 0.0918397307395935,
+      "latencyMs": 51
+    },
+    {
+      "id": "medicine-110-1",
+      "questionId": "medicine-110",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "b59aeec24445983ee7820fbf60359846d8b9be9f43adb605639874f7c0ae37b3",
+      "score": 0.9869518280029297,
+      "latencyMs": 78
+    },
+    {
+      "id": "medicine-111-0",
+      "questionId": "medicine-111",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "f5ba15c86dcf8206232438974e505ae6d24209b97a05250609f873f29c22b2d9",
+      "score": 0.01760077103972435,
+      "latencyMs": 44
+    },
+    {
+      "id": "medicine-111-1",
+      "questionId": "medicine-111",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "abb3ceefa8d4decc8f2b7403bb7c9cbe9792f68f669e51a66a18fe745ae02f3a",
+      "score": 0.9868212938308716,
+      "latencyMs": 59
+    },
+    {
+      "id": "medicine-114-0",
+      "questionId": "medicine-114",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "882713448a8d41cf672084360bb3a9658182968c3aa964bca6485513c40e3a06",
+      "score": 0.021747909486293793,
+      "latencyMs": 47
+    },
+    {
+      "id": "medicine-114-1",
+      "questionId": "medicine-114",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "9a0818e5aaccfc780572425126918a597087d1e2bf812c5e21a240b98025000c",
+      "score": 0.9868560433387756,
+      "latencyMs": 69
+    },
+    {
+      "id": "medicine-116-0",
+      "questionId": "medicine-116",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "b23fe55ec044620d019baee9d03bde6a256092799e3155d6259b3b706f747c0d",
+      "score": 0.20229025185108185,
+      "latencyMs": 54
+    },
+    {
+      "id": "medicine-116-1",
+      "questionId": "medicine-116",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "d5edc275bd4bf1de72ab20d512e28d46b5947e9987a5d6f73e8ef301df6d2a55",
+      "score": 0.9864049553871155,
+      "latencyMs": 81
+    },
+    {
+      "id": "medicine-117-0",
+      "questionId": "medicine-117",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "6d0964bf3f29294f06bd736ba38257f4ba34ae50a5dea7cca189e329167c7d8b",
+      "score": 0.15781980752944946,
+      "latencyMs": 36
+    },
+    {
+      "id": "medicine-117-1",
+      "questionId": "medicine-117",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "12ad176b2f7ffa3bb5d1c3d70fa97f063d9595695bfc4169451f40d4f3d5a2a9",
+      "score": 0.9868760704994202,
+      "latencyMs": 91
+    },
+    {
+      "id": "medicine-118-0",
+      "questionId": "medicine-118",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "2d6a57c1f30e88f658a5450be453b045034cdac17e6f6f265687a6c760407be7",
+      "score": 0.8639580011367798,
+      "latencyMs": 37
+    },
+    {
+      "id": "medicine-118-1",
+      "questionId": "medicine-118",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "140155d5d258a4a23226c7cafaa49b03ec9189f605d37f917ad11beacf256537",
+      "score": 0.9868149757385254,
+      "latencyMs": 38
+    },
+    {
+      "id": "medicine-122-0",
+      "questionId": "medicine-122",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "7a42478a87300e5b5e340d8b0715d2bd995ce2236671e8dbf31cb5d7d590abbf",
+      "score": 0.9377286434173584,
+      "latencyMs": 39
+    },
+    {
+      "id": "medicine-122-1",
+      "questionId": "medicine-122",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "24c1594f5b0d3836cb8ec1952abcd9d4865d9212d47a0a75ddb9b9cfb6a0fd23",
+      "score": 0.9873751997947693,
+      "latencyMs": 67
+    },
+    {
+      "id": "medicine-123-0",
+      "questionId": "medicine-123",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "65ee1e516c1bb6fe1f875f374440601b13c850861af32674ba3ea9c097c691eb",
+      "score": 0.03800386190414429,
+      "latencyMs": 47
+    },
+    {
+      "id": "medicine-123-1",
+      "questionId": "medicine-123",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "2f9e506106c96d0617b055b0b3f71f42850fd8b2cf669fa6c4eecc6260202e80",
+      "score": 0.9860575199127197,
+      "latencyMs": 60
+    },
+    {
+      "id": "medicine-124-0",
+      "questionId": "medicine-124",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "3650051b9ca9efb759e5d63026986eff9a2fba03862eb83c72308279d122e9ea",
+      "score": 0.016134265810251236,
+      "latencyMs": 32
+    },
+    {
+      "id": "medicine-124-1",
+      "questionId": "medicine-124",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "6162cc7f1c9900de9a3f9f46f98c83ff55b0316ad735627683eb05049f7a10e0",
+      "score": 0.986973226070404,
+      "latencyMs": 82
+    },
+    {
+      "id": "medicine-125-0",
+      "questionId": "medicine-125",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "47e9700fa53a47fb40d1025a89aec77680c41248c82119e28dac3a411a01b6b3",
+      "score": 0.024333925917744637,
+      "latencyMs": 53
+    },
+    {
+      "id": "medicine-125-1",
+      "questionId": "medicine-125",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "b3ec68c74de53fc0c6fe8729beb8ae1840ff888e169d559297ce3addd5b59a7e",
+      "score": 0.9865248203277588,
+      "latencyMs": 38
+    },
+    {
+      "id": "medicine-126-0",
+      "questionId": "medicine-126",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "8624229835ae4e7468eb5a8e2e42e11560dd77ec20b6f8c7aa9612213d6404cf",
+      "score": 0.016602132469415665,
+      "latencyMs": 40
+    },
+    {
+      "id": "medicine-126-1",
+      "questionId": "medicine-126",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "eb558aeb1a33a12ec8543228a5dc70fde0e241a225be11e6f77bb9a745507096",
+      "score": 0.9862106442451477,
+      "latencyMs": 38
+    },
+    {
+      "id": "medicine-127-0",
+      "questionId": "medicine-127",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "c7f5b479bebd52ef2392a99f263e7a60c74940eeac5bfd8e99c4375bc63e2cc7",
+      "score": 0.7206540107727051,
+      "latencyMs": 41
+    },
+    {
+      "id": "medicine-127-1",
+      "questionId": "medicine-127",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "38d8760487f84489037116e25939bba2677fa1b5b5277c47c106e163e6952130",
+      "score": 0.9871606826782227,
+      "latencyMs": 62
+    },
+    {
+      "id": "medicine-129-0",
+      "questionId": "medicine-129",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "6be5c59c2e39543c74023334f21c1eb76e0d769e474b790e9ee5beef96694737",
+      "score": 0.04025954753160477,
+      "latencyMs": 88
+    },
+    {
+      "id": "medicine-129-1",
+      "questionId": "medicine-129",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "a5838fa940376881acbd81844f39a0da7b36013a8bcb1c6c1d6fa6f9f8e068c7",
+      "score": 0.9859344363212585,
+      "latencyMs": 34
+    },
+    {
+      "id": "medicine-130-0",
+      "questionId": "medicine-130",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "1ba71f84835a8693fb3b5afeebda172fec0ff0a031a3c634da45dc223f288441",
+      "score": 0.017749780789017677,
+      "latencyMs": 49
+    },
+    {
+      "id": "medicine-130-1",
+      "questionId": "medicine-130",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "61af645a1979130792ddaf96b43cc1f646c8d77105760d1c89db07f3343528d2",
+      "score": 0.9863749146461487,
+      "latencyMs": 68
+    },
+    {
+      "id": "medicine-131-0",
+      "questionId": "medicine-131",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "308a5e9996e96b9ea7aeb6a7d735d60b8a0766e5c378f0d55e7876057b376d20",
+      "score": 0.07370004802942276,
+      "latencyMs": 53
+    },
+    {
+      "id": "medicine-131-1",
+      "questionId": "medicine-131",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "cd6591a8852c5cf80f67d4ce1b0cbe928c3c988e57824845a666c0f00b21a992",
+      "score": 0.9875226616859436,
+      "latencyMs": 56
+    },
+    {
+      "id": "medicine-136-0",
+      "questionId": "medicine-136",
+      "source": "medicine",
+      "label": 0,
+      "sha256": "e52824a65a0c68f1da0d68b83bf61b769e9ac4736b3ac141c915721c8784e982",
+      "score": 0.050694722682237625,
+      "latencyMs": 38
+    },
+    {
+      "id": "medicine-136-1",
+      "questionId": "medicine-136",
+      "source": "medicine",
+      "label": 1,
+      "sha256": "c32f9a058d2f6b8533f44ccbfbbaec8e82dea5d46c4719c32cd9f5b73e573e78",
+      "score": 0.9861133694648743,
+      "latencyMs": 39
+    },
+    {
+      "id": "open_qa-144-0",
+      "questionId": "open_qa-144",
+      "source": "open_qa",
+      "label": 0,
+      "sha256": "f5a9ec6a4ae36dd784672c97d8c616d506a3328b8df14e4c8f01f6795c56e1a2",
+      "score": 0.9816583395004272,
+      "latencyMs": 31
+    },
+    {
+      "id": "open_qa-144-1",
+      "questionId": "open_qa-144",
+      "source": "open_qa",
+      "label": 1,
+      "sha256": "fb82114da5af7d633966a5e2f7eb49c7aae0ba8c680ff41697d40c34fcb48dad",
+      "score": 0.9846697449684143,
+      "latencyMs": 43
+    },
+    {
+      "id": "reddit_eli5-100-0",
+      "questionId": "reddit_eli5-100",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "91dad13b4608757c982c32f84559ed09227681a3701acafb6af1502db0de8202",
+      "score": 0.9775875386069802,
+      "latencyMs": 185
+    },
+    {
+      "id": "reddit_eli5-100-1",
+      "questionId": "reddit_eli5-100",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "7d288f17ab541d5ae5b4672d5e6db001c9d2b96022fada4ee386502559238b5a",
+      "score": 0.9859480857849121,
+      "latencyMs": 83
+    },
+    {
+      "id": "reddit_eli5-103-0",
+      "questionId": "reddit_eli5-103",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "6685119fb30b69fceb649eb53621765c7a15542059739447aaea9cea7b25cb47",
+      "score": 0.015130520798265934,
+      "latencyMs": 45
+    },
+    {
+      "id": "reddit_eli5-103-1",
+      "questionId": "reddit_eli5-103",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "4fcbefb62bf0b47a48d4b7594b944707e4dbf8586679d75dc00d8fe3682cfd32",
+      "score": 0.9840563535690308,
+      "latencyMs": 93
+    },
+    {
+      "id": "reddit_eli5-104-0",
+      "questionId": "reddit_eli5-104",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "ef970ab05f93922ec85b7cb57ef792a5a5c6c0d9be934d40bbe1b703655812a5",
+      "score": 0.08299186825752258,
+      "latencyMs": 41
+    },
+    {
+      "id": "reddit_eli5-104-1",
+      "questionId": "reddit_eli5-104",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "7729dfa7dd2155f12b7f6eb02aba44f24cd9f520aa2a3feb3522ca65fcff1a85",
+      "score": 0.9849588871002197,
+      "latencyMs": 70
+    },
+    {
+      "id": "reddit_eli5-105-0",
+      "questionId": "reddit_eli5-105",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "cad4cc3baef01dd528993ad55784d8dcb101accd456d5dacd0bb02a6a33cd3d8",
+      "score": 0.021029509603977203,
+      "latencyMs": 69
+    },
+    {
+      "id": "reddit_eli5-105-1",
+      "questionId": "reddit_eli5-105",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "1a0ce6cb069d7b4e223de8c8a7da278c61088ebd0545cf6d1e06ff7cefa82c6c",
+      "score": 0.9870839715003967,
+      "latencyMs": 66
+    },
+    {
+      "id": "reddit_eli5-107-0",
+      "questionId": "reddit_eli5-107",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "03af9c241b802afcca83db2dd83e751cee4503f32e5ef8cae8478c2640a7476c",
+      "score": 0.9521113038063049,
+      "latencyMs": 29
+    },
+    {
+      "id": "reddit_eli5-107-1",
+      "questionId": "reddit_eli5-107",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "c393c41696389d2752e5aad2e92c3292e6ed285dfa227e992bf2eb709ad384e1",
+      "score": 0.9865539073944092,
+      "latencyMs": 58
+    },
+    {
+      "id": "reddit_eli5-109-0",
+      "questionId": "reddit_eli5-109",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "93ba30eabd93c2a4915ba8671ef7ba7048f17cdbca29402d99a0bf1eb23cd304",
+      "score": 0.5327963829040527,
+      "latencyMs": 27
+    },
+    {
+      "id": "reddit_eli5-109-1",
+      "questionId": "reddit_eli5-109",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "93f0b8b25d9e9450a6d0e63125ca51c97d11599eba7cb22fcd24325737de1e37",
+      "score": 0.986580491065979,
+      "latencyMs": 63
+    },
+    {
+      "id": "reddit_eli5-110-0",
+      "questionId": "reddit_eli5-110",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "891b181052cde54786b286c5e5838363d34ba8bf3603579cc7c0fe137e39f888",
+      "score": 0.9235055446624756,
+      "latencyMs": 76
+    },
+    {
+      "id": "reddit_eli5-110-1",
+      "questionId": "reddit_eli5-110",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "53125da719c9f9489b61b503c8377450f95fd649ef2a88d0c9d4b30dafb29da9",
+      "score": 0.9865090250968933,
+      "latencyMs": 120
+    },
+    {
+      "id": "reddit_eli5-111-0",
+      "questionId": "reddit_eli5-111",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "9e96f6b63f092b6711902b23ab76750b2b4535f6240d81e6a9c40b4dfc08952b",
+      "score": 0.9711647033691406,
+      "latencyMs": 29
+    },
+    {
+      "id": "reddit_eli5-111-1",
+      "questionId": "reddit_eli5-111",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "6b2d5605dca6d5805e35bad91f34fa03a20cd0dcd944d78e7a75e9864c4316bd",
+      "score": 0.9874427318572998,
+      "latencyMs": 61
+    },
+    {
+      "id": "reddit_eli5-112-0",
+      "questionId": "reddit_eli5-112",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "c5aa228130f35c0480f888b22f4c3a2613fc65a319c28777c1164100341bd1ee",
+      "score": 0.9483071565628052,
+      "latencyMs": 130
+    },
+    {
+      "id": "reddit_eli5-112-1",
+      "questionId": "reddit_eli5-112",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "4d3be12b6370ba47194d551a3d5f8b51de6b99294a73267c5a60a325061cab5d",
+      "score": 0.9871896505355835,
+      "latencyMs": 79
+    },
+    {
+      "id": "reddit_eli5-113-0",
+      "questionId": "reddit_eli5-113",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "7a37793d7df5c54d5dcd6afeefa74cfd034569fc2dc1d094a2e03980f2db8e5b",
+      "score": 0.9791614413261414,
+      "latencyMs": 34
+    },
+    {
+      "id": "reddit_eli5-113-1",
+      "questionId": "reddit_eli5-113",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "048a57242ee71579519bef3501b2f758e3fc0757217805cd363905a976586aab",
+      "score": 0.985629141330719,
+      "latencyMs": 33
+    },
+    {
+      "id": "reddit_eli5-114-0",
+      "questionId": "reddit_eli5-114",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "255dbc503d07a5ad03aa5141f0fe897234f6d6a7366175757f43704b06e53b80",
+      "score": 0.033762700855731964,
+      "latencyMs": 74
+    },
+    {
+      "id": "reddit_eli5-114-1",
+      "questionId": "reddit_eli5-114",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "1c75de25c413bc20ed932c9fab323295eaf05e9886a24ab5018ddb640fda23de",
+      "score": 0.9868507385253906,
+      "latencyMs": 54
+    },
+    {
+      "id": "reddit_eli5-116-0",
+      "questionId": "reddit_eli5-116",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "3794aa94130df993c5133a34cc93a9e75af5ab6060a2290d39eb3f9b6ff30fa6",
+      "score": 0.8606767058372498,
+      "latencyMs": 46
+    },
+    {
+      "id": "reddit_eli5-116-1",
+      "questionId": "reddit_eli5-116",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "afee09e2a1ea8a778b11335dc6810d1bbf0cdb52b5d9630aabec45232bc9f12b",
+      "score": 0.9866695404052734,
+      "latencyMs": 102
+    },
+    {
+      "id": "reddit_eli5-117-0",
+      "questionId": "reddit_eli5-117",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "c94275e891e1304b616327694c741b1538e7ab766577ceb75530f03b4101ffce",
+      "score": 0.758118065564256,
+      "latencyMs": 215
+    },
+    {
+      "id": "reddit_eli5-117-1",
+      "questionId": "reddit_eli5-117",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "4d1ce56aa6f844a708cf1df11017210d8e349d6a55eb2a4524d1be4dd0d04199",
+      "score": 0.9868906140327454,
+      "latencyMs": 87
+    },
+    {
+      "id": "reddit_eli5-118-0",
+      "questionId": "reddit_eli5-118",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "10d213b9faffbc9d93bcba1508fedc65284520af8be3ce9fc38dbdd0fba206aa",
+      "score": 0.018215345218777657,
+      "latencyMs": 88
+    },
+    {
+      "id": "reddit_eli5-118-1",
+      "questionId": "reddit_eli5-118",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "6254ec324e7440296edc8585378639658e8ec1b1aa56158e1c465312070bdcde",
+      "score": 0.9848961234092712,
+      "latencyMs": 60
+    },
+    {
+      "id": "reddit_eli5-120-0",
+      "questionId": "reddit_eli5-120",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "f2fdecf7a93a6f66db31971f78beb2e013b20c0727bf6ec0042c02dc32b331ba",
+      "score": 0.5498959422111511,
+      "latencyMs": 135
+    },
+    {
+      "id": "reddit_eli5-120-1",
+      "questionId": "reddit_eli5-120",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "5734d72cf74b3699f4e2e8d1be653748f142c508dc764d0b167f8d08915e83e3",
+      "score": 0.9864289164543152,
+      "latencyMs": 92
+    },
+    {
+      "id": "reddit_eli5-121-0",
+      "questionId": "reddit_eli5-121",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "56600d32225c53ab0462518a20de98c9cb6a6854ffefeb1a0edd27c8eb08e480",
+      "score": 0.8204261064529419,
+      "latencyMs": 39
+    },
+    {
+      "id": "reddit_eli5-121-1",
+      "questionId": "reddit_eli5-121",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "5d4a7f5fad1db16032a50f62d36d420df48c883fdf5fb462c214ac110ee3c9de",
+      "score": 0.9862881898880005,
+      "latencyMs": 69
+    },
+    {
+      "id": "reddit_eli5-122-0",
+      "questionId": "reddit_eli5-122",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "c1db286789e114476e12e2ade94302042e4b1a5f6f5c15c3dda6f889c60d9611",
+      "score": 0.9828692078590393,
+      "latencyMs": 43
+    },
+    {
+      "id": "reddit_eli5-122-1",
+      "questionId": "reddit_eli5-122",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "231c7fb3f15f0b28d35b0a541577a26125452f4a5f18dcd04bf1c5eaa81367e3",
+      "score": 0.9859578013420105,
+      "latencyMs": 61
+    },
+    {
+      "id": "reddit_eli5-124-0",
+      "questionId": "reddit_eli5-124",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "d78849be83e235da9868ce1bc1dfbb925bf59c2bc445067ce8d3cd7639f11dae",
+      "score": 0.9648056030273438,
+      "latencyMs": 131
+    },
+    {
+      "id": "reddit_eli5-124-1",
+      "questionId": "reddit_eli5-124",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "a3337ef4eff9a739df186b80cff297f404dfcfdff1ed610c9fc524bd3d069c4c",
+      "score": 0.98115074634552,
+      "latencyMs": 57
+    },
+    {
+      "id": "reddit_eli5-125-0",
+      "questionId": "reddit_eli5-125",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "1f19153bf60c8d9344ed273b3a50f2bc4e085f97421780cec3da62a2e6747360",
+      "score": 0.15419669449329376,
+      "latencyMs": 79
+    },
+    {
+      "id": "reddit_eli5-125-1",
+      "questionId": "reddit_eli5-125",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "46e08375604889ba788eb5cd880a87a1f8e354ac02a15b5c8128409d386d4c01",
+      "score": 0.9868283867835999,
+      "latencyMs": 81
+    },
+    {
+      "id": "reddit_eli5-126-0",
+      "questionId": "reddit_eli5-126",
+      "source": "reddit_eli5",
+      "label": 0,
+      "sha256": "f9e7712526b9e224c1baf068ae10775a027e42602a862065b4736ea11b504356",
+      "score": 0.8172174096107483,
+      "latencyMs": 53
+    },
+    {
+      "id": "reddit_eli5-126-1",
+      "questionId": "reddit_eli5-126",
+      "source": "reddit_eli5",
+      "label": 1,
+      "sha256": "6f416046b23a4b523e5c0502eea086422752197132b47ba9cda1368395969324",
+      "score": 0.9855471253395081,
+      "latencyMs": 56
+    },
+    {
+      "id": "wiki_csai-100-0",
+      "questionId": "wiki_csai-100",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "562f6d0f0097adca1fdb5b2ad4499fad6ba4f3916f2001143c59e39ee468b674",
+      "score": 0.9821738004684448,
+      "latencyMs": 181
+    },
+    {
+      "id": "wiki_csai-100-1",
+      "questionId": "wiki_csai-100",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "ddea4b4d0d134c36680526ba9b45d60d829a0c931a2317559b9fd32f14d57afc",
+      "score": 0.9872952103614807,
+      "latencyMs": 54
+    },
+    {
+      "id": "wiki_csai-101-0",
+      "questionId": "wiki_csai-101",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "b6854fef223da00b8747fa8e83361445e92d968ad445d736fb9d5a58613a31aa",
+      "score": 0.9630348086357117,
+      "latencyMs": 70
+    },
+    {
+      "id": "wiki_csai-101-1",
+      "questionId": "wiki_csai-101",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "8b648a907491574eb6efded9e4ac410b1ff473cb972713f67135ec51c6f84e53",
+      "score": 0.9874451756477356,
+      "latencyMs": 57
+    },
+    {
+      "id": "wiki_csai-102-0",
+      "questionId": "wiki_csai-102",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "865cd7b0c852ed02120f01234c3776a3ddbff81f38132b41e45da87bdcb225e2",
+      "score": 0.9724969863891602,
+      "latencyMs": 50
+    },
+    {
+      "id": "wiki_csai-102-1",
+      "questionId": "wiki_csai-102",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "8b720ccecb74e3fc9a1c34e1bf27ac3c1f25f040b73a93942d0eca123d8ad4e1",
+      "score": 0.9871779084205627,
+      "latencyMs": 83
+    },
+    {
+      "id": "wiki_csai-103-0",
+      "questionId": "wiki_csai-103",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "1c525523e581d1a910f452808da569f13b995cca61ed5b915e897f5a013497c9",
+      "score": 0.9679780006408691,
+      "latencyMs": 51
+    },
+    {
+      "id": "wiki_csai-103-1",
+      "questionId": "wiki_csai-103",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "624988419279c32a6b3b528d811dc94e4e08a90999f2989d5644324e1a5798b4",
+      "score": 0.986328125,
+      "latencyMs": 67
+    },
+    {
+      "id": "wiki_csai-104-0",
+      "questionId": "wiki_csai-104",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "cafb2055dc9ceb5c29d07b242737900702bc3067227ab73d6245319c8a487689",
+      "score": 0.9850052270022306,
+      "latencyMs": 256
+    },
+    {
+      "id": "wiki_csai-104-1",
+      "questionId": "wiki_csai-104",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "06be1d4578042563c1bde1dffa17130a320f1e8f5775132d80f3330ff3f07d05",
+      "score": 0.9849328398704529,
+      "latencyMs": 77
+    },
+    {
+      "id": "wiki_csai-105-0",
+      "questionId": "wiki_csai-105",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "d17a758f1116026f848e7bd7a14a5d833909551657ec812712ee8d1cee7e44ca",
+      "score": 0.9178915619850159,
+      "latencyMs": 36
+    },
+    {
+      "id": "wiki_csai-105-1",
+      "questionId": "wiki_csai-105",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "d4bab92f538e5eb1a710e1120fad5dab2ff666d5d54143ea789a89a88d68045f",
+      "score": 0.9859774708747864,
+      "latencyMs": 57
+    },
+    {
+      "id": "wiki_csai-106-0",
+      "questionId": "wiki_csai-106",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "ab5a263419195cac2c197628b2e982694e4fd0e76d49235c54fca5740c830508",
+      "score": 0.9693210124969482,
+      "latencyMs": 34
+    },
+    {
+      "id": "wiki_csai-106-1",
+      "questionId": "wiki_csai-106",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "237f3f7fae516f5b5e23b2897b0aecffdbcfd13e9e421c629d07de1ec6270dc4",
+      "score": 0.9855191707611084,
+      "latencyMs": 67
+    },
+    {
+      "id": "wiki_csai-107-0",
+      "questionId": "wiki_csai-107",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "a15c78f134671ba3a5a0d761142374519d742410ab7ce5eee35b712b48fe7ec3",
+      "score": 0.9805320066374701,
+      "latencyMs": 200
+    },
+    {
+      "id": "wiki_csai-107-1",
+      "questionId": "wiki_csai-107",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "0836ace81eac6673d861e81798c52443d36f405de9ec2cfb0634c0b67bf629d1",
+      "score": 0.9866496324539185,
+      "latencyMs": 86
+    },
+    {
+      "id": "wiki_csai-108-0",
+      "questionId": "wiki_csai-108",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "d88efcc56ed1b4251ea5e8ab926868d1b5cfdba7ab72485370dc53accb0eefd0",
+      "score": 0.9343959093093872,
+      "latencyMs": 103
+    },
+    {
+      "id": "wiki_csai-108-1",
+      "questionId": "wiki_csai-108",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "94484b846162bb8f03490b69c1b164cf31186bb7c212cabd45a3920de01bed1c",
+      "score": 0.9874637722969055,
+      "latencyMs": 78
+    },
+    {
+      "id": "wiki_csai-109-0",
+      "questionId": "wiki_csai-109",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "fe1624bdc79b9da3432620f0b92fb8cbdc600f37479ebce88a3418a38d9a89d7",
+      "score": 0.017791910097002983,
+      "latencyMs": 69
+    },
+    {
+      "id": "wiki_csai-109-1",
+      "questionId": "wiki_csai-109",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "e292cec499cec80fb800ec67e683d8131d70064360c640b017b709e37dbb78d7",
+      "score": 0.9864770174026489,
+      "latencyMs": 69
+    },
+    {
+      "id": "wiki_csai-111-0",
+      "questionId": "wiki_csai-111",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "ead7bfb9e8d1634467a8862326afce496430e5d10fb6ab0d41e8f53e4987a3cc",
+      "score": 0.9694995880126953,
+      "latencyMs": 33
+    },
+    {
+      "id": "wiki_csai-111-1",
+      "questionId": "wiki_csai-111",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "f167e9665a24f0eb0428af71bd3d8ed11068bf03e485ab255e3b571c10ed221f",
+      "score": 0.9855768084526062,
+      "latencyMs": 86
+    },
+    {
+      "id": "wiki_csai-112-0",
+      "questionId": "wiki_csai-112",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "f90f6108498b57eabf6fa08edf279a149e91a1ed3b5f676638de4d5577b33b8e",
+      "score": 0.36227357387542725,
+      "latencyMs": 102
+    },
+    {
+      "id": "wiki_csai-112-1",
+      "questionId": "wiki_csai-112",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "f8567f01cb02605af009415762cd1c25a3b61e172d273411885e4f933a03b56f",
+      "score": 0.986913800239563,
+      "latencyMs": 61
+    },
+    {
+      "id": "wiki_csai-113-0",
+      "questionId": "wiki_csai-113",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "06e8fddf84b43dd4690a22661d2bebb25eab2fbcb3bc58ed0f3cce6bcc72e060",
+      "score": 0.013222641311585903,
+      "latencyMs": 75
+    },
+    {
+      "id": "wiki_csai-113-1",
+      "questionId": "wiki_csai-113",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "44d809ef47446ddfa7fc59763109d5b3e55c018903a134ca6281d2ab2ef91c08",
+      "score": 0.987465500831604,
+      "latencyMs": 56
+    },
+    {
+      "id": "wiki_csai-114-0",
+      "questionId": "wiki_csai-114",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "d9e1519ecb2f8436c05c1694f457a23cbd0e5cf46bbcd60de89093dc2597762d",
+      "score": 0.1287924200296402,
+      "latencyMs": 101
+    },
+    {
+      "id": "wiki_csai-114-1",
+      "questionId": "wiki_csai-114",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "f66155c79a09a2eabc6d5d1f135717131ef545c9fd7c1ff08edfac42aae430a6",
+      "score": 0.9861841797828674,
+      "latencyMs": 72
+    },
+    {
+      "id": "wiki_csai-115-0",
+      "questionId": "wiki_csai-115",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "5f1b611c8cf8bf0a6c8dc8dfc6dcabe37789898316ddcca7c6c05d2ad03c0ab8",
+      "score": 0.943482518196106,
+      "latencyMs": 49
+    },
+    {
+      "id": "wiki_csai-115-1",
+      "questionId": "wiki_csai-115",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "f8c48399af74a0ee93f3cbaf24f40334aec57eae18d4d110ed68ec7ac4c39d97",
+      "score": 0.9870846271514893,
+      "latencyMs": 87
+    },
+    {
+      "id": "wiki_csai-116-0",
+      "questionId": "wiki_csai-116",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "52c12ab54d739c17612a4bfe7d4a680df0d95df453e584c6585983c4956739fc",
+      "score": 0.9526299834251404,
+      "latencyMs": 112
+    },
+    {
+      "id": "wiki_csai-116-1",
+      "questionId": "wiki_csai-116",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "198c2f851cd969fb6eb5f4d8347dcf206257503dbca301ac347da446771e49c8",
+      "score": 0.9870068430900574,
+      "latencyMs": 87
+    },
+    {
+      "id": "wiki_csai-117-0",
+      "questionId": "wiki_csai-117",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "130d86c0d202a47271cc06e5de57e39a2c426fd31f51730ccc1e03a6d0081be9",
+      "score": 0.9202002882957458,
+      "latencyMs": 149
+    },
+    {
+      "id": "wiki_csai-117-1",
+      "questionId": "wiki_csai-117",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "d01c56bdffd6f73bf00e9659bbfba167436ff30cae01741b4265d720c3b90cab",
+      "score": 0.9867625832557678,
+      "latencyMs": 50
+    },
+    {
+      "id": "wiki_csai-118-0",
+      "questionId": "wiki_csai-118",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "9bfd66b3beefdba6d05fbffc2be9f7cdb07a8078a45f7499accf927c96677a91",
+      "score": 0.851219892501831,
+      "latencyMs": 84
+    },
+    {
+      "id": "wiki_csai-118-1",
+      "questionId": "wiki_csai-118",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "f01968759d3befd23ae609db0f08c8260e7cffc5274ca61cbd801639baabbedc",
+      "score": 0.9864155650138855,
+      "latencyMs": 67
+    },
+    {
+      "id": "wiki_csai-119-0",
+      "questionId": "wiki_csai-119",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "580a1be7d098f1fa72f745919ec2054a063cac386b488e6bf8f0adf684b14270",
+      "score": 0.039036840200424194,
+      "latencyMs": 48
+    },
+    {
+      "id": "wiki_csai-119-1",
+      "questionId": "wiki_csai-119",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "53b5766e600545ea21ed8a860a9b8b8365356e7704cff5181be1fc8fd8401bd3",
+      "score": 0.9829844832420349,
+      "latencyMs": 51
+    },
+    {
+      "id": "wiki_csai-120-0",
+      "questionId": "wiki_csai-120",
+      "source": "wiki_csai",
+      "label": 0,
+      "sha256": "f27139e7b4b6e4dc5668be6e111a7de3f512291dbcb1bca76dfbe60fa079aa7a",
+      "score": 0.1620943695306778,
+      "latencyMs": 62
+    },
+    {
+      "id": "wiki_csai-120-1",
+      "questionId": "wiki_csai-120",
+      "source": "wiki_csai",
+      "label": 1,
+      "sha256": "31ae25bef8e3de9c451526355fa561168e9ef27c15aa2a83b70405abf3a930b9",
+      "score": 0.9870443344116211,
+      "latencyMs": 105
+    }
+  ]
+}
