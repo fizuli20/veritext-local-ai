@@ -1,0 +1,191 @@
+{
+  "generatedAt": "2026-11-21T18:02:16.188Z",
+  "dataset": "veritext-real-world-holdout-v4",
+  "totalSamples": 20,
+  "metrics": {
+    "auc": 0.975,
+    "tprAt1Fpr": 0.5,
+    "tprAt5Fpr": 0.5,
+    "ece": 0.186
+  },
+  "rocCurve": [
+    {
+      "threshold": 1.01,
+      "fpr": 0,
+      "tpr": 0
+    },
+    {
+      "threshold": 0.96,
+      "fpr": 0,
+      "tpr": 0.1
+    },
+    {
+      "threshold": 0.95,
+      "fpr": 0,
+      "tpr": 0.2
+    },
+    {
+      "threshold": 0.94,
+      "fpr": 0,
+      "tpr": 0.3
+    },
+    {
+      "threshold": 0.93,
+      "fpr": 0,
+      "tpr": 0.4
+    },
+    {
+      "threshold": 0.86,
+      "fpr": 0,
+      "tpr": 0.5
+    },
+    {
+      "threshold": 0.64,
+      "fpr": 0.1,
+      "tpr": 1
+    },
+    {
+      "threshold": 0.58,
+      "fpr": 0.2,
+      "tpr": 1
+    },
+    {
+      "threshold": 0.48,
+      "fpr": 0.3,
+      "tpr": 1
+    },
+    {
+      "threshold": 0.45,
+      "fpr": 0.4,
+      "tpr": 1
+    },
+    {
+      "threshold": 0.23,
+      "fpr": 0.5,
+      "tpr": 1
+    },
+    {
+      "threshold": 0.19,
+      "fpr": 0.6,
+      "tpr": 1
+    },
+    {
+      "threshold": 0.11,
+      "fpr": 0.7,
+      "tpr": 1
+    },
+    {
+      "threshold": 0.05,
+      "fpr": 1,
+      "tpr": 1
+    }
+  ],
+  "calibrationCurve": [
+    {
+      "binIndex": 0,
+      "confidenceLower": 0,
+      "confidenceUpper": 0.1,
+      "avgConfidence": 0.05,
+      "empiricalAccuracy": 0,
+      "sampleCount": 3
+    },
+    {
+      "binIndex": 1,
+      "confidenceLower": 0.1,
+      "confidenceUpper": 0.2,
+      "avgConfidence": 0.15,
+      "empiricalAccuracy": 0,
+      "sampleCount": 2
+    },
+    {
+      "binIndex": 2,
+      "confidenceLower": 0.2,
+      "confidenceUpper": 0.3,
+      "avgConfidence": 0.23,
+      "empiricalAccuracy": 0,
+      "sampleCount": 1
+    },
+    {
+      "binIndex": 3,
+      "confidenceLower": 0.3,
+      "confidenceUpper": 0.4,
+      "avgConfidence": 0.35000000000000003,
+      "empiricalAccuracy": 0,
+      "sampleCount": 0
+    },
+    {
+      "binIndex": 4,
+      "confidenceLower": 0.4,
+      "confidenceUpper": 0.5,
+      "avgConfidence": 0.465,
+      "empiricalAccuracy": 0,
+      "sampleCount": 2
+    },
+    {
+      "binIndex": 5,
+      "confidenceLower": 0.5,
+      "confidenceUpper": 0.6,
+      "avgConfidence": 0.58,
+      "empiricalAccuracy": 0,
+      "sampleCount": 1
+    },
+    {
+      "binIndex": 6,
+      "confidenceLower": 0.6,
+      "confidenceUpper": 0.7,
+      "avgConfidence": 0.64,
+      "empiricalAccuracy": 0.833,
+      "sampleCount": 6
+    },
+    {
+      "binIndex": 7,
+      "confidenceLower": 0.7,
+      "confidenceUpper": 0.8,
+      "avgConfidence": 0.75,
+      "empiricalAccuracy": 0,
+      "sampleCount": 0
+    },
+    {
+      "binIndex": 8,
+      "confidenceLower": 0.8,
+      "confidenceUpper": 0.9,
+      "avgConfidence": 0.86,
+      "empiricalAccuracy": 1,
+      "sampleCount": 1
+    },
+    {
+      "binIndex": 9,
+      "confidenceLower": 0.9,
+      "confidenceUpper": 1,
+      "avgConfidence": 0.945,
+      "empiricalAccuracy": 1,
+      "sampleCount": 4
+    }
+  ],
+  "domainResults": [
+    {
+      "domain": "encyclopedic",
+      "samples": 5,
+      "falsePositiveRate": 40,
+      "accuracy": 60
+    },
+    {
+      "domain": "academic",
+      "samples": 5,
+      "falsePositiveRate": 0,
+      "accuracy": 100
+    },
+    {
+      "domain": "cliche-free-ai",
+      "samples": 5,
+      "falsePositiveRate": 0,
+      "accuracy": 100
+    },
+    {
+      "domain": "raw-ai",
+      "samples": 5,
+      "falsePositiveRate": 0,
+      "accuracy": 100
+    }
+  ]
+}

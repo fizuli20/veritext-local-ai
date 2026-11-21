@@ -177,7 +177,20 @@ function parseModelScore(output: any): number {
 }
 
 self.onmessage = async (e: MessageEvent) => {
-  const { type, text, id, device } = e.data;
+  const { type, text, id, device } = e.data || {};
+
+  if (type === 'PING') {
+    self.postMessage({
+      type: 'PONG',
+      worker: 'detector',
+      ready: !!classifier,
+      loadedModelId: classifier ? PRIMARY_MODEL : null,
+      backend: currentDevice,
+      webgpuAvailable: typeof navigator !== 'undefined' && 'gpu' in navigator && !!(navigator as any).gpu,
+      timestamp: Date.now(),
+    });
+    return;
+  }
 
   if (type === 'init') {
     await initClassifier(device);

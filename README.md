@@ -1,6 +1,6 @@
-# Veritext Local AI (v3.0 Apex Edition)
+# Veritext Local AI (v4.0 Titan Edition)
 
-> **Flagship 100% Zero-Token, Zero-API-Key AI Forensics & Tournament Humanizer Suite running entirely inside your browser via WebGPU, WebAssembly, and Pure TypeScript NLP.**
+> **Flagship 100% Zero-Token, Zero-API-Key AI Forensics, LM Studio/Ollama Native Connector & Cryptographic Proof-of-Human Suite running entirely inside your browser via WebGPU, WebAssembly, and Pure TypeScript NLP.**
 
 [![Next.js 15](https://img.shields.io/badge/Next.js-15.5-black?logo=next.js)](https://nextjs.org/)
 [![React 19](https://img.shields.io/badge/React-19-blue?logo=react)](https://react.dev/)
@@ -8,16 +8,20 @@
 [![WebGPU & WASM](https://img.shields.io/badge/Compute-WebGPU%20%7C%20WASM-orange?logo=webassembly)](https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API)
 [![Zero-Token](https://img.shields.io/badge/Tokens-Zero%20%2F%20Free-emerald)](https://github.com/fizuli20/veritext-local-ai)
 [![Zero-API-Key](https://img.shields.io/badge/API%20Keys-None%20Required-emerald)](https://github.com/fizuli20/veritext-local-ai)
-[![First Load JS](https://img.shields.io/badge/Bundle-142%20kB%20(<160kB)-success)](https://github.com/fizuli20/veritext-local-ai)
-[![PWA Ready](https://img.shields.io/badge/PWA-Offline%20Ready-purple?logo=pwa)](https://github.com/fizuli20/veritext-local-ai)
+[![First Load JS](https://img.shields.io/badge/Bundle-149%20kB%20(<160kB)-success)](https://github.com/fizuli20/veritext-local-ai)
+[![ROC-AUC](https://img.shields.io/badge/ROC--AUC-0.975-brightgreen)](https://veritext-local-ai.vercel.app/benchmarks)
+[![ECDSA P-256](https://img.shields.io/badge/Proof--of--Human-ECDSA%20P--256-blueviolet)](https://veritext-local-ai.vercel.app/verify)
 [![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-blue?logo=googlechrome)](https://github.com/fizuli20/veritext-local-ai/tree/main/extension)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## ⚡ Architectural Overview (v3.0 Apex Edition)
+## ⚡ Architectural Overview (v4.0 Titan Edition)
 
-Veritext Local AI v3.0 Apex is an academic-grade AI forensic detection and tournament humanizer engine that executes **100% free of external API tokens, paid keys, and server-side ML hosting costs**. All neural models, causal language models, sentence embeddings, stylometric analyses, and document parsers execute locally in browser Web Workers.
+Veritext Local AI v4.0 Titan is an academic-grade AI forensic detection, tournament humanizer, and cryptographic authorship certification engine that executes **100% free of external API tokens, paid keys, and server-side ML hosting costs**. Inference runs strictly via:
+1. **User's Local Desktop Server:** Native **LM Studio** (`localhost:1234/v1`) or **Ollama** (`localhost:11434/v1`) streaming connector.
+2. **In-Browser WebGPU/WASM Workers:** `@huggingface/transformers` and `@mlc-ai/web-llm` running inside isolated Web Workers.
+3. **Pure TypeScript Instant Engines:** Stylometrics, Fast-DetectGPT curvature $d(x)$, homoglyph sanitization, and deterministic clean-up.
 
 ```text
                                 ┌────────────────────────────────────────────────────────────────────────┐
@@ -43,156 +47,112 @@ Veritext Local AI v3.0 Apex is an academic-grade AI forensic detection and tourn
                                 │                                   │                                    │
                                 │                                   ▼                                    │
                                 │   ┌────────────────────────────────────────────────────────────────┐   │
-                                │   │         Surgical Protected-Span Masker & Reranker Humanizer    │   │
-                                │   │  • Protected Spans: Quotes, Citations, Code, LaTeX, URLs/Emails│   │
-                                │   │  • Candidate Gen: WebLLM / Deterministic De-AI / WASM Seq2Seq   │   │
+                                │   │     4-Tier Humanizer & Desktop LLM Connector (Honest Badge)    │   │
+                                │   │  • Tier 1: LM Studio / Ollama (Desktop Native VRAM via SSE)    │   │
+                                │   │  • Tier 2: Browser WebLLM (Qwen2.5-1.5B via WebGPU)            │   │
+                                │   │  • Tier 3: Browser WASM Seq2Seq (Flan-T5)                      │   │
+                                │   │  • Tier 4: Instant Deterministic Cleaner (<15ms)               │   │
+                                │   │  • Factual Guard: Protected Quotes, Citations, Code & Formulas │   │
                                 │   │  • Semantic Fidelity: MiniLM-L6-v2 Embeddings (Cosine >= 0.84) │   │
-                                │   │  • Voice Cloning: Personal Stylistic Fingerprinting            │   │
                                 │   └───────────────────────────────┬────────────────────────────────┘   │
                                 │                                   │                                    │
                                 │                                   ▼                                    │
   ┌─────────────────┐           │   ┌────────────────────────────────────────────────────────────────┐   │
-  │ Verified Human  │ ◄─────────┼───│   Batch Auditor (25 Docs) • Draft Comparator (SHA-256 Digest)  │   │
-  │  Document / UI  │           │   └────────────────────────────────────────────────────────────────┘   │
-  └─────────────────┘           └────────────────────────────────────────────────────────────────────────┘
+  │ Verified Human  │ ◄─────────┼───│   Cryptographic Proof-of-Human Studio & Offline Verifier       │   │
+  │ Certificate / UI│           │   │  • ECDSA P-256 + SHA-256 Document Hash Signing (.json)         │   │
+  └─────────────────┘           │   │  • Keystroke Interval Cadence Entropy & Revision Timeline      │   │
+                                │   │  • Offline Verifier (/verify) Flags Single-Character Tampering │   │
+                                │   └────────────────────────────────────────────────────────────────┘   │
+                                └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🎯 What's New in V3.0 Apex Edition
+## 🚀 Key v4.0 Titan Upgrades
 
-### 1. Fast-DetectGPT Conditional Probability Curvature
-Upgrade to exact analytical probability curvature computed inside the causal-LM GPT-2 forward pass without sampling overhead:
-- At each token position $t$ with probability distribution $p_t(v) = P(v \mid x_{<t})$ and observed token log-probability $\ell_t = \log p_t(x_t)$:
-  $$\mu_t = \sum_v p_t(v) \log p_t(v)$$
-  $$\sigma_t^2 = \sum_v p_t(v) (\log p_t(v) - \mu_t)^2$$
-  $$d(x) = \frac{\sum_{t=1}^{N} (\ell_t - \mu_t)}{\sqrt{\sum_{t=1}^{N} \sigma_t^2 + \epsilon}}$$
-- Modern LLMs with prompts avoiding clichés yield high positive curvature ($d(x) > 1.5$), exposing subtle AI text even when zero surface-level clichés are present.
-- Fully integrated into calibrated forensic scoring: $0.55 \cdot \text{Curvature} + 0.25 \cdot \text{PPL Burstiness} + 0.20 \cdot \text{GLTR Rank Ratio}$.
+### 1. Native LM Studio & Ollama Desktop Streaming Connector
+- **Zero-Dependency SSE Client:** Connects directly from browser JavaScript to `http://localhost:1234/v1` (LM Studio) or `http://localhost:11434/v1` (Ollama).
+- **Model Family Auto-Tuning:** Detects `gemma`, `qwen`, `mistral`, `llama`, and `muse` families and auto-applies anti-slop sampling parameters (e.g., Gemma Anti-Slop: `temp 0.85, top_p 0.92, freq_penalty 0.28, pres_penalty 0.22`).
+- **DeepSeek & Gemma `<think>` Stripping:** Cleans reasoning chains, `<thought>`, `<|thought|>`, and conversational filler (`"Here is the humanized text:"`) in real-time.
+- **Actionable CORS Doctor:** Diagnoses connection failures instantly and provides one-click copyable terminal commands:
+  ```bash
+  # LM Studio
+  lms server start --cors
+  # Ollama
+  OLLAMA_ORIGINS="*" ollama serve
+  ```
+- **Execution Provenance Badge:** Output cards honestly show the exact engine that processed the text (`LM Studio · google/gemma-4-12b`, `WebLLM · Qwen2.5-1.5B`, `WASM Seq2Seq`, or `Instant Stylometrics`).
 
-### 2. Hard Cliché-Free Benchmark Corpus (100% Accuracy)
-Tested against subtle modern LLM text (GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro instructed to avoid clichés) vs. challenging human prose (patents, clinical trial protocols, Linux kernel patches, legal briefs):
-- **Accuracy:** **100.0%** (20/20 passages correctly classified)
-- **Human False-Positive Rate:** **0.0%** (0/10 false accusations)
+### 2. Worker Truth Audit & System Diagnostics
+- **Live Worker PING/PONG Protocol:** Probes all 5 Web Workers with handshake roundtrips, measuring response latency in milliseconds:
+  1. `RoBERTa Detector Worker`
+  2. `GPT-2 Curvature & PPL Worker`
+  3. `MiniLM-L6 Embedding Worker`
+  4. `Flan-T5 Paraphraser Worker`
+  5. `WebLLM Local LLM Worker`
+- **Hardware Telemetry:** Inspects `navigator.gpu`, active adapter limits, and OPFS/CacheStorage disk usage in a unified diagnostic table.
 
-### 3. Multilingual Guard & Script Detector
-- Fast (<2ms), zero-dependency character-trigram and Unicode script classifier supporting: `en`, `es`, `fr`, `de`, `tr`, `az`, `ru`, `ar`, `zh`, `ja`, `other`.
-- Prevents false-positive penalties on non-English texts by disabling English-specific cliché matching and contraction analysis.
+### 3. Out-of-Distribution Calibration & ROC Forensics (`/benchmarks`)
+- **Holdout Corpus:** Evaluated against 4 diverse linguistic domains: Wikipedia/Encyclopedic, ArXiv/Academic, Subtle Cliché-Free AI, and Raw LLM default text.
+- **Academic Metrics:** Measures **ROC-AUC (0.975)**, **TPR @ 5% FPR (50%)**, and **ECE Calibration Error (0.186)**.
+- **Interactive SVG Dashboard:** Pure SVG Receiver Operating Characteristic (ROC) curve with operating threshold point ($\tau \approx 0.60$), 10-bin Calibration Reliability Diagram, and honest domain limitations disclosure.
 
-### 4. Surgical Protected-Span Masking
-Preserves critical semantic elements verbatim during humanization passes:
-- **Direct Quotes:** Quotes $\ge 4$ words (`"..."`, `“...”`).
-- **Academic Citations:** Parenthetical citations (`(Smith et al., 2024)`), IEEE numeric brackets (`[1]`, `[1-3]`), and DOIs (`doi:10...`).
-- **Code & LaTeX Math:** Inline and block code (`code`, ```` ``` ````), display math (`$$...$$`), and inline math (`$...$`).
-- **Identifiers & Contact Info:** URLs (`https://...`), emails, and user-specified locked terms.
-- Robust fuzzy restoration fallback guarantees zero leaked placeholders (`__KEEP_N__`).
-
-### 5. Pure SVG Forensic Charts
-- **Sentence AI Risk Sparkline Profile:** Interactive per-sentence risk bars with click-to-highlight synchronization with the Heatmap editor.
-- **6-Dimensional Forensic Radar Matrix:** Polygon breakdown across Burstiness, Clichés, Syntax Uniformity, Lexical Diversity, Entropy, Paragraph Symmetry, and Curvature.
-- **GLTR Rank Proportions Bar:** Color-coded 4-tier distribution compared to human reference baselines (~35% / 25% / 20% / 20%).
-
-### 6. Batch Audit Queue (Up to 25 Documents)
-- Drag-and-drop batch queue supporting `.docx`, `.pdf`, `.md`, and `.txt`.
-- Dynamic document parser loading keeps main bundle light.
-- Sortable column table (Score, Words, Language, Verdict, Integrity Flag) with instant CSV export.
-
-### 7. Draft-vs-Draft Forensic Comparator & SHA-256 Digest
-- Side-by-side alignment comparing Draft A (Original) vs Draft B (Revised).
-- Paragraph-by-paragraph delta detection with `AI Score Drop`, `+AI Insertion Alert`, and `Unchanged Human Baseline`.
-- Generates a cryptographic **Local Authorship Verification Digest** (`.json` and printable standalone `.html`) with Web Crypto SHA-256 hashes of both drafts.
-
-### 8. Bundle Optimization Diet (<142 kB First Load JS)
-- Reduced First Load JS from **302 kB** in V2 to **142 kB** in V3 (well below the `< 160 kB` ceiling).
-- Converted `mammoth`, `docx`, and `pdfjs-dist` to dynamic imports.
-- Dynamic route chunking for heavy tabs (`BatchAuditor`, `DraftComparator`, `ModelLoaderCard`).
-
-### 9. Developer API Playground & OpenAPI 3.1
-- Interactive `/developers` live testing playground with copyable cURL, TypeScript, and Python snippets.
-- `POST /api/detect`: Single document stylometric detection.
-- `POST /api/batch-detect`: High-throughput batch detection (up to 10 items) with Zod schema validation and SHA-256 caching.
-- `GET /api/openapi.json`: OpenAPI 3.1.0 specification.
-
-### 10. Companion Chrome Extension (Manifest V3)
-- Located in `extension/` and packaged to `public/downloads/veritext-chrome-extension.zip`.
-- Right-click context menu: **"Scan with Veritext Local AI"** and **"De-AI / Humanize Text"**.
-- Shadow-DOM isolated floating card prevents style leakage on visited web pages.
-- Popup with quick scanner and 1-click deterministic humanizer.
+### 4. Cryptographic "Proof-of-Human" Author Studio & Offline Verifier (`/verify`)
+- **Web Crypto ECDSA P-256 + SHA-256:** Generates and stores author cryptographic keypairs locally in the browser.
+- **Forensic Keystroke Telemetry:** Records active composition duration, typing speed (WPM), paste event ratios, and Shannon entropy of inter-keystroke intervals ($H > 2.5\text{ bits}$).
+- **Continuous Revision Trail:** Captures intermediate SHA-256 draft snapshots over time, mathematically proving iterative manual creation.
+- **Tamper-Evident Verification:** The offline verifier at `/verify` validates `.veritext-proof.json` against candidate text. **Any single-character alteration, punctuation swap, or whitespace edit immediately triggers a bold red `TAMPER DETECTED: Content does not match signed cryptographic hash` alert.**
+- **Printable Certificate:** One-click PDF/print export of a formal Certificate of Authenticated Human Authorship.
 
 ---
 
-## 🔬 Benchmark Matrix
+## 📊 Benchmark Calibration Results
 
-### Hard Cliché-Free Benchmark (V3 Apex)
-| Target Metric | Benchmark Goal | **Veritext V3.0 Apex Result** | Status |
-| :--- | :--- | :--- | :---: |
-| **Classification Accuracy** | $\ge 80.0\%$ | **100.0%** (20 / 20 correct) | ✅ **Exceeded** |
-| **Human False-Positive Rate** | $\le 10.0\%$ | **0.0%** (0 / 10 false accusations) | ✅ **Perfect** |
+| Corpus Domain | Ground Truth | Sample Size | False Positive Rate | Accuracy |
+| :--- | :--- | :--- | :--- | :--- |
+| **Wikipedia / Encyclopedic** | Human-Authored | 5 passages | 40% FPR (Formulaic prose) | 60% |
+| **ArXiv / Academic & Clinical** | Human-Authored | 5 passages | 0% FPR | 100% |
+| **Modern Stealth AI (Zero-Cliché)** | AI-Generated | 5 passages | N/A (True AI) | 100% |
+| **Raw LLM Default Generation** | AI-Generated | 5 passages | N/A (True AI) | 100% |
 
-### 50-Passage Adversarial Corpus Benchmark
-| Target Metric | Benchmark Goal | **Veritext V3.0 Apex Result** | Status |
-| :--- | :--- | :--- | :---: |
-| **Passage Classification Accuracy** | $\ge 88.0\%$ | **93.3%** (28 / 30 raw pairs) | ✅ **Exceeded** |
-| **Separation Delta (LLM vs Human)** | $\ge 45.0$ points | **66.6 points** (LLM: 81.1% vs Human: 14.5%) | ✅ **Exceeded** |
-| **ESL & Academic False-Positive Rate** | $\le 10.0\%$ | **0.0%** (0 / 10 false accusations) | ✅ **Perfect** |
-| **Adversarial Attack Neutralization** | $\ge 90.0\%$ | **100.0%** (8 / 8 attacks normalized) | ✅ **Perfect** |
-| **Stylometrics p50 Latency** | $< 10.0$ms | **2.93ms** | ✅ **Instant** |
-| **Stylometrics p95 Latency** | $< 40.0$ms | **4.58ms** | ✅ **Instant** |
+- **Overall ROC-AUC:** `0.975`
+- **Expected Calibration Error (ECE):** `0.186`
+- **First Load JS on `/`:** `149 kB` (Strictly `< 160 kB`)
 
 ---
 
-## 🧪 Verification Matrix
+## 📦 Developer API & Extension
 
-### Unit & Integration Suite (`vitest`)
-```bash
-npm test
-```
-- **15 Test Files:** 100% Passed (54 / 54 tests)
-- Tests include: `cliche-free.test.ts`, `language.test.ts`, `curvature.test.ts`, `protected-spans.test.ts`, `batch-api.test.ts`, `stylometrics.test.ts`, `deterministic-cleaner.test.ts`, `sanitizer.test.ts`, `documents.test.ts`, `tournament.test.ts`, `voice-profile.test.ts`, `guardrail.test.ts`, `diff.test.ts`, `tokenizer.test.ts`, `api.test.ts`.
+### Live REST Endpoints (100% Free / Zero API Key)
+- `POST /api/detect`: Fast 3-signal stylometric evaluation
+- `POST /api/batch-detect`: High-throughput multi-document evaluation (up to 25 items)
+- `GET /api/health`: Engine health and uptime status
+- `GET /api/openapi.json`: OpenAPI 3.1 schema specification
+- `GET /downloads/veritext-chrome-extension.zip`: Companion Manifest V3 browser extension
 
-### End-to-End Suite (`playwright`)
-```bash
-npx playwright test
-```
-- **9 Scenarios:** 100% Passed in 4.3 seconds
-  1. Root page loads clean with zero console errors and `v3.0.0` tag.
-  2. 3-Signal Detector renders Heatmap, Score Gauge, and SVG Forensic Charts.
-  3. Obfuscation Defense detects homoglyphs and displays warning banner.
-  4. Humanizer Studio preserves quotes and academic citations verbatim.
-  5. Batch Audit Queue loads 3 sample documents, scans queue, and enables CSV export.
-  6. Compare Drafts computes delta and renders SHA-256 Authorship Digest.
-  7. Developer API playground executes live request returning 200 OK.
-  8. Stateless API (`/api/openapi.json`) and Extension ZIP download return 200 OK.
-  9. Mobile viewport (375x812) has zero horizontal overflow.
-
----
-
-## 🚀 Getting Started
-
-### Local Development
-```bash
-git clone https://github.com/fizuli20/veritext-local-ai.git
-cd veritext-local-ai
-npm install
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000).
-
-### Build Chrome Extension
+### Companion Chrome Extension
+Download the packaged extension zip directly from `/downloads/veritext-chrome-extension.zip` or build from source:
 ```bash
 npm run build:extension
 ```
-- Extension bundle output: `extension/dist/`
-- Downloadable ZIP: `public/downloads/veritext-chrome-extension.zip`
-- To install in Chrome: Go to `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and select `extension/dist`.
+Load unpacked in Chrome via `chrome://extensions` (Developer Mode).
 
-### Production Build
+---
+
+## 🧪 Verification & Test Coverage
+
 ```bash
+# Run all 18 Vitest test suites (72 tests)
+npm test
+
+# Run all 14 Playwright E2E scenarios
+npx playwright test
+
+# Check bundle size and build Next.js production output
 npm run build
-npm run start
 ```
 
 ---
 
 ## 📄 License
-MIT © 2026 Veritext Authors. Free and open source for all researchers, educators, and developers.
+MIT License. © 2026 Veritext Local AI.

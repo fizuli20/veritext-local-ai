@@ -54,6 +54,7 @@ export interface PerplexityResult {
 let tokenizer: any = null;
 let model: any = null;
 let currentModelId = '';
+let currentDevice: 'webgpu' | 'wasm' = 'wasm';
 
 async function loadModel(useWebGPU = true): Promise<void> {
   const modelId = PRIMARY_MODEL;
@@ -68,6 +69,7 @@ async function loadModel(useWebGPU = true): Promise<void> {
       },
     });
     currentModelId = modelId;
+    currentDevice = useWebGPU ? 'webgpu' : 'wasm';
     postMessage({ type: 'STATUS', status: 'ready', model: modelId });
   } catch (primaryErr) {
     console.warn(`Failed to load ${PRIMARY_MODEL}, falling back to ${FALLBACK_MODEL}:`, primaryErr);
@@ -81,6 +83,7 @@ async function loadModel(useWebGPU = true): Promise<void> {
       },
     });
     currentModelId = FALLBACK_MODEL;
+    currentDevice = 'wasm';
     postMessage({ type: 'STATUS', status: 'ready', model: FALLBACK_MODEL });
   }
 }
@@ -372,7 +375,20 @@ async function analyzePerplexity(
 // Web Worker message listener
 if (typeof self !== 'undefined') {
   self.onmessage = async (e: MessageEvent) => {
-    const { type, payload } = e.data;
+    const { type, payload } = e.data || {};
+
+    if (type === 'PING') {
+      postMessage({
+        type: 'PONG',
+        worker: 'perplexity',
+        ready: !!model,
+        loadedModelId: currentModelId,
+        backend: currentDevice,
+        webgpuAvailable: typeof navigator !== 'undefined' && 'gpu' in navigator && !!(navigator as any).gpu,
+        timestamp: Date.now(),
+      });
+      return;
+    }
 
     if (type === 'INIT') {
       const useWebGPU = payload?.useWebGPU ?? true;

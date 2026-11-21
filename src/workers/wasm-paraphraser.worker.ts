@@ -71,7 +71,20 @@ async function paraphraseText(
 }
 
 self.onmessage = async (e: MessageEvent) => {
-  const { type, payload } = e.data;
+  const { type, payload } = e.data || {};
+
+  if (type === 'PING') {
+    postMessage({
+      type: 'PONG',
+      worker: 'wasm-paraphraser',
+      ready: !!model,
+      loadedModelId: model ? MODEL_ID : null,
+      backend: 'wasm',
+      webgpuAvailable: typeof navigator !== 'undefined' && 'gpu' in navigator && !!(navigator as any).gpu,
+      timestamp: Date.now(),
+    });
+    return;
+  }
 
   try {
     if (type === 'INIT') {

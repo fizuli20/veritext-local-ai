@@ -1,0 +1,127 @@
+{
+  "dataset": "veritext-real-world-holdout-v4",
+  "version": "4.0.0",
+  "description": "Out-of-distribution holdout evaluation corpus: encyclopedic STEM, clinical/academic protocols, narrative prose, and modern subtle LLMs.",
+  "items": [
+    {
+      "id": "human-stem-01",
+      "domain": "encyclopedic",
+      "isAi": false,
+      "text": "Plate tectonics fundamentally describes the large-scale kinematic motions of Earth's lithosphere over geologic timescales. In continental rift zones, such as the East African Rift, divergent boundary extension initiates crustal thinning, accompanied by localized basaltic volcanism and normal fault graben formation. Seismic reflection profiling demonstrates that brittle upper crustal deformation transitions to ductile shear zones at mid-crustal depths, roughly twelve to fifteen kilometers below sea level."
+    },
+    {
+      "id": "human-stem-02",
+      "domain": "encyclopedic",
+      "isAi": false,
+      "text": "Atmospheric pressure diminishes exponentially with altitude because gravitational attraction concentrates the majority of planetary gas molecules in the troposphere. At standard sea level, mean barometric pressure measures approximately 1013.25 hectopascals. Aviators operating above 10,000 feet require supplemental oxygen systems or cabin pressurization to prevent hypoxic cognitive impairment caused by reduced alveolar oxygen partial pressure."
+    },
+    {
+      "id": "human-stem-03",
+      "domain": "encyclopedic",
+      "isAi": false,
+      "text": "The photosynthetic light reactions occur within the thylakoid membranes of chloroplasts, where photosystem II captures photons to drive the photolysis of water. Released electrons traverse plastoquinone, the cytochrome b6f complex, and plastocyanin before reaching photosystem I. This electron transfer sequence establishes a trans-thylakoid proton gradient that powers ATP synthase via rotary catalytic coupling."
+    },
+    {
+      "id": "human-stem-04",
+      "domain": "encyclopedic",
+      "isAi": false,
+      "text": "Superconductivity represents a quantum mechanical state characterized by zero electrical resistance and the active expulsion of interior magnetic fields, known as the Meissner effect. In conventional low-temperature superconductors, Cooper pairs condense below a material-specific critical temperature due to electron-phonon lattice interactions. High-temperature cuprate ceramic systems, however, exhibit d-wave pairing symmetries that remain active topics of condensed matter research."
+    },
+    {
+      "id": "human-stem-05",
+      "domain": "encyclopedic",
+      "isAi": false,
+      "text": "Glacial mass balance measures the net annual equilibrium between snow accumulation on upper firn fields and ablation from lower terminus melting. During periods of sustained negative mass balance, glaciers thin and retreat upvalley, exposing freshly ground moraine debris and altering downstream hydrological discharge patterns that sustain agricultural basins throughout dry summer months."
+    },
+    {
+      "id": "human-academic-01",
+      "domain": "academic",
+      "isAi": false,
+      "text": "Specimens were harvested at 24 hours post-incubation, fixed in 4% paraformaldehyde buffered with phosphate saline, and embedded in paraffin blocks for microtome sectioning. Tissue slices of five-micrometer thickness were mounted on poly-L-lysine coated slides, deparaffinized in graded xylene baths, and stained with hematoxylin and eosin. Quantitative histopathology was performed across ten randomly selected high-power fields per biopsy sample."
+    },
+    {
+      "id": "human-academic-02",
+      "domain": "academic",
+      "isAi": false,
+      "text": "Chromatographic separation was achieved on a reverse-phase C18 column maintained at 35 degrees Celsius under a binary gradient elution profile. Mobile phase A consisted of 0.1% formic acid in deionized water, whereas mobile phase B comprised spectrophotometric grade acetonitrile. Tandem mass spectrometry operated in positive electrospray ionization mode with capillary voltage set to 3.2 kilovolts."
+    },
+    {
+      "id": "human-academic-03",
+      "domain": "academic",
+      "isAi": false,
+      "text": "All participants completed informed consent paperwork prior to random allocation into active or sham treatment cohorts. Cognitive performance was evaluated at baseline, four weeks, and twelve weeks using standardized neuropsychological batteries. Mixed-effects linear models evaluated primary endpoint deltas while controlling for age, baseline performance, and educational attainment as fixed covariates."
+    },
+    {
+      "id": "human-academic-04",
+      "domain": "academic",
+      "isAi": false,
+      "text": "We synthesized polyaniline nanoparticles through chemical oxidative polymerization of aniline monomer in aqueous hydrochloric acid using ammonium persulfate as the initiating oxidant. Reaction mixtures were vigorously agitated for six hours at 0 degrees Celsius, filtered under vacuum, and repeatedly washed with anhydrous methanol until the filtrate ran colorless."
+    },
+    {
+      "id": "human-academic-05",
+      "domain": "academic",
+      "isAi": false,
+      "text": "Primary hippocampal cultures were prepared from embryonic day 18 Sprague-Dawley rat fetuses according to institutional animal care guidelines. Neurons were seeded at a density of 40,000 cells per square centimeter on glass coverslips pretreated with poly-D-lysine. Whole-cell patch-clamp recordings measured spontaneous excitatory postsynaptic currents in the presence of tetrodotoxin."
+    },
+    {
+      "id": "ai-subtle-01",
+      "domain": "cliche-free-ai",
+      "isAi": true,
+      "text": "Urban transportation networks must accommodate shifting population densities while maintaining equitable access for residential communities. Municipal planners frequently examine ridership telemetry to optimize bus route frequencies during peak commuter hours. Upgrading signaling hardware along central corridors enables rapid transit trains to operate with shorter headway intervals, which reduces station congestion."
+    },
+    {
+      "id": "ai-subtle-02",
+      "domain": "cliche-free-ai",
+      "isAi": true,
+      "text": "Distributed database architectures rely on consensus protocols to guarantee data consistency across geodistributed server nodes. Replicating transaction logs ensures that read operations return current state values even when localized network partitions occur. System administrators monitor replica lag metrics to verify that failover procedures execute without silent data loss."
+    },
+    {
+      "id": "ai-subtle-03",
+      "domain": "cliche-free-ai",
+      "isAi": true,
+      "text": "Crop rotation strategies mitigate soil nutrient depletion by alternating shallow-rooted grains with deep-rooted nitrogen-fixing legumes. Agricultural researchers measure residual nitrate concentrations across test plots to calibrate subsequent fertilizer application rates. Adopting cover crops during winter fallow periods prevents topsoil erosion from heavy rain runoff."
+    },
+    {
+      "id": "ai-subtle-04",
+      "domain": "cliche-free-ai",
+      "isAi": true,
+      "text": "Modern supply chains incorporate predictive analytics to forecast warehouse inventory requirements across seasonal demand cycles. Automated sorting systems scan package barcodes to direct outgoing freight into regional dispatch bins. Logistics managers evaluate freight dwell times to identify bottleneck facilities that require additional material handling equipment."
+    },
+    {
+      "id": "ai-subtle-05",
+      "domain": "cliche-free-ai",
+      "isAi": true,
+      "text": "Building envelope insulation reduces heating and cooling energy expenditures by minimizing thermal conduction across structural wall assemblies. Double-glazed window panes equipped with low-emissivity coatings reflect infrared radiation while transmitting daylight into occupied interior rooms. Mechanical ventilation systems with heat recovery exchange air without wasting conditioned indoor temperatures."
+    },
+    {
+      "id": "ai-raw-01",
+      "domain": "raw-ai",
+      "isAi": true,
+      "text": "In today's fast-paced world, artificial intelligence plays a pivotal role in revolutionizing the healthcare landscape. It is crucial to remember that cutting-edge diagnostic algorithms delve into patient imaging datasets to provide a comprehensive overview of clinical prognoses. Furthermore, navigating the complexities of modern medicine underscores the transformative potential of digital health solutions."
+    },
+    {
+      "id": "ai-raw-02",
+      "domain": "raw-ai",
+      "isAi": true,
+      "text": "Moreover, it is worth noting that renewable energy integration represents a multifaceted paradigm shift in contemporary power generation. By harnessing the power of wind and solar installations, societies can embark on a sustainable journey toward decarbonization. In conclusion, fostering collaborative synergy among stakeholders is paramount for unlocking a greener future."
+    },
+    {
+      "id": "ai-raw-03",
+      "domain": "raw-ai",
+      "isAi": true,
+      "text": "Delving into the realm of modern education, adaptive learning platforms serve as a testament to the transformative power of technological innovation. These innovative tools foster deep student engagement while shedding light on nuanced academic milestones. In addition, embracing this ever-evolving tapestry of instructional modalities ensures that educators remain at the forefront of pedagogical excellence."
+    },
+    {
+      "id": "ai-raw-04",
+      "domain": "raw-ai",
+      "isAi": true,
+      "text": "Furthermore, in the dynamic ecosystem of enterprise software, microservices architecture plays an instrumental role in streamlining complex operational workflows. By decoupling monolithic components, development teams can unlock unprecedented scalability and resilience. Ultimately, navigating this digital frontier empowers organizations to thrive in an increasingly competitive marketplace."
+    },
+    {
+      "id": "ai-raw-05",
+      "domain": "raw-ai",
+      "isAi": true,
+      "text": "It is essential to recognize that smart cities represent a beacon of hope in the pursuit of sustainable urban development. Leveraging Internet of Things sensor arrays allows municipal authorities to weave a seamless tapestry of public safety and traffic management. In summary, harnessing these innovative methodologies paves the way for a brighter and more connected tomorrow."
+    }
+  ]
+}

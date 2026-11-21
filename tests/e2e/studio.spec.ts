@@ -14,9 +14,9 @@ test.describe('VeriText V3.0 Apex Edition E2E Suite', () => {
 
     await page.goto('/');
 
-    // Check header branding and v3.0.0 tag
+    // Check header branding and v4.0.0 tag
     await expect(page.locator('header').getByText('Veritext', { exact: true })).toBeVisible();
-    await expect(page.locator('text=v3.0.0').first()).toBeVisible();
+    await expect(page.locator('text=v4.0.0').first()).toBeVisible();
 
     // Check Extension & API links exist in header
     await expect(page.locator('a[title*="Chrome Extension"]')).toBeVisible();

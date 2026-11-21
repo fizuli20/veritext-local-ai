@@ -36,6 +36,13 @@ import { runTournamentReranker, TournamentCandidate } from '@/lib/humanizer/tour
 import { AuthorVoiceFingerprint } from '@/lib/nlp/voice-profile';
 import { maskProtectedSpans, restoreProtectedSpans } from '@/lib/humanizer/protected-spans';
 import { computeWordDiff } from '@/lib/nlp/diff';
+import {
+  loadStoredServerConfig,
+  streamChatCompletion,
+  StreamTelemetry,
+  classifyLocalServerError,
+} from '@/lib/humanizer/local-server-client';
+import { LocalServerCard } from './LocalServerCard';
 
 export interface RecentRunItem {
   id: string;
@@ -107,6 +114,13 @@ export function HumanizerStudio({
   const [protectCitations, setProtectCitations] = useState(true);
   const [protectCodeAndMath, setProtectCodeAndMath] = useState(true);
   const [protectUrlsAndEmails, setProtectUrlsAndEmails] = useState(true);
+
+  // Engine Tier & Local Server
+  const [humanizerEngine, setHumanizerEngine] = useState<'local-server' | 'webllm' | 'wasm' | 'instant'>('instant');
+  const [serverConfig, setServerConfig] = useState(loadStoredServerConfig());
+  const [executionProvenance, setExecutionProvenance] = useState<string | null>(null);
+  const [telemetry, setTelemetry] = useState<StreamTelemetry | null>(null);
+  const [engineError, setEngineError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'editor' | 'diff'>('editor');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -265,6 +279,57 @@ export function HumanizerStudio({
     });
 
     try {
+      if (humanizerEngine === 'local-server') {
+        const currentCfg = loadStoredServerConfig();
+        setServerConfig(currentCfg);
+        setProgressStage(`Connecting to Local Server (${currentCfg.baseUrl})...`);
+        setProgressPercent(25);
+        setEngineError(null);
+        setTelemetry(null);
+
+        const modelId = currentCfg.selectedModelId || 'google/gemma-4-12b';
+        const systemPrompt = `You are an elite, natural human author. Rewrite the input text into authentic, natural prose. Vary sentence lengths, avoid AI clichés, and preserve the original factual meaning and tone.`;
+
+        const finalCleaned = await streamChatCompletion({
+          baseUrl: currentCfg.baseUrl,
+          apiKey: currentCfg.apiKey,
+          modelId,
+          systemPrompt,
+          userPrompt: maskedText,
+          signal: abortControllerRef.current.signal,
+          onChunk: (chunk, full) => {
+            setOutputText(restoreProtectedSpans(full, spans));
+          },
+          onTelemetry: (t) => {
+            setTelemetry(t);
+            setProgressStage(`LM Studio streaming: ${t.totalTokens} tokens (${t.tokensPerSec} t/s, TTFT: ${t.ttftMs}ms)...`);
+            setProgressPercent(Math.min(95, 25 + Math.round(t.totalTokens * 0.5)));
+          },
+        });
+
+        const restoredText = restoreProtectedSpans(finalCleaned, spans);
+        updateOutputWithHistory(restoredText);
+        setDiffChanges(computeWordDiff(inputText, restoredText));
+        const afterRes = analyzeStylometrics(restoredText, domain);
+        setOutputAnalysis(afterRes);
+        setExecutionProvenance(`LM Studio · ${modelId}`);
+
+        const runItem: RecentRunItem = {
+          id: `run-${Date.now()}`,
+          timestamp: new Date().toLocaleTimeString(),
+          mode: selectedMode,
+          beforeScore: beforeRes.aiScore,
+          afterScore: afterRes.aiScore,
+          inputText,
+          outputText: restoredText,
+          diff: computeWordDiff(inputText, restoredText),
+        };
+        setRecentRuns((prev) => [runItem, ...prev.slice(0, 9)]);
+        setProgressStage(`Completed with ${modelId}. Verified locally.`);
+        setProgressPercent(100);
+        return;
+      }
+
       if (tournamentMode) {
         setProgressStage('Tournament Mode: Generating 3 structural rewrite candidates...');
         setProgressPercent(35);
@@ -317,6 +382,7 @@ export function HumanizerStudio({
 
         const afterRes = analyzeStylometrics(winnerText, domain);
         setOutputAnalysis(afterRes);
+        setExecutionProvenance('Instant Tournament Reranker');
 
         const runItem: RecentRunItem = {
           id: `run-${Date.now()}`,
@@ -349,6 +415,7 @@ export function HumanizerStudio({
 
         const afterRes = analyzeStylometrics(restoredText, domain);
         setOutputAnalysis(afterRes);
+        setExecutionProvenance(streamRewriteFn ? `WebLLM · ${activeLlmTier}` : 'Instant Deterministic Cleaner');
 
         const runItem: RecentRunItem = {
           id: `run-${Date.now()}`,
@@ -365,9 +432,15 @@ export function HumanizerStudio({
 
       setProgressPercent(100);
       setProgressStage('Complete: Verified factual guardrails & stylistic cadence.');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Humanization error:', err);
-      setProgressStage('Error during humanization execution.');
+      if (humanizerEngine === 'local-server') {
+        const diag = classifyLocalServerError(err, serverConfig.baseUrl);
+        setEngineError(`${diag.title}: ${diag.description}`);
+        setProgressStage(`Local Server Error: ${diag.title}`);
+      } else {
+        setProgressStage(`Error: ${err?.message || err}`);
+      }
     } finally {
       setIsProcessing(false);
       abortControllerRef.current = null;
@@ -432,6 +505,74 @@ export function HumanizerStudio({
           </select>
         </div>
       </div>
+
+      {/* 4-Tier Inference Engine Selector & Execution Provenance */}
+      <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-semibold text-slate-700 dark:text-slate-300">Inference Engine:</span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              onClick={() => setHumanizerEngine('local-server')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                humanizerEngine === 'local-server'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              LM Studio / Ollama (Native VRAM)
+            </button>
+            <button
+              onClick={() => setHumanizerEngine('webllm')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                humanizerEngine === 'webllm'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              Browser WebLLM (WebGPU)
+            </button>
+            <button
+              onClick={() => setHumanizerEngine('wasm')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                humanizerEngine === 'wasm'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              Browser WASM (Flan-T5)
+            </button>
+            <button
+              onClick={() => setHumanizerEngine('instant')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                humanizerEngine === 'instant'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              Instant Deterministic Cleaner (&lt;15ms)
+            </button>
+          </div>
+        </div>
+
+        {humanizerEngine === 'local-server' && (
+          <button
+            onClick={onOpenModelManager}
+            className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-mono font-medium flex items-center gap-1"
+          >
+            Server: {serverConfig.selectedModelId || 'Select Local Model'} ↗
+          </button>
+        )}
+      </div>
+
+      {humanizerEngine === 'local-server' && (
+        <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800">
+          <LocalServerCard
+            onSelectModel={(cfg) => {
+              setServerConfig(cfg);
+            }}
+          />
+        </div>
+      )}
 
       {/* Humanizer Mode & Tournament Controls Bar */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-xs">
@@ -647,11 +788,37 @@ export function HumanizerStudio({
 
         {/* Right Pane: Output Text / Word-Level Diff View */}
         <div className="flex flex-col space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          {engineError && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-lg text-xs text-rose-800 dark:text-rose-200 space-y-1">
+              <span className="font-bold block">Inference Server Notice:</span>
+              <p>{engineError}</p>
+              <button
+                onClick={onOpenModelManager}
+                className="mt-1 text-xs text-indigo-600 dark:text-indigo-400 underline font-medium"
+              >
+                Open Model &amp; Server Manager ↗
+              </button>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 Humanized Output
               </span>
+              {executionProvenance && (
+                <span
+                  data-testid="provenance-badge"
+                  className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
+                >
+                  {executionProvenance}
+                </span>
+              )}
+              {telemetry && (
+                <span className="text-[10px] font-mono text-slate-400">
+                  TTFT: {telemetry.ttftMs}ms • {telemetry.tokensPerSec} t/s
+                </span>
+              )}
               {outputText && (
                 <span className="text-[11px] font-mono text-slate-500">
                   {outputText.split(/\s+/).filter(Boolean).length} words
@@ -694,6 +861,7 @@ export function HumanizerStudio({
               activeTab === 'editor' ? (
                 <div className="flex-1 flex flex-col">
                   <textarea
+                    data-testid="humanized-output-textarea"
                     value={outputText}
                     onChange={(e) => updateOutputWithHistory(e.target.value)}
                     className="w-full flex-1 min-h-[300px] bg-transparent text-sm font-sans leading-relaxed text-slate-800 dark:text-slate-200 focus:outline-none resize-none"

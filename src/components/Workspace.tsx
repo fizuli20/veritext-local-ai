@@ -18,6 +18,7 @@ import {
   Code2,
   Layers,
   GitCompare,
+  BarChart3,
 } from 'lucide-react';
 import { probeHardwareCapabilities, HardwareCapabilities } from '@/lib/ml/capabilities';
 import {
@@ -70,8 +71,16 @@ const ForensicCharts = dynamic(
   }
 );
 
+const ProofStudio = dynamic(
+  () => import('./ProofStudio').then((mod) => mod.default),
+  {
+    ssr: false,
+    loading: () => <div className="h-64 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />,
+  }
+);
+
 export function Workspace() {
-  const [activeTab, setActiveTab] = useState<'detector' | 'humanizer' | 'batch' | 'compare'>('humanizer');
+  const [activeTab, setActiveTab] = useState<'detector' | 'humanizer' | 'batch' | 'compare' | 'proof'>('humanizer');
   const [hardware, setHardware] = useState<HardwareCapabilities | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<DomainProfile>('general');
   const [documentCurvature, setDocumentCurvature] = useState<number | undefined>(undefined);
@@ -441,6 +450,26 @@ export function Workspace() {
             <span className="hidden lg:inline font-medium">Extension</span>
           </a>
 
+          {/* Benchmarks Link */}
+          <a
+            href="/benchmarks"
+            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+            title="Empirical Calibration & ROC Benchmarks"
+          >
+            <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden lg:inline font-medium">Benchmarks</span>
+          </a>
+
+          {/* Proof Verifier Link */}
+          <a
+            href="/verify"
+            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+            title="Offline Proof-of-Human Verifier"
+          >
+            <FileCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <span className="hidden lg:inline font-medium">Verifier</span>
+          </a>
+
           {/* Developers API Link */}
           <a
             href="/developers"
@@ -469,7 +498,7 @@ export function Workspace() {
             title="GitHub Repository"
           >
             <Github className="w-4 h-4" />
-            <span className="hidden sm:inline font-mono font-medium">v3.0.0</span>
+            <span className="hidden sm:inline font-mono font-medium">v4.0.0</span>
           </a>
         </div>
       </header>
@@ -521,6 +550,17 @@ export function Workspace() {
             >
               <GitCompare className="w-3.5 h-3.5" />
               Compare Drafts
+            </button>
+            <button
+              onClick={() => setActiveTab('proof')}
+              className={`px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 whitespace-nowrap transition-colors ${
+                activeTab === 'proof'
+                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
+              }`}
+            >
+              <FileCheck className="w-3.5 h-3.5" />
+              Proof-of-Human Studio
             </button>
           </div>
         </div>
@@ -577,6 +617,8 @@ export function Workspace() {
           />
         ) : activeTab === 'compare' ? (
           <DraftComparator />
+        ) : activeTab === 'proof' ? (
+          <ProofStudio />
         ) : (
           /* Standalone 3-Signal Forensic Detector Tab */
           <div className="flex flex-col space-y-6">
@@ -833,7 +875,7 @@ export function Workspace() {
 
       {/* Footer */}
       <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 py-4 px-4 lg:px-8 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <p>© 2026 Veritext Local AI v2.0 Max. 100% Free, Zero-Token Architecture.</p>
+        <p>© 2026 Veritext Local AI v4.0 Titan. 100% Free, Zero-Token Architecture.</p>
         <div className="flex items-center gap-4 font-mono text-[11px]">
           <span>Privacy: No text leaves browser RAM</span>
         </div>

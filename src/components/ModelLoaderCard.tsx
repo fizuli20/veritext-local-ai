@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Download, CheckCircle2, Trash2, Cpu, HardDrive, AlertCircle } from 'lucide-react';
 import { ModelDefinition, ONNX_DETECTOR_MODELS, WEBLLM_HUMANIZER_MODELS } from '@/lib/ml/model-registry';
 import { clearBrowserModelCache } from '@/lib/ml/cache-manager';
+import { LocalServerCard } from './LocalServerCard';
+import { WorkerDiagnosticsCard } from './WorkerDiagnosticsCard';
 
 interface ModelLoaderCardProps {
   hasWebGPU: boolean;
@@ -202,6 +204,12 @@ export function ModelLoaderCard({
           )}
         </div>
       </div>
+
+      {/* Local Server (LM Studio / Ollama) */}
+      <LocalServerCard />
+
+      {/* Real Worker Truth Audit Diagnostics */}
+      <WorkerDiagnosticsCard />
     </div>
   );
 }
