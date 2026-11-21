@@ -436,37 +436,33 @@ export async function streamChatCompletion({
     signal,
   });
 
-  // Gemma Auto-Fallback: If 400 rejecting system role, retry folding system instructions into user prompt
+  // Gemma Auto-Fallback: If 400 (e.g. template rejecting system role), retry folding into user prompt
   if (res.status === 400) {
     const errText = await res.text();
-    const isSystemRoleRejection =
-      errText.toLowerCase().includes("system") ||
-      errText.toLowerCase().includes("developer") ||
-      errText.toLowerCase().includes("role");
+    const foldedPayload = {
+      model: modelId,
+      messages: [
+        {
+          role: "user",
+          content: `[System Instructions:\n${systemPrompt}]\n\n[Task:\n${userPrompt}]`,
+        },
+      ],
+      temperature: sampling.temperature,
+      top_p: sampling.top_p,
+      frequency_penalty: sampling.frequency_penalty,
+      presence_penalty: sampling.presence_penalty,
+      max_tokens: sampling.max_tokens,
+      stream: true,
+    };
 
-    if (isSystemRoleRejection) {
-      bodyPayload = {
-        model: modelId,
-        messages: [
-          {
-            role: "user",
-            content: `[System Instructions:\n${systemPrompt}]\n\n[Task:\n${userPrompt}]`,
-          },
-        ],
-        temperature: sampling.temperature,
-        top_p: sampling.top_p,
-        frequency_penalty: sampling.frequency_penalty,
-        presence_penalty: sampling.presence_penalty,
-        max_tokens: sampling.max_tokens,
-        stream: true,
-      };
-
-      res = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(bodyPayload),
-        signal,
-      });
+    const retryRes = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(foldedPayload),
+      signal,
+    });
+    if (retryRes.ok) {
+      res = retryRes;
     } else {
       throw new Error(`Local server returned HTTP 400: ${errText}`);
     }

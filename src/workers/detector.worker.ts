@@ -6,6 +6,7 @@ import {
   parseAiScore,
   tokenWindows,
   describeEvidence,
+  calibrateDetectorScore,
 } from "../lib/detector/evidence";
 import { tokenizeSentences } from "../lib/nlp/tokenizer";
 
@@ -14,20 +15,78 @@ env.useBrowserCache = true;
 // A single WASM thread also works without cross-origin isolation.
 env.backends.onnx.wasm!.numThreads = 1;
 let classifier: any = null;
+let activeDevice: "wasm" | "webgpu" = "wasm";
 const scoreCache = new Map<string, number>();
 let initialization: Promise<void> | null = null;
+
+function createThrottledProgress(postFn: (msg: any) => void, throttleMs = 150) {
+  let lastTime = 0;
+  let trailingTimer: any = null;
+  let lastProgress: any = null;
+
+  return (progress: any) => {
+    lastProgress = progress;
+    const now = performance.now();
+    if (progress.status === "done" || progress.status === "initiate") {
+      if (trailingTimer) clearTimeout(trailingTimer);
+      lastTime = now;
+      postFn({ type: "progress", progress });
+      return;
+    }
+    if (now - lastTime >= throttleMs) {
+      if (trailingTimer) clearTimeout(trailingTimer);
+      lastTime = now;
+      postFn({ type: "progress", progress });
+    } else if (!trailingTimer) {
+      trailingTimer = setTimeout(() => {
+        trailingTimer = null;
+        lastTime = performance.now();
+        if (lastProgress) {
+          postFn({ type: "progress", progress: lastProgress });
+        }
+      }, throttleMs);
+    }
+  };
+}
 
 async function initialize() {
   if (classifier) return;
   if (!initialization)
     initialization = (async () => {
-      classifier = await pipeline("text-classification", DETECTOR_MODEL, {
-        revision: DETECTOR_REVISION,
-        device: "wasm",
-        dtype: "q8",
-        progress_callback: (progress: any) =>
-          self.postMessage({ type: "progress", progress }),
-      });
+      const throttledProgress = createThrottledProgress(
+        (msg) => self.postMessage(msg),
+        150,
+      );
+      let device: "wasm" | "webgpu" = "wasm";
+      if (typeof navigator !== "undefined" && (navigator as any).gpu) {
+        try {
+          const adapter = await (navigator as any).gpu.requestAdapter();
+          if (adapter) device = "webgpu";
+        } catch {
+          device = "wasm";
+        }
+      }
+      try {
+        classifier = await pipeline("text-classification", DETECTOR_MODEL, {
+          revision: DETECTOR_REVISION,
+          device,
+          dtype: device === "webgpu" ? "fp32" : "q8",
+          progress_callback: throttledProgress,
+        });
+        activeDevice = device;
+      } catch (err) {
+        if (device !== "wasm") {
+          activeDevice = "wasm";
+          classifier = await pipeline("text-classification", DETECTOR_MODEL, {
+            revision: DETECTOR_REVISION,
+            device: "wasm",
+            dtype: "q8",
+            progress_callback: throttledProgress,
+          });
+        } else {
+          throw err;
+        }
+      }
     })().catch((err) => {
       initialization = null;
       throw err;
@@ -109,7 +168,13 @@ self.onmessage = async ({ data }: MessageEvent) => {
         id: data.id,
         message: "Model ready. Scoring the document…",
       });
-      const score = await scoreText(text);
+      const rawDocScore = await scoreText(text);
+      const docScore = calibrateDetectorScore(text, rawDocScore);
+      const scoreForEvidence =
+        docScore >= 0.75 ? 0.99 : docScore <= 0.2 ? docScore : rawDocScore;
+      const evidence = describeEvidence(text, scoreForEvidence);
+      evidence.modelScore = docScore;
+
       const sentences = data.includeContexts ? tokenizeSentences(text) : [];
       const results = [];
       // Context windows are clearly labelled, never represented as isolated sentence probabilities.
@@ -119,9 +184,13 @@ self.onmessage = async ({ data }: MessageEvent) => {
           sentences[Math.max(0, i - 1)]!.start,
           sentences[Math.min(sentences.length - 1, i + 1)]!.end,
         );
-        if (i < 60)
-          results.push({ ...current, score: await scoreText(context) });
-        else results.push({ ...current, score: null });
+        if (i < 60) {
+          const rawContext = await scoreText(context);
+          const calibratedContext = calibrateDetectorScore(context, rawContext);
+          results.push({ ...current, score: calibratedContext });
+        } else {
+          results.push({ ...current, score: null });
+        }
         if (i < 60)
           self.postMessage({
             type: "analysis-progress",
@@ -134,9 +203,12 @@ self.onmessage = async ({ data }: MessageEvent) => {
         type: "result",
         id: data.id,
         text,
-        evidence: describeEvidence(text, score),
+        evidence,
         sentences: results,
-        engine: "TMR RoBERTa · WASM Q8",
+        engine:
+          activeDevice === "webgpu"
+            ? "TMR RoBERTa · WebGPU FP32"
+            : "TMR RoBERTa · WASM Q8",
         contextLimit: data.includeContexts && sentences.length > 60 ? 60 : null,
         model: DETECTOR_MODEL,
         revision: DETECTOR_REVISION,

@@ -82,6 +82,13 @@ export function restoreRewriteSpans(
   }
   if (strict && new RegExp(locked.prefix, "i").test(restored))
     throw new Error("The model returned an unknown protected marker.");
+  if (!strict) {
+    restored = restored.replace(
+      new RegExp(locked.prefix + String.raw`_\d+_END`, "gi"),
+      "",
+    );
+    restored = restored.replace(/__KEEP_\d+__/gi, "");
+  }
   return restored;
 }
 export interface RewritePart {
@@ -206,9 +213,29 @@ export async function runRewritePipeline(options: {
             attempt: attempt + 1,
             reason: issues.join(" "),
           });
-          feedback =
-            "Your previous draft failed preservation checks. Rewrite again and keep every claim, negation, fact and marker intact.";
-          continue;
+          const hasFatalIssue = issues.some(
+            (iss) =>
+              iss.includes("Numbers or amounts changed") ||
+              iss.includes("The model returned no rewrite") ||
+              iss.includes("Protected") ||
+              iss.includes("Locked term changed") ||
+              iss.includes("Quotation changed"),
+          );
+          if (attempt === 0) {
+            feedback =
+              "Your previous draft failed preservation checks. Rewrite again and keep every claim, negation, fact and marker intact.";
+            continue;
+          } else if (
+            !hasFatalIssue &&
+            locked.locks.length === 0 &&
+            restored.trim() !== originalPart.trim()
+          ) {
+            accepted = restored;
+            warnings.push(`Section ${i + 1}: ${issues.join("; ")}`);
+            break;
+          } else {
+            continue;
+          }
         }
         if (restored.trim() === originalPart.trim()) {
           checks.push({

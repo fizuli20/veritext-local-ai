@@ -6,8 +6,10 @@
 const THINKING_TAG_REGEXES = [
   /<think>[\s\S]*?<\/think>/gi,
   /<thought>[\s\S]*?<\/thought>/gi,
-  /<\|thought\|>[\s\S]*?<\|thought\|>/gi,
+  /<\|thought\|>[\s\S]*?<\|(?:end_)?thought\|?>/gi,
+  /<\|start_header_id\|>thought[\s\S]*?<\|end_header_id\|>/gi,
   /\[THOUGHT\][\s\S]*?\[\/THOUGHT\]/gi,
+  /<reasoning>[\s\S]*?<\/reasoning>/gi,
 ];
 
 const PREAMBLE_REGEXES = [
@@ -38,7 +40,7 @@ export function cleanLlmOutput(rawText: string): string {
 
   // 2. Strip unclosed leading thinking tags (e.g. if streaming cutoff)
   cleaned = cleaned
-    .replace(/(?:<think>|<thought>|<\|thought\|>)[\s\S]*$/i, "")
+    .replace(/(?:<think>|<thought>|<\|thought\|>|<reasoning>|\[THOUGHT\])[\s\S]*$/i, "")
     .trim();
 
   // 3. Strip code fence blocks if LLM wrapped whole prose in ```...```

@@ -8,10 +8,17 @@ export interface ClicheMatch {
 
 export const TIER_1_CLICHES: string[] = [
   'delve into',
+  'delving into',
+  'delves into',
   'tapestry of',
   "in today's fast-paced",
+  "in today's rapidly evolving",
   'it is worth noting',
+  'it is important to note',
+  'it is important to remember',
+  'it is important to emphasize',
   'testament to',
+  'serves as a testament',
   'realm of',
   'underscore the importance',
   'navigating the complexities',
@@ -21,14 +28,18 @@ export const TIER_1_CLICHES: string[] = [
   'comprehensive overview',
   'serves as a reminder',
   'seamless integration',
+  'multifaceted',
   'multifaceted nature',
   'embark on a journey',
+  'transformative journey',
   'beacon of hope',
   'vibrant tapestry',
   'indelible mark',
   'game-changer',
   'paradigm shift',
   'at the intersection of',
+  'cornerstone of',
+  'cornerstone in',
 ];
 
 export const TIER_2_FORMULAIC_OPENERS: string[] = [
