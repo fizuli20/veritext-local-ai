@@ -14,7 +14,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'ok',
     product: 'Veritext Local AI',
-    version: '2.0.0',
+    version: '4.0.0',
     mode: 'zero-token-local-ai-max',
     zeroKeyMandate: true,
     externalApiKeysRequired: false,
