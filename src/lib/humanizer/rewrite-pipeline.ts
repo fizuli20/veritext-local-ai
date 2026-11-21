@@ -274,7 +274,7 @@ export async function runRewritePipeline(options: {
         const prefix = completed + recovered + leading;
         const draft = await generate({
           systemPrompt: rewriteInstructions(mode),
-          userPrompt: `Simplify the wording and remove repetition in this passage. Return only the edited passage.\n\n${segment.text.trim()}`,
+          userPrompt: `Simplify the wording and remove repetition without adding any claims. Remove empty lead-ins rather than turning them into new statements. For example, "At the present moment in time, it is important to note that no decision has been made" means "No decision has been made yet"; it does not mean that time is important. Preserve every substantive claim, request, uncertainty and negation. Return only the edited passage.\n\n${segment.text.trim()}`,
           attempt: 2,
           onText: (value) => onText(prefix + value),
         });

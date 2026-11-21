@@ -1,6 +1,12 @@
-# Veritext 4.2 — latest validation
+# Veritext 4.2.1 — latest validation
 
 Date: 22 November 2026, Asia/Baku. Source: https://github.com/fizuli20/veritext-local-ai. Production: https://veritext-local-ai.vercel.app.
+
+## Production follow-up and patch
+
+The initial 4.2 production run completed its factual rewrite in 9.1 seconds (96 to 85 words), preserving the protected sentences. Manual review found an unnecessary added statement, “The current time is important,” in the unprotected prose. Invariant checks did not catch it. The 4.2.1 recovery prompt explicitly tells the model to remove empty lead-ins without converting them into new claims, with a counterexample. Typecheck, lint, all 91 unit tests, production build, and all 10 production-build browser tests were repeated after this patch and passed. Live recheck observations are included in the delivery report rather than assuming the prompt guarantees semantic fidelity.
+
+The 4.2 live detector also completed a document-only scan in 1.2 seconds on the factual sample, with cached model assets. This is a single warm observation, not a latency distribution. Optional context scoring was a separate user action. No comparison to the old cold download-plus-context timing is implied.
 
 ## Changes verified in this release
 
