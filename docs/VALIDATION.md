@@ -16,7 +16,7 @@ The attached 33-page conversation PDF was extracted across all pages and its rel
 
 - TypeScript: passed.
 - Lint: passed, zero warnings/errors from the linter. Next.js reports that `next lint` is deprecated; migration is not needed to run this release.
-- Vitest: **19 files, 82 tests passed**. Old synthetic-fixture tests are compatibility regressions only, not product-accuracy evidence.
+- Vitest: **19 files, 83 tests passed**. Old synthetic-fixture tests are compatibility regressions only, not product-accuracy evidence.
 - Playwright: **7 tests passed** against the production build. Covers focused desktop/mobile layout (1280 and 375 px), no implicit model download or fake rewrite, short/non-English abstention, actual worker download-failure handling, local-server response fixture with Gemma 400 retry, SSE output cleanup, diff, fact-change warnings, CORS/offline guidance, legacy API disclosure/invalid JSON, and validation-page limitations.
 - The local-server integration fixture is explicitly mocked. It does not establish actual Gemma/LM Studio quality.
 - Production build: passed; homepage First Load JS **120 kB** (see actual build output for exact installed framework reporting).
@@ -57,7 +57,13 @@ See [public behavior report](REVERSE_ENGINEERING.md). One ordinary task-authored
 
 ## Deployment verification
 
-The release is deployed through the existing authenticated Vercel project. Live checks and the immutable deployment URL are reported in the accompanying final delivery after deployment, rather than invented before it runs.
+The initial 4.1 implementation (`f6b36be`) was deployed successfully to https://veritext-local-2r9k985or-fizuli20s-projects.vercel.app and aliased to https://veritext-local-ai.vercel.app. The final small follow-up adds clearer model-ready feedback, an explicit stale-source draft notice and handling for a stream that sends DONE but leaves the connection open. All checks were repeated after those changes.
+
+Live production checks: homepage, benchmarks, developers, retired verify page, health, and OpenAPI all returned HTTP 200; health reported 4.1.0. Twenty fresh small legacy detection requests returned explicit null authorship probabilities. Internet roundtrip latency was p50 **347.0 ms**, p95 **484.3 ms**; this is not neural inference latency. See [production-smoke.json](validation/production-smoke.json).
+
+Actual production browser neural detection on the 152-word task sample returned raw **88/100**, reference estimate **1%**, and correctly showed **Inconclusive** because the two signals disagreed. The held-out reference bin had 0/36 labelled-AI passages, with a displayed 95% interval of 0–10%. This example exposes the limits of historical calibration on current AI-generated prose. First production scan displayed **22.1 seconds**, including initial download/model startup and context inference. No browser errors were observed.
+
+The live browser writing-model download was stopped and retried through the product UI; it recovered to a ready model. Final production status and rewrite observation are recorded in the delivery ledger accompanying this release.
 
 ## Remaining limits
 

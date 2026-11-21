@@ -537,6 +537,7 @@ export async function streamChatCompletion({
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";
       for (const line of lines) processLine(line);
+      if (completed) break;
     }
     buffer += decoder.decode();
     if (buffer.trim()) processLine(buffer);
@@ -549,6 +550,7 @@ export async function streamChatCompletion({
         "The connection ended before the model completed. The draft is incomplete.",
       );
   } finally {
+    await reader.cancel().catch(() => {});
     reader.releaseLock();
   }
 

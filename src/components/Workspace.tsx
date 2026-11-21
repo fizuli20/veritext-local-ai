@@ -122,6 +122,11 @@ export function Workspace() {
     setInput(value);
     setScan(null);
     setError("");
+    setNotice(
+      output && value !== source
+        ? "Source text changed. The edited draft belongs to your previous source. Run Rewrite to create a new draft."
+        : "",
+    );
   }
   async function paste() {
     try {
@@ -267,6 +272,7 @@ export function Workspace() {
             `Loading ${p.file}: ${Math.round((p.loaded ?? 0) / 1048576)} MB${p.progress ? ` · ${Math.round(p.progress)}%` : ""}`,
           );
         }
+        if (data.type === "phase" && data.id === id) setProgress(data.message);
         if (data.type === "analysis-progress" && data.id === id)
           setProgress(`Checking context ${data.completed} of ${data.total}…`);
         if (data.type === "error")

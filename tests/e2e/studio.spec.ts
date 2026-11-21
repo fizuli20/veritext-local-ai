@@ -136,6 +136,11 @@ test("local-server integration fixture: discovery, Gemma retry, streamed draft, 
   await page.getByRole("button", { name: "Show changes", exact: true }).click();
   await expect(page.locator("ins").first()).toBeVisible();
   expect(completions).toBe(2);
+  await page
+    .getByRole("textbox", { name: "Original text", exact: true })
+    .fill(source + " One more source detail.");
+  await expect(page.getByRole("status")).toContainText("previous source");
+
   await page.getByRole("button", { name: "Edit draft", exact: true }).click();
   await page
     .getByRole("textbox", { name: "Edited draft", exact: true })

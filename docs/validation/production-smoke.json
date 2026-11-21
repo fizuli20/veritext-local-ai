@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-11-21T18:41:10Z",
+  "baseUrl": "https://veritext-local-ai.vercel.app",
+  "routes": [
+    {
+      "path": "/",
+      "response": "200 0.440343",
+      "ok": true
+    },
+    {
+      "path": "/benchmarks",
+      "response": "200 0.699401",
+      "ok": true
+    },
+    {
+      "path": "/developers",
+      "response": "200 0.731429",
+      "ok": true
+    },
+    {
+      "path": "/verify",
+      "response": "200 0.742097",
+      "ok": true
+    },
+    {
+      "path": "/api/health",
+      "response": "200 0.513966",
+      "ok": true
+    },
+    {
+      "path": "/api/openapi.json",
+      "response": "200 0.341504",
+      "ok": true
+    }
+  ],
+  "healthVersion": "4.1.0",
+  "legacyApiHttpLatencyMs": {
+    "requests": 20,
+    "p50": 347.0,
+    "p95": 484.3,
+    "note": "Client roundtrip over internet; new small public texts per request. Legacy style engine only, not neural inference."
+  }
+}

@@ -97,6 +97,11 @@ self.onmessage = async ({ data }: MessageEvent) => {
         return;
       }
       await initialize();
+      self.postMessage({
+        type: "phase",
+        id: data.id,
+        message: "Model ready. Scoring the document…",
+      });
       const score = await scoreText(text);
       const sentences = tokenizeSentences(text);
       const results = [];

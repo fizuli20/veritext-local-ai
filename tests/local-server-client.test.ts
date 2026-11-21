@@ -181,16 +181,40 @@ describe("Local Server Client", () => {
 });
 
 describe("stream completion integrity", () => {
+  it("finishes on DONE even if the server keeps the stream open", async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            'data: {"choices":[{"delta":{"content":"Complete."}}]}\n\ndata: [DONE]\n\n',
+          ),
+        );
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(stream)));
+    try {
+      expect(
+        await streamChatCompletion({
+          baseUrl: "http://localhost:1234/v1",
+          modelId: "fixture",
+          systemPrompt: "Copy edit",
+          userPrompt: "Text",
+          onChunk: () => {},
+        }),
+      ).toBe("Complete.");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   const run = async (body: string) => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(body, {
-            headers: { "content-type": "text/event-stream" },
-          }),
-        ),
+      vi.fn().mockResolvedValue(
+        new Response(body, {
+          headers: { "content-type": "text/event-stream" },
+        }),
+      ),
     );
     try {
       return await streamChatCompletion({
