@@ -27,13 +27,6 @@ export const WRITING_MODELS = {
       "About 1.8–2.2 GB download and 2.3 GB working GPU memory. Requires more memory.",
     memoryMB: 2264,
   },
-  advanced: {
-    id: "Qwen3.5-4B-q4f16_1-MLC",
-    label: "Advanced · Qwen3.5 4B",
-    description:
-      "About 2.4 GB download and 3.9 GB working GPU memory. Choose this on a device with enough memory for the larger writing model.",
-    memoryMB: 3868,
-  },
 } as const;
 export type WritingModelTier = keyof typeof WRITING_MODELS;
 export function resolveWritingModel<T extends { model_id: string }>(

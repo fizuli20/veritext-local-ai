@@ -326,11 +326,17 @@ export function Workspace() {
     } catch (err) {
       if (operation.current === id) {
         const message = err instanceof Error ? err.message : String(err);
-        setError(
-          /NetworkError|Failed to fetch|Cache\.add/i.test(message)
-            ? "The model download stopped. Retry to resume from cached files, or choose a smaller model."
-            : message,
-        );
+        if (err instanceof Error && err.name === "QuotaExceededError") {
+          setError(
+            "The browser ran out of storage while saving the model. Free some space or choose a smaller model.",
+          );
+        } else if (/NetworkError|Failed to fetch|Cache\.add/i.test(message)) {
+          setError(
+            "The model download stopped. Retry to reuse any cached files, or choose a smaller model.",
+          );
+        } else {
+          setError(message);
+        }
       }
     } finally {
       if (operation.current === id) {
@@ -540,9 +546,6 @@ export function Workspace() {
             stream: true,
             temperature: attempt ? 0.65 : 0.5,
             max_tokens: 1800,
-            ...(browserName === WRITING_MODELS.advanced.id
-              ? { extra_body: { enable_thinking: false } }
-              : {}),
           });
           let draft = "",
             truncated = false;
@@ -580,7 +583,6 @@ export function Workspace() {
     }
   }, [
     activeName,
-    browserName,
     input,
     output,
     source,

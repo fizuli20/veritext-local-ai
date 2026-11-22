@@ -43,19 +43,14 @@ export async function loadBrowserRewriter(
           ),
         );
       },
-      tier === "advanced" ? 600000 : 300000,
+      300000,
     );
   });
   try {
     const loading = CreateWebWorkerMLCEngine(
       worker,
       record.model_id,
-      {
-        initProgressCallback: (report) => onProgress(report.text),
-        ...(tier === "advanced"
-          ? { appConfig: { ...prebuiltAppConfig, cacheBackend: "indexeddb" } }
-          : {}),
-      },
+      { initProgressCallback: (report) => onProgress(report.text) },
       { context_window_size: 4096 },
     );
     const engine = await Promise.race([loading, cancelled]);
