@@ -1,3 +1,15 @@
+# Veritext 4.5.0 quality follow-up
+
+The Detailed detector now reports up to six eligible English paragraph scores alongside the document score. On a browser test combining HC3 human-source passage `wiki_csai-120-0` with the built-in AI-written library example, the document signal was 70/100, with paragraph signals of 8/100 and 98/100. This deliberately contrasting example verifies the UI and score provenance. It cannot estimate accuracy on mixed documents in general. Paragraph scores are uncalibrated and their offsets are included in the exported analysis.
+
+We also evaluated [GPTTrace Ettin-150M](https://huggingface.co/nakas/gpttrace-ettin150-text-v5e/tree/9dadc95474b74a7be285866203788a6568b3c216) with its int8 weights locally on the same 394 previously examined passages. We stripped invisible formatting, used its tokenizer, scored overlapping windows and combined their token-weighted signals. This used a custom evaluation harness on clean text. It did not reproduce the upstream product or its homoglyph normalization. At the raw 0.5 threshold, the candidate flagged 13 of 338 human samples and detected 26 of 56 AI samples (AUC 0.733). Detailed flagged 51 of 338 and detected 52 of 56 (AUC 0.962). Detailed's separately reported historical-reference threshold flagged 10 of 338 and detected 43 of 56. We kept Detailed as the default due to the candidate's lower recall and ranking on this set. These previously examined passages may overlap training sources.
+
+Full rewrite now rewards a second, more substantial edit if it passes checks. It can recover work in smaller passages after whole-section failures and discloses when the completed draft changed little. Exact facts remain protected during recovery. A local Qwen 3B option is available alongside the existing lighter models. Different runs can produce different wording. The checks cover literal invariants and cannot establish complete fidelity.
+
+Validation for this release includes **106 unit tests and 14 browser tests**, plus production build, lint, and type checks. The earlier comparison and benchmark records follow.
+
+---
+
 # Veritext 4.4.0 — workflow comparison and rewrite validation
 
 Date: 22 November 2026, Asia/Baku. [Public workflow comparison](PUBLIC_WORKFLOW_COMPARISON.md), [observed outputs and real-model tests](validation/public-comparison-4.4.json).

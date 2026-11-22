@@ -690,3 +690,4 @@ body {
   color: #294a22;
   box-shadow: inset 0 0 0 1px #668156;
 }
+.vt-passage { white-space: pre-wrap; overflow-wrap: anywhere; }

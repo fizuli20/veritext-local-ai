@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { DETECTOR_PROFILES } from "@/lib/detector/evidence";
+import { WRITING_MODELS } from "@/lib/ml/writing-models";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET() {
   return NextResponse.json({
     status: "ok",
     product: "Veritext",
-    version: "4.4.0",
+    version: "4.5.0",
     zeroKeyMandate: true,
     externalApiKeysRequired: false,
     engines: {
@@ -19,6 +20,8 @@ export async function GET() {
         readiness:
           "Client must load model; server health does not prove client inference works.",
         calibration: "Provisional HC3 reference; see /benchmarks",
+        paragraphSignals:
+          "First six eligible English paragraphs, minimum 80 words each. Uncalibrated model signals.",
       },
       humanizer: {
         engines: [
@@ -32,11 +35,7 @@ export async function GET() {
         documentImport: "Browser-local TXT, Markdown, DOCX and text-based PDF",
         sectionRetryLimit: 1,
         protectedSentenceRecoveryLimit: 4,
-        browserModels: [
-          "Llama-3.2-1B-Instruct-q4f16_1-MLC",
-          "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
-          "Llama-3.2-3B-Instruct-q4f16_1-MLC",
-        ],
+        browserModels: Object.values(WRITING_MODELS).map(({ id }) => id),
       },
       privacy: {
         browserWorkspaceTextUploadedToVercel: false,

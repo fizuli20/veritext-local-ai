@@ -207,6 +207,85 @@ describe("Protected rewrite pipeline", () => {
     expect(result.text).toBe(text);
     expect(result.changed).toBe(false);
   });
+  it("keeps a checked light edit when a stronger rewrite loses a qualifier", async () => {
+    const text =
+      "The neighborhood library can serve residents in several ways. Adults may learn how to use public services in evening classes. Students can bring their assignments to the quiet room. Volunteers help visitors sign up for new programs. Managers should check which programs serve people who do not already have a library card. The next meeting is about how to measure success.";
+    const light = text.replace("next meeting", "upcoming meeting");
+    const generate = vi.fn(async ({ attempt }) =>
+      attempt === 0 ? light : text.replace("Adults may learn", "Adults learn"),
+    );
+    const result = await runRewritePipeline({
+      text,
+      mode: "standard",
+      depth: "rephrase",
+      onProgress: noop,
+      onText: noop,
+      generate,
+    });
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(result.text).toBe(light);
+    expect(result.warnings.join(" ")).toContain("light wording changes");
+    expect(
+      result.checks.some((check) =>
+        check.reason.includes("Possibility wording changed"),
+      ),
+    ).toBe(true);
+  });
+
+  it("includes the original qualifiers in instructions for a failed factual retry", async () => {
+    const text =
+      "The draft may be circulated after the review, but the board won’t approve it this week.";
+    const generate = vi.fn(async ({ attempt, userPrompt }) => {
+      if (attempt === 0)
+        return "The draft will be circulated after the review, and the board will approve it this week.";
+      expect(userPrompt).toContain(
+        "Keep these qualifiers with their original claims: may",
+      );
+      expect(userPrompt).toContain(
+        "negative expressions with their original claims: won’t",
+      );
+      return text.replace("circulated", "shared");
+    });
+    const result = await runRewritePipeline({
+      text,
+      mode: "standard",
+      onProgress: noop,
+      onText: noop,
+      generate,
+    });
+    expect(result.changed).toBe(true);
+    expect(result.retries).toBe(1);
+  });
+
+  it("rewrites smaller qualified passages and retains any passage that fails its own checks", async () => {
+    const text =
+      "Adults may learn how to use public services in evening classes when the library is open. The staff prepare the rooms before the visitors arrive and leave the printed guides on the desks near the front of the room. The library will not require people to register in advance because the staff want residents to be able to drop in when they have time.";
+    const generate = vi.fn(async ({ attempt, userPrompt }) => {
+      if (attempt < 2)
+        return text.replace("Adults may learn", "Adults will learn");
+      const excerpt = userPrompt.split("\n\n").at(-1)!;
+      if (excerpt.startsWith("Adults may"))
+        return "In the evening, adults may learn to use public services in classes held during library hours.";
+      if (excerpt.startsWith("The library will not"))
+        return excerpt.replace("will not", "will");
+      return excerpt;
+    });
+    const result = await runRewritePipeline({
+      text,
+      mode: "standard",
+      depth: "rephrase",
+      onProgress: noop,
+      onText: noop,
+      generate,
+    });
+    expect(result.text).toContain("In the evening, adults may learn");
+    expect(result.text).toContain("The library will not require");
+    expect(result.warnings.join(" ")).toContain(
+      "protected sentences kept intact",
+    );
+    expect(generate).toHaveBeenCalledTimes(5);
+  });
+
   it("stops before generation and never substitutes a rule-based rewrite", async () => {
     const controller = new AbortController();
     controller.abort();

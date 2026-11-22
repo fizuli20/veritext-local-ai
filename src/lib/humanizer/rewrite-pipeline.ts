@@ -1,6 +1,8 @@
-import { tokenizeSentences } from "../nlp/tokenizer";
+import { countWords, tokenizeSentences } from "../nlp/tokenizer";
 import {
   reviewRewrite,
+  preservationInstructions,
+  rewriteExtent,
   rewriteInstructions,
   type RewriteDepth,
 } from "./rewrite-review";
@@ -196,6 +198,11 @@ export async function runRewritePipeline(options: {
         : locked;
     let accepted: string | null = null;
     let feedback = "";
+    let usableLightEdit: string | null = null;
+    const checkExtent =
+      depth === "rephrase" &&
+      countWords(originalPart) >= 60 &&
+      generationLocks.locks.length === 0;
     for (let attempt = 0; attempt < 2; attempt++) {
       if (signal?.aborted) throw new Error("Generation stopped.");
       if (attempt) retries++;
@@ -240,11 +247,11 @@ export async function runRewritePipeline(options: {
               iss.includes("Possibility wording changed"),
           );
           if (attempt === 0) {
-            feedback =
-              "Your previous draft failed preservation checks. Rewrite again and keep every claim, negation, fact and marker intact.";
+            feedback = preservationInstructions(originalPart, issues);
             continue;
           } else if (
             !hasFatalIssue &&
+            !usableLightEdit &&
             locked.locks.length === 0 &&
             restored.trim() !== originalPart.trim()
           ) {
@@ -266,6 +273,21 @@ export async function runRewritePipeline(options: {
           if (attempt === 1) accepted = originalPart;
           continue;
         }
+        if (
+          checkExtent &&
+          rewriteExtent(originalPart, restored) < 0.2 &&
+          attempt === 0
+        ) {
+          usableLightEdit = restored;
+          checks.push({
+            section: i + 1,
+            attempt: attempt + 1,
+            reason: "The first draft made only small wording changes.",
+          });
+          feedback =
+            "Recast more sentence openings and clause structures while keeping the original actions, claims, and qualifiers. Keep protected text verbatim.";
+          continue;
+        }
         accepted = restored;
         break;
       } catch (error) {
@@ -278,36 +300,61 @@ export async function runRewritePipeline(options: {
           "Your previous draft changed protected markers. Keep every marker exactly once and rewrite only the surrounding prose.";
       }
     }
+    if (
+      usableLightEdit &&
+      (!accepted ||
+        rewriteExtent(originalPart, accepted) <
+          rewriteExtent(originalPart, usableLightEdit))
+    )
+      accepted = usableLightEdit;
     if (accepted === null || accepted.trim() === originalPart.trim()) {
       // Small models can lose markers. Recover using real inference only on
       // sentences outside protected ranges; never repair a fact by guessing.
       const ranges = lockRewriteSpans(originalPart, terms).ranges!;
       const sentences = tokenizeSentences(originalPart);
-      const segments: { text: string; protected: boolean }[] = [];
+      // In Full rewrite, retry qualified prose in smaller groups. Exact
+      // facts remain locked during recovery, and each group must pass checks.
+      const retryQualified = checkExtent && sentences.length >= 3;
+      const segments: {
+        text: string;
+        kind: "locked" | "qualified" | "plain";
+      }[] = [];
       let cursor = 0;
       for (const sentence of sentences) {
-        const protectedSentence =
-          ranges.some(
-            (range) => range.start < sentence.end && range.end > sentence.start,
-          ) ||
-          /\b(?:no|not|never|neither|cannot|without|can|could|may|might)\b|n't\b/i.test(
+        const hasLockedSpan = ranges.some(
+          (range) => range.start < sentence.end && range.end > sentence.start,
+        );
+        const hasQualifier =
+          /\b(?:no|not|never|neither|cannot|without|can|could|may|might)\b|n['’]t\b/i.test(
             sentence.text,
           );
+        const kind =
+          hasLockedSpan || (hasQualifier && !retryQualified)
+            ? "locked"
+            : hasQualifier
+              ? "qualified"
+              : "plain";
         const value = originalPart.slice(cursor, sentence.end);
         const previous = segments.at(-1);
-        if (previous && previous.protected === protectedSentence)
-          previous.text += value;
-        else segments.push({ text: value, protected: protectedSentence });
+        if (previous?.kind === kind) previous.text += value;
+        else segments.push({ text: value, kind });
         cursor = sentence.end;
       }
       if (cursor < originalPart.length)
-        segments.push({ text: originalPart.slice(cursor), protected: true });
+        segments.push({ text: originalPart.slice(cursor), kind: "locked" });
       let recovered = "",
         recoveryCalls = 0;
+      let retainedProtected = false;
       for (const segment of segments) {
         if (signal?.aborted) throw new Error("Generation stopped.");
-        if (segment.protected || !segment.text.trim() || recoveryCalls >= 4) {
+        if (
+          segment.kind === "locked" ||
+          !segment.text.trim() ||
+          recoveryCalls >= 4
+        ) {
           recovered += segment.text;
+          if (segment.kind !== "plain" && segment.text.trim())
+            retainedProtected = true;
           continue;
         }
         recoveryCalls++;
@@ -320,7 +367,7 @@ export async function runRewritePipeline(options: {
         const prefix = completed + recovered + leading;
         const draft = await generate({
           systemPrompt: rewriteInstructions(mode, depth),
-          userPrompt: `Simplify the wording and remove repetition without adding any claims. Remove empty lead-ins rather than turning them into new statements. For example, "At the present moment in time, it is important to note that no decision has been made" means "No decision has been made yet"; it does not mean that time is important. Preserve every substantive claim, request, uncertainty and negation. Return only the edited passage.\n\n${segment.text.trim()}`,
+          userPrompt: `Edit this excerpt with its original meaning and purpose intact. Keep who does what, when and why. A sentence about how to judge success must still describe that criterion. Remove empty lead-ins rather than turning them into claims.${segment.kind === "qualified" ? " Keep every original negative expression and possibility word, attached to the same claims. Leave any difficult sentence intact." : ""} Return only the edited excerpt.\n\n${segment.text.trim()}`,
           attempt: 2,
           onText: (value) => onText(prefix + value),
         });
@@ -335,7 +382,15 @@ export async function runRewritePipeline(options: {
             reason: issues.join(" ") || "No usable surrounding-prose edit.",
           });
           recovered += segment.text;
-        } else recovered += leading + draft.trim() + trailing;
+          if (segment.kind !== "plain") retainedProtected = true;
+        } else {
+          recovered += leading + draft.trim() + trailing;
+          if (
+            segment.kind === "qualified" &&
+            draft.trim() === segment.text.trim()
+          )
+            retainedProtected = true;
+        }
       }
       if (
         recovered.trim() !== originalPart.trim() &&
@@ -343,7 +398,9 @@ export async function runRewritePipeline(options: {
       ) {
         accepted = recovered;
         warnings.push(
-          `Section ${i + 1}: protected sentences kept intact; surrounding prose edited by the model.`,
+          retainedProtected
+            ? `Section ${i + 1}: protected sentences kept intact. The model revised smaller passages.`
+            : `Section ${i + 1}: the model revised smaller passages after the whole-section draft failed its checks.`,
         );
       }
     }
@@ -354,6 +411,14 @@ export async function runRewritePipeline(options: {
         `Section ${i + 1} retained: the model did not produce a changed draft that passed the checks.`,
       );
     }
+    if (
+      checkExtent &&
+      accepted !== originalPart &&
+      rewriteExtent(originalPart, accepted) < 0.2
+    )
+      warnings.push(
+        `Section ${i + 1}: the available draft contains light wording changes.`,
+      );
     completed += accepted + part.separator;
     onText(completed);
   }

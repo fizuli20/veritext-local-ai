@@ -12,6 +12,11 @@ import {
   tokenWindows,
   describeEvidence,
 } from "../lib/detector/evidence";
+import {
+  eligiblePassages,
+  PASSAGE_LIMIT,
+  type PassageSignal,
+} from "../lib/detector/passages";
 import { tokenizeSentences } from "../lib/nlp/tokenizer";
 
 env.allowLocalModels = false;
@@ -198,6 +203,17 @@ self.onmessage = async ({ data }: MessageEvent) => {
       });
       const docScore = await scoreText(text);
       const evidence = describeEvidence(text, docScore, tier);
+      const eligible = eligiblePassages(text);
+      const passageSignals: PassageSignal[] = [];
+      for (const passage of eligible.slice(0, PASSAGE_LIMIT)) {
+        self.postMessage({
+          type: "phase",
+          id: data.id,
+          message: `Checking paragraph ${passageSignals.length + 1} of ${Math.min(PASSAGE_LIMIT, eligible.length)}…`,
+        });
+        const score = await scoreText(text.slice(passage.start, passage.end));
+        passageSignals.push({ ...passage, score });
+      }
 
       const sentences = data.includeContexts ? tokenizeSentences(text) : [];
       const results = [];
@@ -227,6 +243,8 @@ self.onmessage = async ({ data }: MessageEvent) => {
         text,
         evidence,
         sentences: results,
+        passages: passageSignals,
+        eligiblePassageCount: eligible.length,
         engine: `${profile.engine} · ${tier === "light" ? "WASM Q8" : "WASM · INT8 weights / FP32 math"}`,
         tier,
         contextLimit: data.includeContexts && sentences.length > 60 ? 60 : null,

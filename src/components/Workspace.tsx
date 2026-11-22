@@ -36,6 +36,7 @@ import {
   type RewriteOutcome,
 } from "@/lib/humanizer/rewrite-pipeline";
 import { WRITING_MODELS, type WritingModelTier } from "@/lib/ml/writing-models";
+import type { PassageSignal } from "@/lib/detector/passages";
 import { computeWordDiff } from "@/lib/nlp/diff";
 
 interface Scan {
@@ -48,6 +49,8 @@ interface Scan {
   revision?: string;
   tier?: DetectorTier;
   contextLimit?: number | null;
+  passages?: PassageSignal[];
+  eligiblePassageCount?: number;
   sentences: {
     start: number;
     end: number;
@@ -222,8 +225,10 @@ export function Workspace() {
       contextLimit: scan.contextLimit ?? null,
       latencyMs: scan.latencyMs,
       contexts: scan.sentences,
+      passages: scan.passages ?? [],
+      eligiblePassageCount: scan.eligiblePassageCount ?? 0,
       limitation:
-        "Model signals are not proof of authorship. Reference estimates describe historical data. Context scores are uncalibrated. This file contains the checked text.",
+        "Model signals are not proof of authorship. Reference estimates describe historical data. Context and paragraph scores are uncalibrated. This file contains the checked text.",
     };
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(report, null, 2)], { type: "application/json" }),
@@ -1025,6 +1030,31 @@ export function Workspace() {
                     reference estimates are not reliable probabilities for
                     current writing.
                   </p>
+                  {!!scan.passages?.length && (
+                    <section aria-label="Paragraph signals">
+                      <h3>Paragraph signals</h3>
+                      <p className="vt-small">
+                        Compare parts of a mixed document. These scores show
+                        model signals on each eligible English paragraph of 80
+                        or more words.
+                        {(scan.eligiblePassageCount ?? 0) >
+                          scan.passages.length &&
+                          ` Showing the first ${scan.passages.length} of ${scan.eligiblePassageCount} eligible paragraphs.`}
+                      </p>
+                      {scan.passages.map((passage) => (
+                        <details className="vt-reference" key={passage.start}>
+                          <summary>
+                            Paragraph {passage.paragraph} ·{" "}
+                            {Math.round(passage.score * 100)}/100 ·{" "}
+                            {passage.wordCount} words
+                          </summary>
+                          <p className="vt-passage">
+                            {scan.text.slice(passage.start, passage.end)}
+                          </p>
+                        </details>
+                      ))}
+                    </section>
+                  )}
                   {scan.evidence.modelScore !== null &&
                     scan.sentences.length === 0 && (
                       <button
@@ -1087,6 +1117,7 @@ export function Workspace() {
                         ? " including model setup"
                         : ""}{" "}
                       · document
+                      {scan.passages?.length ? " and paragraphs" : ""}
                       {scan.sentences.length ? " and contexts" : ""}
                     </p>
                   )}

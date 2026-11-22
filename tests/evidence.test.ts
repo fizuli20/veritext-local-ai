@@ -105,7 +105,7 @@ describe("Meaning review", () => {
     expect(full).toContain("fresh version");
     expect(full).toContain("courteous professional");
     expect(full).toContain("all names, numbers");
-    expect(full).toContain("Keep all caveats");
+    expect(full).toContain("every original claim and caveat");
     expect(rewriteInstructions("standard", "polish")).toContain(
       "restrained copy edit",
     );

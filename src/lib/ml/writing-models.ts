@@ -13,6 +13,13 @@ export const WRITING_MODELS = {
       "About 1 GB download and 1.6 GB working GPU memory. Try for more substantial edits.",
     memoryMB: 1630,
   },
+  qwen3b: {
+    id: "Qwen2.5-3B-Instruct-q4f16_1-MLC",
+    label: "Larger · Qwen 3B",
+    description:
+      "About 1.8 GB download and 2.5 GB working GPU memory. Try it for more detailed rewrites on a device with sufficient memory.",
+    memoryMB: 2505,
+  },
   quality: {
     id: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
     label: "Larger · Llama 3B",
