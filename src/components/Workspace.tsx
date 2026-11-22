@@ -705,7 +705,12 @@ export function Workspace() {
           onProgress: (message) => {
             if (operation.current === id) setProgress(message);
           },
-          generate: async ({ systemPrompt, userPrompt, attempt }) => {
+          generate: async ({
+            systemPrompt,
+            userPrompt,
+            attempt,
+            restructure,
+          }) => {
             if (useLocal && modelId && connectedUrl)
               return streamChatCompletion({
                 baseUrl: connectedUrl,
@@ -723,7 +728,7 @@ export function Workspace() {
                 { role: "user", content: userPrompt },
               ],
               stream: true,
-              temperature: attempt ? 0.65 : 0.5,
+              temperature: attempt || restructure ? 0.65 : 0.5,
               max_tokens: 1800,
             });
             let draft = "",
@@ -794,12 +799,22 @@ export function Workspace() {
         setEngineName(activeName);
         setOutput(nextDraft);
         setRewriteReport(result);
+        if (!selected) {
+          requestAnimationFrame(() => {
+            const field = draftField.current;
+            if (!field || operation.current !== id) return;
+            field.setSelectionRange(0, 0);
+            field.scrollTop = 0;
+          });
+        }
         setNotice(
           selected
             ? "Selected text revised. Review the updated draft."
-            : result.changed
-              ? `Draft ready. ${result.parts} section${result.parts === 1 ? "" : "s"} checked${result.retained ? `; ${result.retained} retained unchanged` : ""}. Review the changes before using the text.`
-              : "The model did not produce a changed draft that passed preservation checks after a retry. The original was retained. Try a larger model or another tone.",
+            : result.lightFallback
+              ? "Light edit ready. Review the available wording changes."
+              : result.changed
+                ? `Draft ready. ${result.parts} section${result.parts === 1 ? "" : "s"} checked${result.retained ? `; ${result.retained} retained unchanged` : ""}. Review the changes before using the text.`
+                : "The model did not produce a changed draft that passed preservation checks after a retry. The original was retained. Try a larger model or another tone.",
         );
       } catch (err) {
         if (operation.current === id) {
@@ -1234,7 +1249,10 @@ export function Workspace() {
                       </div>
                     )}
                     <p className="vt-provenance">
-                      {engineName} · {REWRITE_DEPTHS[outputDepth].label}
+                      {engineName} ·{" "}
+                      {rewriteReport?.lightFallback
+                        ? "Light edit result"
+                        : REWRITE_DEPTHS[outputDepth].label}
                       {rewriteReport
                         ? ` · ${(rewriteReport.elapsedMs / 1000).toFixed(1)} s · ${rewriteReport.retries} retr${rewriteReport.retries === 1 ? "y" : "ies"}`
                         : ""}

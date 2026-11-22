@@ -496,6 +496,131 @@ describe("Protected rewrite pipeline", () => {
     expect(reviewRewrite(original, legitimate)).toEqual([]);
   });
 
+  it("catches the actor reassignment from the reported full rewrite", () => {
+    const original =
+      "Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns.";
+    const wrong =
+      "Opening hours should match the lives of local residents, allowing them time to answer questions rather than spending every shift processing returns.";
+    const faithful =
+      "Opening hours should fit local residents' schedules. Staff need time to answer questions instead of sorting returns all shift.";
+    expect(reviewRewrite(original, wrong)).toContain(
+      "Protected actor changed. Keep staff responsible for the original action.",
+    );
+    expect(reviewRewrite(original, faithful)).toEqual([]);
+  });
+
+  it("rewrites qualified long paragraphs in bounded sentence groups and preserves exact separators", async () => {
+    const sentences = [
+      "A neighborhood library can offer people a quiet place to work away from interruptions.",
+      "Visitors can also meet their neighbors through weekly activities run by the staff.",
+      "The staff prepare a shared table before each workshop so participants can find the materials.",
+      "The public schedule might change when volunteers are unavailable to cover a weekend session.",
+      "The organizers will not cancel the program simply because attendance dips for a week.",
+      "They plan to talk to visitors before setting dates for the next round of activities.",
+      "The notice board by the entrance carries the current schedule for everyone to see.",
+      "Someone can call the front desk when the printed hours and the website disagree.",
+      "The team will update the notice board and tell visitors about each schedule change.",
+    ];
+    const text = sentences.join("  ");
+    const drafts = [
+      "A quiet place to work is one thing a neighborhood library can offer. Weekly activities can help visitors get to know their neighbors. Staff put the materials on a shared table before each workshop so participants can find them.",
+      "The posted schedule might shift if volunteers are unavailable for a weekend session. A brief dip in attendance will not prompt the organizers to cancel. Before choosing dates for the next round, they intend to ask visitors for input.",
+      "For the latest schedule, check the notice board by the entrance. If the website and printed hours conflict, visitors can call the front desk. The team will post every change on the board and let visitors know.",
+    ];
+    const generated: string[] = [];
+    const prompts: string[] = [];
+    const result = await runRewritePipeline({
+      text,
+      mode: "standard",
+      depth: "rephrase",
+      onProgress: noop,
+      generate: async ({ systemPrompt, userPrompt }) => {
+        prompts.push(systemPrompt);
+        const source = userPrompt.split("\n\n").at(-1)!;
+        generated.push(source);
+        return drafts[generated.length - 1]!;
+      },
+    });
+    expect(generated).toEqual([
+      sentences.slice(0, 3).join("  "),
+      sentences.slice(3, 6).join("  "),
+      sentences.slice(6).join("  "),
+    ]);
+    expect(prompts[1]).toContain(sentences[0]);
+    expect(prompts[1]).toContain(sentences[2]);
+    expect(result.text).toBe(drafts.join("  "));
+  });
+
+  it("preserves the prerequisite and each action of a long conditional instruction", () => {
+    const original =
+      "Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for.";
+    const drifted =
+      "Library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for.";
+    expect(reviewRewrite(original, drifted).join(" ")).toContain(
+      "Protected conditional instructions changed",
+    );
+    expect(reviewRewrite(original, original)).toEqual([]);
+  });
+
+  it("rejects invented commercial owners, services and new outcomes from the Llama retest", () => {
+    const source =
+      "Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own.";
+    const libraryContext = "A library is in the neighborhood. " + source;
+    const restriction =
+      "Protected meaning changed. Remove the added owner, service or independent claim.";
+    expect(
+      reviewRewrite(
+        source,
+        source.replace("Opening hours", "For a store, opening hours"),
+        "standard",
+        [],
+        libraryContext,
+      ),
+    ).toContain(restriction);
+    expect(
+      reviewRewrite(
+        source,
+        source.replace(
+          "on its own.",
+          "on its own; rather, it is just one aspect of an efficient workplace layout.",
+        ),
+      ),
+    ).toContain(restriction);
+    expect(
+      reviewRewrite(
+        source,
+        source.replace("Opening hours", "The store's opening hours"),
+      ),
+    ).toContain(restriction);
+    expect(
+      reviewRewrite(
+        source,
+        source.replace(
+          "answer questions",
+          "answer questions and provide personalized service,",
+        ),
+      ),
+    ).toContain(restriction);
+    expect(
+      reviewRewrite(
+        source,
+        source.replace(
+          "on its own.",
+          "on its own; it simply provides more space for employees to work efficiently.",
+        ),
+      ),
+    ).toContain(restriction);
+    expect(
+      reviewRewrite(
+        source,
+        source.replace("Opening hours", "The library's opening hours"),
+        "standard",
+        [],
+        "A library is in the neighborhood. " + source,
+      ),
+    ).not.toContain(restriction);
+  });
+
   it("stops before generation and never substitutes a rule-based rewrite", async () => {
     const controller = new AbortController();
     controller.abort();

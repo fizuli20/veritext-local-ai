@@ -13,10 +13,17 @@ export async function loadBrowserRewriter(
       "WebGPU is unavailable here. Connect LM Studio/Ollama, or use a browser with a working WebGPU adapter.",
     );
   if (signal?.aborted) throw new Error("Model loading stopped.");
-  const { CreateWebWorkerMLCEngine, prebuiltAppConfig } = await import(
-    "@mlc-ai/web-llm"
-  );
+  const { CreateWebWorkerMLCEngine, prebuiltAppConfig, hasModelInCache } =
+    await import("@mlc-ai/web-llm");
   const record = resolveWritingModel(prebuiltAppConfig.model_list, tier);
+  // Keep working caches on existing devices. Cold Llama downloads use
+  // IndexedDB after these large shards repeatedly failed in Cache Storage.
+  const useIndexedDB =
+    tier === "quality" &&
+    !(await hasModelInCache(record.model_id, prebuiltAppConfig).catch(
+      () => false,
+    ));
+  if (signal?.aborted) throw new Error("Model loading stopped.");
   const worker = new Worker(
     new URL("../../workers/humanizer.worker.ts", import.meta.url),
     { type: "module" },
@@ -43,14 +50,19 @@ export async function loadBrowserRewriter(
           ),
         );
       },
-      300000,
+      useIndexedDB ? 360000 : 300000,
     );
   });
   try {
     const loading = CreateWebWorkerMLCEngine(
       worker,
       record.model_id,
-      { initProgressCallback: (report) => onProgress(report.text) },
+      {
+        initProgressCallback: (report) => onProgress(report.text),
+        ...(useIndexedDB
+          ? { appConfig: { ...prebuiltAppConfig, cacheBackend: "indexeddb" } }
+          : {}),
+      },
       { context_window_size: 4096 },
     );
     const engine = await Promise.race([loading, cancelled]);

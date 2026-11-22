@@ -1,3 +1,15 @@
+# Veritext 5.0.1 library-sample rewrite regression
+
+The reported Llama 3B output made only light changes and substituted an ambiguous pronoun for staff in the request to leave time for answering questions. Regression tests include that exact sentence. The editor now checks that explicit actors stay attached to coordinated duties. It retains a referenced qualified claim and keeps a qualified checklist with its prerequisite. Additional checks cover the store, new service, and new outcome introduced in intermediate real-model experiments. These checks are conservative and cannot establish complete semantic fidelity.
+
+Full rewrite divides longer, heavily qualified prose into a few groups at sentence boundaries. Later groups receive earlier source context to keep the subject grounded. Shorter passes preserve the exact spacing between groups and keep their original caveats. When a full rewrite yields only light wording changes, the editor labels the output as a Light edit result. A new full output opens at the top of the draft.
+
+A warm browser run of the reported 152-word library sample with Llama 3.2 3B took 30.1 seconds with six retries. About 25% of adjacent-word pairs changed, and one of three groups was retained. The output still identified staff as answering questions, preserved the timetable caveat and the pre-expansion checklist, and opened at the top. That is one observed run, not a general quality or latency guarantee.
+
+Cold Llama 3B Cache Storage setup stopped twice during testing. IndexedDB completed the download and model startup on the same browser. Working Cache Storage model downloads remain supported.
+
+---
+
 # Veritext 5.0 workspace validation
 
 Select text in the edited draft and choose Revise selection to send that range to the same writing engine. The rest of the draft remains byte-for-byte identical. The merged draft is checked against its prior version so that a selection that cuts through a protected quote or other checked span cannot bypass its protection. Undo restores the previous draft. A real Chrome run with Qwen 2.5 1.5B revised one selected sentence in 0.8 seconds and retained its exact surrounding text. This was a warm, single-device observation.

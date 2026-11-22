@@ -4,9 +4,12 @@ import {
   reviewRewrite,
   CLOSING_OMISSION,
   closingRecommendation,
+  conditionalInstructions,
   preservationInstructions,
   quantityClaims,
+  qualifiedReferences,
   rewriteExtent,
+  rewriteQualifierInstructions,
   rewriteInstructions,
   type RewriteDepth,
 } from "./rewrite-review";
@@ -103,6 +106,8 @@ export function restoreRewriteSpans(
 export interface RewritePart {
   text: string;
   separator: string;
+  restructure?: true;
+  context?: string;
 }
 /** Keep paragraph boundaries; prefer sentence/space boundaries inside long paragraphs. */
 export function splitRewrite(
@@ -131,11 +136,63 @@ export function splitRewrite(
   }
   return parts;
 }
+const QUALIFIED_SENTENCE =
+  /\b(?:no|not|never|neither|cannot|without|can|could|may|might)\b|n['’]t\b/i;
+
+/** Shorter first-pass groups reduce whole-paragraph retries in qualified prose. */
+function splitQualifiedProse(
+  part: RewritePart,
+  lockPrefix: string,
+): RewritePart[] {
+  if (part.text.includes(lockPrefix) || countWords(part.text) < 100)
+    return [part];
+  const sentences = tokenizeSentences(part.text);
+  if (
+    sentences.length < 6 ||
+    sentences.filter(({ text }) => QUALIFIED_SENTENCE.test(text)).length < 3
+  )
+    return [part];
+
+  const groups = Math.min(4, Math.ceil(sentences.length / 3));
+  const pieces: RewritePart[] = [];
+  let sentenceIndex = 0;
+  let start = 0;
+  for (let group = 0; group < groups; group++) {
+    const earlier = sentences[sentenceIndex - 1]?.text;
+    const context = earlier
+      ? [...new Set([sentences[0]!.text, earlier])].join(" ").slice(0, 450)
+      : undefined;
+    sentenceIndex += Math.ceil(
+      (sentences.length - sentenceIndex) / (groups - group),
+    );
+    const next = sentences[sentenceIndex];
+    if (!next) {
+      pieces.push({
+        text: part.text.slice(start),
+        separator: part.separator,
+        restructure: true,
+        context,
+      });
+      break;
+    }
+    const end = sentences[sentenceIndex - 1]!.end;
+    pieces.push({
+      text: part.text.slice(start, end),
+      separator: part.text.slice(end, next.start),
+      restructure: true,
+      context,
+    });
+    start = next.start;
+  }
+  return pieces;
+}
+
 export interface GenerateRewrite {
   (request: {
     systemPrompt: string;
     userPrompt: string;
     attempt: number;
+    restructure?: boolean;
   }): Promise<string>;
 }
 export interface RewriteOutcome {
@@ -146,6 +203,7 @@ export interface RewriteOutcome {
   warnings: string[];
   elapsedMs: number;
   changed: boolean;
+  lightFallback: boolean;
   checks: { section: number; attempt: number; reason: string }[];
 }
 export async function runRewritePipeline(options: {
@@ -170,7 +228,13 @@ export async function runRewritePipeline(options: {
   } = options;
   const started = performance.now();
   const documentLocks = lockRewriteSpans(text, terms);
-  const parts = splitRewrite(documentLocks.text);
+  const sections = splitRewrite(documentLocks.text);
+  const parts =
+    depth === "rephrase"
+      ? sections.flatMap((section) =>
+          splitQualifiedProse(section, documentLocks.prefix),
+        )
+      : sections;
   let completed = "",
     retries = 0,
     retained = 0;
@@ -204,20 +268,31 @@ export async function runRewritePipeline(options: {
     let feedback = "";
     let usableLightEdit: string | null = null;
     const recommendation = closingRecommendation(originalPart);
+    const conditional = conditionalInstructions(originalPart);
+    const references = qualifiedReferences(originalPart);
     let keepClosingSentence = Boolean(recommendation);
     let outputLimited = false;
     const checkExtent =
       depth === "rephrase" &&
-      countWords(originalPart) >= 60 &&
+      countWords(originalPart) >= (part.restructure ? 30 : 60) &&
       generationLocks.locks.length === 0;
-    const fixedSentences = new Set(protectedAmounts);
+    const fixedSentences = new Set([
+      ...protectedAmounts,
+      ...conditional,
+      ...references,
+    ]);
     if (recommendation) fixedSentences.add(recommendation);
     const fixedWordCount = [...fixedSentences].reduce(
       (count, sentence) => count + countWords(sentence),
       0,
     );
     const tryLargerEdit =
-      checkExtent && countWords(originalPart) - fixedWordCount >= 60;
+      checkExtent &&
+      countWords(originalPart) - fixedWordCount >= (part.restructure ? 30 : 60);
+    const subjectContext = part.context
+      ? " Earlier source text identifies the subject and setting. Use it to resolve references, then edit only the requested excerpt: " +
+        JSON.stringify(part.context)
+      : "";
     for (let attempt = 0; attempt < 2; attempt++) {
       if (signal?.aborted) throw new Error("Generation stopped.");
       if (attempt) retries++;
@@ -228,9 +303,19 @@ export async function runRewritePipeline(options: {
       try {
         candidate = await generate({
           systemPrompt:
-            rewriteInstructions(mode, depth, styleNote) +
+            rewriteInstructions(mode, depth, styleNote, part.restructure) +
+            subjectContext +
+            (part.restructure
+              ? " " + rewriteQualifierInstructions(originalPart)
+              : "") +
             (protectedAmounts.length
               ? " Keep sentences reporting distinct amounts unchanged, including the actions and subjects tied to those amounts."
+              : "") +
+            (references.length
+              ? " Keep any sentence beginning with It or They that describes a benefit with can, could, may or might word for word."
+              : "") +
+            (conditional.length
+              ? " Keep any opening prerequisite and its full list of instructions in the original sentence, word for word."
               : "") +
             (recommendation
               ? " Keep the original closing recommendation and its conditions word for word."
@@ -240,6 +325,7 @@ export async function runRewritePipeline(options: {
               : ""),
           userPrompt: `${feedback ? feedback + "\n\n" : ""}Edit the following passage. Return only the edited passage.\n\n${generationLocks.text}`,
           attempt,
+          restructure: part.restructure,
         });
       } catch (error) {
         if (signal?.aborted) throw new Error("Generation stopped.");
@@ -257,7 +343,7 @@ export async function runRewritePipeline(options: {
       if (signal?.aborted) throw new Error("Generation stopped.");
       try {
         const restored = restoreRewriteSpans(candidate, generationLocks);
-        const issues = reviewRewrite(originalPart, restored, mode, terms);
+        const issues = reviewRewrite(originalPart, restored, mode, terms, text);
         if (issues.length) {
           keepClosingSentence ||= issues.some((issue) =>
             issue.startsWith(CLOSING_OMISSION),
@@ -346,7 +432,8 @@ export async function runRewritePipeline(options: {
       const sentences = tokenizeSentences(originalPart);
       // In Full rewrite, retry qualified prose in smaller groups. Exact
       // facts remain locked during recovery, and each group must pass checks.
-      const retryQualified = checkExtent && sentences.length >= 3;
+      const retryQualified =
+        part.restructure || (checkExtent && sentences.length >= 3);
       const segments: {
         text: string;
         kind: "locked" | "qualified" | "plain";
@@ -356,12 +443,10 @@ export async function runRewritePipeline(options: {
         const hasLockedSpan = ranges.some(
           (range) => range.start < sentence.end && range.end > sentence.start,
         );
-        const hasQualifier =
-          /\b(?:no|not|never|neither|cannot|without|can|could|may|might)\b|n['’]t\b/i.test(
-            sentence.text,
-          );
+        const hasQualifier = QUALIFIED_SENTENCE.test(sentence.text);
         const kind =
           hasLockedSpan ||
+          fixedSentences.has(sentence.text) ||
           (keepClosingSentence && sentence === sentences.at(-1)) ||
           (hasQualifier && !retryQualified)
             ? "locked"
@@ -372,6 +457,7 @@ export async function runRewritePipeline(options: {
         const previous = segments.at(-1);
         if (
           previous?.kind === kind &&
+          !(part.restructure && kind === "qualified") &&
           (!outputLimited ||
             kind === "locked" ||
             previous.text.length + value.length <= 700)
@@ -407,7 +493,12 @@ export async function runRewritePipeline(options: {
         let draft: string;
         try {
           draft = await generate({
-            systemPrompt: rewriteInstructions(mode, depth, styleNote),
+            systemPrompt:
+              rewriteInstructions(mode, depth, styleNote, part.restructure) +
+              subjectContext +
+              (part.restructure
+                ? " " + rewriteQualifierInstructions(segment.text)
+                : ""),
             userPrompt: `Edit this excerpt with its original meaning and purpose intact. Keep who does what, when and why. A sentence about how to judge success must still describe that criterion. Remove empty lead-ins rather than turning them into claims.${segment.kind === "qualified" ? " Keep every original negative expression and possibility word, attached to the same claims. Leave any difficult sentence intact." : ""} Return only the edited excerpt.\n\n${segment.text.trim()}`,
             attempt: 2,
           });
@@ -424,7 +515,13 @@ export async function runRewritePipeline(options: {
         if (signal?.aborted) throw new Error("Generation stopped.");
         // Assess omissions against the whole recovered section below; a wordy
         // surrounding fragment may legitimately shrink more than the whole.
-        const issues = reviewRewrite(segment.text, draft, "concise", terms);
+        const issues = reviewRewrite(
+          segment.text,
+          draft,
+          "concise",
+          terms,
+          text,
+        );
         if (issues.length || !draft.trim()) {
           checks.push({
             section: i + 1,
@@ -444,7 +541,7 @@ export async function runRewritePipeline(options: {
       }
       if (
         recovered.trim() !== originalPart.trim() &&
-        reviewRewrite(originalPart, recovered, mode, terms).length === 0
+        reviewRewrite(originalPart, recovered, mode, terms, text).length === 0
       ) {
         accepted = recovered;
         warnings.push(
@@ -471,6 +568,14 @@ export async function runRewritePipeline(options: {
       );
     completed += accepted + part.separator;
   }
+  const changed = completed.trim() !== text.trim();
+  const lightFallback =
+    depth === "rephrase" &&
+    changed &&
+    countWords(text) >= 60 &&
+    rewriteExtent(text, completed) < 0.2;
+  if (parts.length > sections.length && lightFallback)
+    warnings.push("The completed draft contains light wording changes.");
   return {
     text: completed,
     parts: parts.length,
@@ -478,7 +583,8 @@ export async function runRewritePipeline(options: {
     retained,
     warnings,
     elapsedMs: Math.round(performance.now() - started),
-    changed: completed.trim() !== text.trim(),
+    changed,
+    lightFallback,
     checks,
   };
 }
