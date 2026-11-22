@@ -208,12 +208,19 @@ test("rewrite retries copied text, preserves quotes and locked terms, and restor
   page,
 }) => {
   let attempts = 0;
+  let retry = () => {};
+  const allowRetry = new Promise<void>((resolve) => {
+    retry = resolve;
+  });
   await page.route("http://localhost:1234/**", async (route) => {
     if (route.request().url().endsWith("/models"))
       return route.fulfill({ json: { data: [{ id: "fixture-chat" }] } });
     const body = route.request().postDataJSON();
     const passage = body.messages.at(-1).content.split("\n\n").at(-1);
     attempts++;
+    if (attempts === 2) await allowRetry;
+    if (attempts === 3)
+      return route.fulfill({ status: 503, body: "Fixture disconnected" });
     const draft =
       attempts === 1
         ? passage
@@ -235,11 +242,28 @@ test("rewrite retries copied text, preserves quotes and locked terms, and restor
   ).toBeVisible();
   await page.getByRole("button", { name: "Return to editor" }).click();
   await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  try {
+    await expect(page.getByRole("status")).toContainText("Refining section 1");
+    await expect(
+      page.getByRole("textbox", { name: "Edited draft", exact: true }),
+    ).toHaveCount(0);
+  } finally {
+    retry();
+  }
   await expect(
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(edited);
   expect(attempts).toBe(2);
   await expect(page.getByText(/^Local model .*1 retry$/)).toBeVisible();
+  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await expect(
+    page
+      .getByRole("alert")
+      .filter({ hasText: "Your last completed draft is still available." }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Edited draft", exact: true }),
+  ).toHaveValue(edited);
   await page.getByRole("button", { name: "Rewrite", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Undo", exact: true }),
@@ -490,6 +514,47 @@ test("rewrite depth reaches the engine and the completed draft keeps its depth l
     page.getByText(/^Local model · depth-fixture · Light edit/),
   ).toBeVisible();
   expect(prompts.at(-1)).toContain("restrained copy edit");
+});
+
+test("shows a nonzero detector signal below one point and preserves the exact export score", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor() {
+        const code = `
+          self.onmessage = ({data}) => self.postMessage({
+            type: "result", id: data.id, text: data.text, engine: "Fixture detector",
+            latencyMs: 10, sentences: [],
+            evidence: {status:"signal", verdict:"Low signal · authorship unknown", modelScore:0.0002, calibratedProbability:null, explanation:"Fixture low signal."}
+          });
+        `;
+        super(
+          URL.createObjectURL(new Blob([code], { type: "text/javascript" })),
+        );
+      }
+    };
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "AI Detector", exact: true }).click();
+  await page.getByRole("button", { name: "Try a sample" }).click();
+  await page.getByRole("button", { name: "Detect text" }).click();
+  const report = page.getByTestId("detector-result");
+  await expect(
+    report.getByRole("heading", { name: "Low signal · authorship unknown" }),
+  ).toBeVisible();
+  await expect(report).toContainText("<0.1/100 model signal");
+  const downloading = page.waitForEvent("download");
+  await report
+    .getByRole("button", { name: "Save analysis", exact: true })
+    .click();
+  const stream = await (await downloading).createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+  expect(JSON.parse(Buffer.concat(chunks).toString()).evidence.modelScore).toBe(
+    0.0002,
+  );
 });
 
 test("keeps the document result available while adding context highlights and after stopping", async ({

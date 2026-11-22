@@ -1,4 +1,5 @@
 import { countWords, tokenizeSentences } from "../nlp/tokenizer";
+import { RewriteOutputLimitError } from "./output-cleaner";
 import {
   reviewRewrite,
   CLOSING_OMISSION,
@@ -134,7 +135,6 @@ export interface GenerateRewrite {
   (request: {
     systemPrompt: string;
     userPrompt: string;
-    onText: (text: string) => void;
     attempt: number;
   }): Promise<string>;
 }
@@ -157,7 +157,6 @@ export async function runRewritePipeline(options: {
   signal?: AbortSignal;
   generate: GenerateRewrite;
   onProgress: (message: string) => void;
-  onText: (text: string) => void;
 }): Promise<RewriteOutcome> {
   const {
     text,
@@ -168,7 +167,6 @@ export async function runRewritePipeline(options: {
     signal,
     generate,
     onProgress,
-    onText,
   } = options;
   const started = performance.now();
   const documentLocks = lockRewriteSpans(text, terms);
@@ -207,6 +205,7 @@ export async function runRewritePipeline(options: {
     let usableLightEdit: string | null = null;
     const protectRecommendation = Boolean(closingRecommendation(originalPart));
     let keepClosingSentence = protectRecommendation;
+    let outputLimited = false;
     const checkExtent =
       depth === "rephrase" &&
       countWords(originalPart) >= 60 &&
@@ -217,29 +216,33 @@ export async function runRewritePipeline(options: {
       onProgress(
         `${attempt ? "Refining" : "Editing"} section ${i + 1} of ${parts.length}…`,
       );
-      const candidate = await generate({
-        systemPrompt:
-          rewriteInstructions(mode, depth, styleNote) +
-          (preserveQuantityClaims
-            ? " Keep sentences reporting distinct amounts unchanged, including the actions and subjects tied to those amounts."
-            : "") +
-          (protectRecommendation
-            ? " Keep the original closing recommendation and its conditions word for word."
-            : "") +
-          (generationLocks.locks.length
-            ? ` Preserve every ${locked.prefix}_number_END marker exactly once. Markers stand for protected source text; never modify them.`
-            : ""),
-        userPrompt: `${feedback ? feedback + "\n\n" : ""}Edit the following passage. Return only the edited passage.\n\n${generationLocks.text}`,
-        attempt,
-        onText: (value) => {
-          const preview = restoreRewriteSpans(
-            value,
-            generationLocks,
-            false,
-          ).replace(new RegExp(locked.prefix + String.raw`\S*$`), "");
-          onText(completed + preview);
-        },
-      });
+      let candidate: string;
+      try {
+        candidate = await generate({
+          systemPrompt:
+            rewriteInstructions(mode, depth, styleNote) +
+            (preserveQuantityClaims
+              ? " Keep sentences reporting distinct amounts unchanged, including the actions and subjects tied to those amounts."
+              : "") +
+            (protectRecommendation
+              ? " Keep the original closing recommendation and its conditions word for word."
+              : "") +
+            (generationLocks.locks.length
+              ? ` Preserve every ${locked.prefix}_number_END marker exactly once. Markers stand for protected source text; never modify them.`
+              : ""),
+          userPrompt: `${feedback ? feedback + "\n\n" : ""}Edit the following passage. Return only the edited passage.\n\n${generationLocks.text}`,
+          attempt,
+        });
+      } catch (error) {
+        if (!(error instanceof RewriteOutputLimitError)) throw error;
+        outputLimited = true;
+        checks.push({
+          section: i + 1,
+          attempt: attempt + 1,
+          reason: error.message,
+        });
+        break;
+      }
       if (signal?.aborted) throw new Error("Generation stopped.");
       try {
         const restored = restoreRewriteSpans(candidate, generationLocks);
@@ -356,7 +359,13 @@ export async function runRewritePipeline(options: {
               : "plain";
         const value = originalPart.slice(cursor, sentence.end);
         const previous = segments.at(-1);
-        if (previous?.kind === kind) previous.text += value;
+        if (
+          previous?.kind === kind &&
+          (!outputLimited ||
+            kind === "locked" ||
+            previous.text.length + value.length <= 700)
+        )
+          previous.text += value;
         else segments.push({ text: value, kind });
         cursor = sentence.end;
       }
@@ -384,13 +393,23 @@ export async function runRewritePipeline(options: {
         );
         const leading = segment.text.match(/^\s*/)?.[0] ?? "";
         const trailing = segment.text.match(/\s*$/)?.[0] ?? "";
-        const prefix = completed + recovered + leading;
-        const draft = await generate({
-          systemPrompt: rewriteInstructions(mode, depth, styleNote),
-          userPrompt: `Edit this excerpt with its original meaning and purpose intact. Keep who does what, when and why. A sentence about how to judge success must still describe that criterion. Remove empty lead-ins rather than turning them into claims.${segment.kind === "qualified" ? " Keep every original negative expression and possibility word, attached to the same claims. Leave any difficult sentence intact." : ""} Return only the edited excerpt.\n\n${segment.text.trim()}`,
-          attempt: 2,
-          onText: (value) => onText(prefix + value),
-        });
+        let draft: string;
+        try {
+          draft = await generate({
+            systemPrompt: rewriteInstructions(mode, depth, styleNote),
+            userPrompt: `Edit this excerpt with its original meaning and purpose intact. Keep who does what, when and why. A sentence about how to judge success must still describe that criterion. Remove empty lead-ins rather than turning them into claims.${segment.kind === "qualified" ? " Keep every original negative expression and possibility word, attached to the same claims. Leave any difficult sentence intact." : ""} Return only the edited excerpt.\n\n${segment.text.trim()}`,
+            attempt: 2,
+          });
+        } catch (error) {
+          if (!(error instanceof RewriteOutputLimitError)) throw error;
+          checks.push({
+            section: i + 1,
+            attempt: 2 + recoveryCalls,
+            reason: error.message,
+          });
+          recovered += segment.text;
+          continue;
+        }
         if (signal?.aborted) throw new Error("Generation stopped.");
         // Assess omissions against the whole recovered section below; a wordy
         // surrounding fragment may legitimately shrink more than the whole.
@@ -440,7 +459,6 @@ export async function runRewritePipeline(options: {
         `Section ${i + 1}: the available draft contains light wording changes.`,
       );
     completed += accepted + part.separator;
-    onText(completed);
   }
   return {
     text: completed,

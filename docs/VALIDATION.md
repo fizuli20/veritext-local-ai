@@ -1,3 +1,11 @@
+# Veritext 4.6.5 rewrite and score display fixes
+
+Model retries previously replaced the visible output with each provisional candidate. The editor now publishes a draft once its checks finish. A failed or stopped run preserves the last completed draft. Output-limit failures retry shorter source groups. If nothing passes, the editor labels the original as retained or keeps the previous completed draft. The browser fixture pauses a retry to verify that provisional text stays hidden, then injects a server failure to verify that the completed draft remains.
+
+The detector expresses its raw score on a 100-point scale. A positive score below 0.1 points appears as `<0.1/100`. The display preserves the distinction between small signals and exact zero, and the JSON report keeps the full underlying value. This change is presentation only.
+
+---
+
 # Veritext 4.6.4 first-load reliability
 
 The source editor now waits for the browser application to initialize before accepting typing. A delayed-script browser test reproduces the early-input condition on 4.6.3 and passes with the fix. The 4.6.3 detector release was independently checked in production with actual browser inference. The human technical-writing probe scored 96.61/100 and was correctly reported as inconclusive under the new cutoff. The built-in AI library example scored 97.57/100 and still returned an elevated signal.

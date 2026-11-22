@@ -3,6 +3,12 @@
  * Strips reasoning tokens (<think>, <thought>), accidental preambles, and conversational artifacts.
  */
 
+export class RewriteOutputLimitError extends Error {
+  constructor() {
+    super("The model reached its output limit before finishing the draft.");
+  }
+}
+
 const THINKING_TAG_REGEXES = [
   /<think>[\s\S]*?<\/think>/gi,
   /<thought>[\s\S]*?<\/thought>/gi,
@@ -40,7 +46,10 @@ export function cleanLlmOutput(rawText: string): string {
 
   // 2. Strip unclosed leading thinking tags (e.g. if streaming cutoff)
   cleaned = cleaned
-    .replace(/(?:<think>|<thought>|<\|thought\|>|<reasoning>|\[THOUGHT\])[\s\S]*$/i, "")
+    .replace(
+      /(?:<think>|<thought>|<\|thought\|>|<reasoning>|\[THOUGHT\])[\s\S]*$/i,
+      "",
+    )
     .trim();
 
   // 3. Strip code fence blocks if LLM wrapped whole prose in ```...```

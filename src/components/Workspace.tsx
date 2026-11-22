@@ -18,6 +18,7 @@ import {
   DETECTOR_PROFILES,
   type DetectorTier,
   describeEvidence,
+  formatModelSignal,
   type DetectionEvidence,
 } from "@/lib/detector/evidence";
 import {
@@ -25,7 +26,10 @@ import {
   streamChatCompletion,
   type DiscoveredModel,
 } from "@/lib/humanizer/local-server-client";
-import { cleanLlmOutput } from "@/lib/humanizer/output-cleaner";
+import {
+  cleanLlmOutput,
+  RewriteOutputLimitError,
+} from "@/lib/humanizer/output-cleaner";
 import {
   reviewRewrite,
   REWRITE_DEPTHS,
@@ -164,11 +168,15 @@ export function Workspace() {
     if (timer.current) clearTimeout(timer.current);
     setBusy(null);
     setProgress("");
-    setNotice(
+    const message =
       busy === "scan"
         ? "Scan stopped. Completed scores are still available."
-        : "Stopped. Any partial rewrite is an unfinished draft.",
-    );
+        : busy === "load"
+          ? "Model setup stopped."
+          : output
+            ? "Rewrite stopped. Your last completed draft is still available."
+            : "Rewrite stopped.";
+    setNotice(message);
   }
   function editInput(value: string) {
     setPendingRewrite(false);
@@ -485,22 +493,7 @@ export function Workspace() {
     }
     const id = ++operation.current;
     const original = input;
-    if (output)
-      setPreviousDraft({
-        source,
-        output,
-        engine: engineName,
-        mode: outputMode,
-        depth: outputDepth,
-      });
-    setSource(original);
-    setOutputMode(mode);
-    setOutputDepth(depth);
-    setRewriteReport(null);
-    setOutput("");
-    setDiff(false);
     setBusy("rewrite");
-    setEngineName(activeName);
     setProgress("Writing a draft…");
     const controller = new AbortController();
     abort.current = controller;
@@ -524,10 +517,7 @@ export function Workspace() {
         onProgress: (message) => {
           if (operation.current === id) setProgress(message);
         },
-        onText: (text) => {
-          if (operation.current === id) setOutput(text);
-        },
-        generate: async ({ systemPrompt, userPrompt, onText, attempt }) => {
+        generate: async ({ systemPrompt, userPrompt, attempt }) => {
           if (useLocal && modelId && connectedUrl)
             return streamChatCompletion({
               baseUrl: connectedUrl,
@@ -536,7 +526,6 @@ export function Workspace() {
               userPrompt,
               signal: controller.signal,
               style: mode === "academic" ? "academic" : "default",
-              onChunk: (_, text) => onText(text),
             });
           if (!browserEngine.current)
             throw new Error("Load a writing model before rewriting.");
@@ -556,16 +545,31 @@ export function Workspace() {
               throw new Error("Generation stopped.");
             if (chunk.choices[0]?.finish_reason === "length") truncated = true;
             draft += chunk.choices[0]?.delta.content ?? "";
-            onText(cleanLlmOutput(draft));
           }
-          if (truncated)
-            throw new Error(
-              "The model reached its output limit. The draft is incomplete. Try a shorter source section.",
-            );
+          if (truncated) throw new RewriteOutputLimitError();
           return cleanLlmOutput(draft);
         },
       });
       if (operation.current !== id) return;
+      if (!result.changed && output) {
+        setNotice(
+          "No new rewrite passed the preservation checks. Your previous draft is still available.",
+        );
+        return;
+      }
+      if (output)
+        setPreviousDraft({
+          source,
+          output,
+          engine: engineName,
+          mode: outputMode,
+          depth: outputDepth,
+        });
+      setSource(original);
+      setOutputMode(mode);
+      setOutputDepth(depth);
+      setDiff(false);
+      setEngineName(activeName);
       setOutput(result.text);
       setRewriteReport(result);
       setNotice(
@@ -574,8 +578,18 @@ export function Workspace() {
           : "The model did not produce a changed draft that passed preservation checks after a retry. The original was retained. Try a larger model or another tone.",
       );
     } catch (err) {
-      if (operation.current === id)
-        setError(err instanceof Error ? err.message : String(err));
+      if (operation.current === id) {
+        const message = controller.signal.aborted
+          ? "The rewrite timed out."
+          : err instanceof Error
+            ? err.message
+            : String(err);
+        setError(
+          output
+            ? message + " Your last completed draft is still available."
+            : message,
+        );
+      }
     } finally {
       if (operation.current === id) {
         if (timer.current) clearTimeout(timer.current);
@@ -895,6 +909,7 @@ export function Workspace() {
                 {tab === "humanizer" && output && (
                   <button
                     className="vt-text-button"
+                    disabled={!!busy}
                     onClick={() => {
                       if (output.length > 12000) {
                         setError("Use a shorter draft to compare changes.");
@@ -1021,7 +1036,10 @@ export function Workspace() {
                             void detect(false, output);
                           }}
                         >
-                          Check edited draft <ArrowRight size={15} />
+                          {rewriteReport?.changed === false
+                            ? "Check retained text"
+                            : "Check edited draft"}{" "}
+                          <ArrowRight size={15} />
                         </button>
                         <button
                           className={controlClass}
@@ -1034,7 +1052,7 @@ export function Workspace() {
                       </div>
                     </div>
                   </>
-                ) : (
+                ) : busy === "rewrite" ? null : (
                   <div className="vt-empty">
                     <div className="vt-empty-icon">
                       <Sparkles size={25} />
@@ -1071,7 +1089,7 @@ export function Workspace() {
                       </summary>
                       <p>
                         HC3 reference estimate:{" "}
-                        {Math.round(scan.evidence.referenceProbability * 100)}%
+                        {formatModelSignal(scan.evidence.referenceProbability)}%
                         AI class
                       </p>
                       {scan.evidence.referenceBin && (
@@ -1090,7 +1108,7 @@ export function Workspace() {
                   )}
                   {scan.evidence.modelScore !== null && (
                     <div className="vt-score">
-                      {Math.round(scan.evidence.modelScore * 100)}
+                      {formatModelSignal(scan.evidence.modelScore)}
                       <span>/100 model signal</span>
                     </div>
                   )}
@@ -1117,7 +1135,7 @@ export function Workspace() {
                         <details className="vt-reference" key={passage.start}>
                           <summary>
                             Paragraph {passage.paragraph} ·{" "}
-                            {Math.round(passage.score * 100)}/100 ·{" "}
+                            {formatModelSignal(passage.score)}/100 ·{" "}
                             {passage.wordCount} words
                           </summary>
                           <p className="vt-passage">
@@ -1168,7 +1186,7 @@ export function Workspace() {
                               title={
                                 s.score === null
                                   ? "Context not scored"
-                                  : `Neighboring context signal: ${Math.round(s.score * 100)}/100`
+                                  : `Neighboring context signal: ${formatModelSignal(s.score)}/100`
                               }
                             >
                               {scan.text.slice(s.start, s.end)}

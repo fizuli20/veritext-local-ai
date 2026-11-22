@@ -3,6 +3,7 @@ import {
   DETECTOR_PROFILES,
   wilsonInterval,
   describeEvidence,
+  formatModelSignal,
   parseAiScore,
   tokenWindows,
 } from "@/lib/detector/evidence";
@@ -16,6 +17,14 @@ const english =
     10,
   );
 describe("Detection evidence boundaries", () => {
+  it("distinguishes small nonzero signals from zero and near-maximum scores from 100", () => {
+    expect(formatModelSignal(0)).toBe("0");
+    expect(formatModelSignal(0.0002)).toBe("<0.1");
+    expect(formatModelSignal(0.004)).toBe("0.4");
+    expect(formatModelSignal(0.975652)).toBe("97.6");
+    expect(formatModelSignal(0.99998)).toBe(">99.9");
+    expect(formatModelSignal(1)).toBe("100");
+  });
   it("refuses unknown class polarity and selects the actual AI class", () => {
     expect(
       parseAiScore([

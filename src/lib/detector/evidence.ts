@@ -43,6 +43,14 @@ export interface DetectionEvidence {
   explanation: string;
 }
 
+/** Displays a signal from 0 to 1 on a 100-point scale without rounding to an endpoint. */
+export function formatModelSignal(signal: number): string {
+  const points = signal * 100;
+  if (points > 0 && points < 0.1) return "<0.1";
+  if (points > 99.9 && points < 100) return ">99.9";
+  return String(Number(points.toFixed(1)));
+}
+
 // The config at DETECTOR_REVISION explicitly maps 0=human and 1=ai.
 // Refuse unknown labels instead of guessing which class LABEL_1 means.
 export function parseAiScore(output: unknown): number {

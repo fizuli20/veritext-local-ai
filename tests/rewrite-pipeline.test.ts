@@ -6,6 +6,7 @@ import {
   runRewritePipeline,
 } from "@/lib/humanizer/rewrite-pipeline";
 import { reviewRewrite } from "@/lib/humanizer/rewrite-review";
+import { RewriteOutputLimitError } from "@/lib/humanizer/output-cleaner";
 const noop = () => {};
 describe("Protected rewrite pipeline", () => {
   it("recovers from broken markers by editing surrounding prose while retaining fact-bearing sentences exactly", async () => {
@@ -16,7 +17,6 @@ describe("Protected rewrite pipeline", () => {
       text,
       mode: "concise",
       terms: ["Ana"],
-      onText: noop,
       onProgress: noop,
       generate: async (request) => {
         calls++;
@@ -80,7 +80,6 @@ describe("Protected rewrite pipeline", () => {
       text,
       mode: "standard",
       onProgress: noop,
-      onText: noop,
       generate: async (request) => request.userPrompt.split("\n\n").at(-1)!,
     });
     expect(result.text).toContain(
@@ -105,7 +104,6 @@ describe("Protected rewrite pipeline", () => {
       mode: "standard",
       terms: ["Ana"],
       generate,
-      onText: noop,
       onProgress: noop,
     });
     expect(result.retries).toBe(1);
@@ -118,7 +116,6 @@ describe("Protected rewrite pipeline", () => {
       text,
       mode: "standard",
       generate: async () => "The experiment reduced costs by 25%.",
-      onText: noop,
       onProgress: noop,
     });
     expect(result.text).toBe(text);
@@ -132,7 +129,6 @@ describe("Protected rewrite pipeline", () => {
     const result = await runRewritePipeline({
       text,
       mode: "standard",
-      onText: noop,
       onProgress: noop,
       generate: async () =>
         "The committee approved the proposal because the evidence was incomplete.",
@@ -159,7 +155,6 @@ describe("Protected rewrite pipeline", () => {
       text,
       mode: "professional",
       depth: "rephrase",
-      onText: noop,
       onProgress: noop,
       generate,
     });
@@ -182,7 +177,6 @@ describe("Protected rewrite pipeline", () => {
       mode: "standard",
       depth: "rephrase",
       terms: ["Ana"],
-      onText: noop,
       onProgress: noop,
       generate,
     });
@@ -197,7 +191,6 @@ describe("Protected rewrite pipeline", () => {
       text,
       mode: "standard",
       depth: "rephrase",
-      onText: noop,
       onProgress: noop,
       generate: async (request) => {
         expect(request.userPrompt.length).toBeLessThan(1000);
@@ -220,7 +213,6 @@ describe("Protected rewrite pipeline", () => {
       mode: "standard",
       depth: "rephrase",
       onProgress: noop,
-      onText: noop,
       generate,
     });
     expect(generate).toHaveBeenCalledTimes(2);
@@ -251,7 +243,6 @@ describe("Protected rewrite pipeline", () => {
       text,
       mode: "standard",
       onProgress: noop,
-      onText: noop,
       generate,
     });
     expect(result.changed).toBe(true);
@@ -276,7 +267,6 @@ describe("Protected rewrite pipeline", () => {
       mode: "standard",
       depth: "rephrase",
       onProgress: noop,
-      onText: noop,
       generate,
     });
     expect(result.text).toContain("In the evening, adults may learn");
@@ -306,7 +296,6 @@ describe("Protected rewrite pipeline", () => {
       mode: "standard",
       depth: "rephrase",
       onProgress: noop,
-      onText: noop,
       generate,
     });
     expect(result.text).toBe(
@@ -345,7 +334,6 @@ describe("Protected rewrite pipeline", () => {
       mode: "standard",
       depth: "rephrase",
       onProgress: noop,
-      onText: noop,
       generate,
     });
     expect(result.text).toBe(
@@ -368,7 +356,6 @@ describe("Protected rewrite pipeline", () => {
       mode: "standard",
       depth: "rephrase",
       onProgress: noop,
-      onText: noop,
       generate: async ({ attempt, systemPrompt }) => {
         if (attempt < 2) {
           expect(systemPrompt).toContain(
@@ -403,12 +390,41 @@ describe("Protected rewrite pipeline", () => {
       styleNote: "Friendly and direct",
       generate,
       onProgress: noop,
-      onText: noop,
     });
     expect(result.text).toBe(
       "You do not need to reserve a spot at the library.",
     );
     expect(result.retries).toBe(1);
+  });
+
+  it("recovers a length-limited rewrite using shorter source groups", async () => {
+    const first =
+      "The team needs to review the workshop feedback before deciding which changes to make and how to schedule the next series. ".repeat(
+        4,
+      );
+    const second =
+      "The library runs a series of sessions for visitors who want help with reading, technology and everyday tasks. "
+        .repeat(4)
+        .trim();
+    const generate = vi.fn(async ({ attempt, userPrompt }) => {
+      if (attempt === 0) throw new RewriteOutputLimitError();
+      const excerpt = userPrompt.split("\n\n").at(-1)!;
+      expect(excerpt.length).toBeLessThanOrEqual(700);
+      return excerpt
+        .replaceAll("needs to review", "should review")
+        .replaceAll("runs a series of", "offers");
+    });
+    const result = await runRewritePipeline({
+      text: first + second,
+      mode: "standard",
+      generate,
+      onProgress: noop,
+    });
+    expect(generate).toHaveBeenCalledTimes(3);
+    expect(result.changed).toBe(true);
+    expect(result.text).toContain("should review the workshop feedback");
+    expect(result.text).toContain("offers sessions for visitors");
+    expect(result.checks[0]?.reason).toContain("output limit");
   });
 
   it("stops before generation and never substitutes a rule-based rewrite", async () => {
@@ -421,7 +437,6 @@ describe("Protected rewrite pipeline", () => {
         mode: "standard",
         signal: controller.signal,
         generate,
-        onText: noop,
         onProgress: noop,
       }),
     ).rejects.toThrow("stopped");

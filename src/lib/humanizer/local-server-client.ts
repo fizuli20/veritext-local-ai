@@ -5,16 +5,14 @@
  * - Custom OpenAI-compatible endpoints
  */
 
-import { cleanLlmOutput, extractDeltaContent } from "./output-cleaner";
+import {
+  cleanLlmOutput,
+  extractDeltaContent,
+  RewriteOutputLimitError,
+} from "./output-cleaner";
 
 export type ModelFamily =
-  | "gemma"
-  | "qwen"
-  | "mistral"
-  | "muse"
-  | "llama"
-  | "hemmingway"
-  | "other";
+  "gemma" | "qwen" | "mistral" | "muse" | "llama" | "hemmingway" | "other";
 
 export interface DiscoveredModel {
   id: string;
@@ -382,7 +380,7 @@ export interface StreamChatCompletionOptions {
   userPrompt: string;
   style?: "default" | "academic" | "creative";
   signal?: AbortSignal;
-  onChunk: (chunk: string, fullCleanedText: string) => void;
+  onChunk?: (chunk: string, fullCleanedText: string) => void;
   onTelemetry?: (telemetry: StreamTelemetry) => void;
 }
 
@@ -481,7 +479,6 @@ export async function streamChatCompletion({
   const decoder = new TextDecoder("utf-8");
 
   let accumulatedRaw = "";
-  let accumulatedClean = "";
   let tokenCount = 0;
   const startTime = performance.now();
   let firstTokenTime: number | null = null;
@@ -510,8 +507,7 @@ export async function streamChatCompletion({
     tokenCount++;
     if (firstTokenTime === null) firstTokenTime = performance.now();
     accumulatedRaw += content;
-    accumulatedClean = cleanLlmOutput(accumulatedRaw);
-    onChunk(content, accumulatedClean);
+    onChunk?.(content, cleanLlmOutput(accumulatedRaw));
     const now = performance.now(),
       elapsedMs = Math.round(now - startTime),
       activeGenSec = (now - firstTokenTime) / 1000;
@@ -537,10 +533,7 @@ export async function streamChatCompletion({
     }
     buffer += decoder.decode();
     if (buffer.trim()) processLine(buffer);
-    if (truncated)
-      throw new Error(
-        "The model reached its output limit. The draft may be incomplete; shorten the input.",
-      );
+    if (truncated) throw new RewriteOutputLimitError();
     if (!completed)
       throw new Error(
         "The connection ended before the model completed. The draft is incomplete.",
