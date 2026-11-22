@@ -150,6 +150,7 @@ export async function runRewritePipeline(options: {
   text: string;
   mode: string;
   depth?: RewriteDepth;
+  styleNote?: string;
   terms?: string[];
   signal?: AbortSignal;
   generate: GenerateRewrite;
@@ -160,6 +161,7 @@ export async function runRewritePipeline(options: {
     text,
     mode,
     depth = "polish",
+    styleNote,
     terms = [],
     signal,
     generate,
@@ -213,7 +215,7 @@ export async function runRewritePipeline(options: {
       );
       const candidate = await generate({
         systemPrompt:
-          rewriteInstructions(mode, depth) +
+          rewriteInstructions(mode, depth, styleNote) +
           (preserveQuantityClaims
             ? " Keep any sentence reporting two or more quantities unchanged, including the actions and subjects tied to those amounts."
             : "") +
@@ -371,7 +373,7 @@ export async function runRewritePipeline(options: {
         const trailing = segment.text.match(/\s*$/)?.[0] ?? "";
         const prefix = completed + recovered + leading;
         const draft = await generate({
-          systemPrompt: rewriteInstructions(mode, depth),
+          systemPrompt: rewriteInstructions(mode, depth, styleNote),
           userPrompt: `Edit this excerpt with its original meaning and purpose intact. Keep who does what, when and why. A sentence about how to judge success must still describe that criterion. Remove empty lead-ins rather than turning them into claims.${segment.kind === "qualified" ? " Keep every original negative expression and possibility word, attached to the same claims. Leave any difficult sentence intact." : ""} Return only the edited excerpt.\n\n${segment.text.trim()}`,
           attempt: 2,
           onText: (value) => onText(prefix + value),

@@ -205,6 +205,36 @@ self.onmessage = async ({ data }: MessageEvent) => {
       const evidence = describeEvidence(text, docScore, tier);
       const eligible = eligiblePassages(text);
       const passageSignals: PassageSignal[] = [];
+      const sentences = tokenizeSentences(text);
+      const results = sentences.map((sentence) => ({
+        ...sentence,
+        score: null as number | null,
+      }));
+      const fullLimit = Math.min(60, sentences.length);
+      const contextTarget = data.includeContexts
+        ? fullLimit
+        : Math.min(8, fullLimit);
+      const postResult = (complete: boolean) => {
+        self.postMessage({
+          type: complete ? "result" : "partial-result",
+          id: data.id,
+          text,
+          evidence,
+          sentences: results,
+          passages: passageSignals,
+          eligiblePassageCount: eligible.length,
+          engine: `${profile.engine} · ${tier === "light" ? "WASM Q8" : "WASM · INT8 weights / FP32 math"}`,
+          tier,
+          contextLimit: fullLimit,
+          contextTarget,
+          model: profile.model,
+          revision: profile.revision,
+          latencyMs: Math.round(performance.now() - started),
+          loadingMs: Math.round(loadedAt - started),
+        });
+      };
+      // A document score is useful even while the slower context checks run.
+      postResult(false);
       for (const passage of eligible.slice(0, PASSAGE_LIMIT)) {
         self.postMessage({
           type: "phase",
@@ -213,46 +243,25 @@ self.onmessage = async ({ data }: MessageEvent) => {
         });
         const score = await scoreText(text.slice(passage.start, passage.end));
         passageSignals.push({ ...passage, score });
+        postResult(false);
       }
-
-      const sentences = data.includeContexts ? tokenizeSentences(text) : [];
-      const results = [];
-      // Context windows are clearly labelled, never represented as isolated sentence probabilities.
-      for (let i = 0; i < sentences.length; i++) {
-        const current = sentences[i]!;
+      // Each score uses the sentence and its neighbors. No individual
+      // sentence is represented as having a calibrated authorship probability.
+      for (let i = 0; i < contextTarget; i++) {
+        self.postMessage({
+          type: "analysis-progress",
+          id: data.id,
+          completed: i,
+          total: contextTarget,
+        });
         const context = text.slice(
           sentences[Math.max(0, i - 1)]!.start,
           sentences[Math.min(sentences.length - 1, i + 1)]!.end,
         );
-        if (i < 60) {
-          results.push({ ...current, score: await scoreText(context) });
-        } else {
-          results.push({ ...current, score: null });
-        }
-        if (i < 60)
-          self.postMessage({
-            type: "analysis-progress",
-            id: data.id,
-            completed: i + 1,
-            total: Math.min(60, sentences.length),
-          });
+        results[i]!.score = await scoreText(context);
+        if (i % 2 === 1 && i + 1 < contextTarget) postResult(false);
       }
-      self.postMessage({
-        type: "result",
-        id: data.id,
-        text,
-        evidence,
-        sentences: results,
-        passages: passageSignals,
-        eligiblePassageCount: eligible.length,
-        engine: `${profile.engine} · ${tier === "light" ? "WASM Q8" : "WASM · INT8 weights / FP32 math"}`,
-        tier,
-        contextLimit: data.includeContexts && sentences.length > 60 ? 60 : null,
-        model: profile.model,
-        revision: profile.revision,
-        latencyMs: Math.round(performance.now() - started),
-        loadingMs: Math.round(loadedAt - started),
-      });
+      postResult(true);
     }
   } catch (error) {
     self.postMessage({

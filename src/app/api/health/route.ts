@@ -7,7 +7,7 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     product: "Veritext",
-    version: "4.5.1",
+    version: "4.6.0",
     zeroKeyMandate: true,
     externalApiKeysRequired: false,
     engines: {
@@ -20,6 +20,8 @@ export async function GET() {
         readiness:
           "Client must load model; server health does not prove client inference works.",
         calibration: "Provisional HC3 reference; see /benchmarks",
+        contextHighlights:
+          "The initial scan checks up to 8 neighboring contexts. Optional expansion checks up to 60. The document score appears before context checks finish.",
         paragraphSignals:
           "First six eligible English paragraphs, minimum 80 words each. Uncalibrated model signals.",
       },
@@ -32,6 +34,7 @@ export async function GET() {
         semanticGuarantee: false,
         protectedSpans: true,
         rewriteDepths: ["polish", "rephrase"],
+        customStyle: "Optional local voice or audience preference",
         documentImport: "Browser-local TXT, Markdown, DOCX and text-based PDF",
         sectionRetryLimit: 1,
         protectedSentenceRecoveryLimit: 4,

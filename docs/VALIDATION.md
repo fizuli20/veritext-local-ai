@@ -1,3 +1,15 @@
+# Veritext 4.6.0 workflow and local model validation
+
+The detector shows the document score as soon as it is ready, then adds paragraph signals and the first eight neighboring sentence-context scores. Check more contexts expands the scan to up to 60 contexts, preserving completed highlights while additional work runs. A stopped scan preserves completed results. JSON reports include context coverage, and the print layout can be saved as PDF using the browser. Context scores remain uncalibrated model signals. The existing detector and scoring thresholds were retained.
+
+On the built-in 152-word library example in native Chrome, the Detailed detector returned 98/100. The initial scan showed 8 of 9 contexts, and expansion reached 9 of 9 with the same document score. This checks the workflow on a known AI sample. It does not establish accuracy or parity on unseen writing.
+
+Custom style lets you describe a voice or audience separately from rewrite depth and tone. In a native Chrome run with Qwen 2.5 3B, a 62-word library notice became 60 words in 13.1 seconds. The notice retained the exact service outage times, existing reservations, email instruction, and access to the building, books, and study rooms. The edits were modest.
+
+The release passed 108 unit tests, 15 browser integration tests, lint, and the production build. The browser tests include coverage for progressive scores, retaining partial results after Stop, and rendering a print-ready PDF. Native Chrome model tests are recorded separately from mocked integration tests.
+
+---
+
 # Veritext 4.5.1 quality follow-up
 
 The Detailed detector now reports up to six eligible English paragraph scores alongside the document score. On a browser test combining HC3 human-source passage `wiki_csai-120-0` with the built-in AI-written library example, the document signal was 70/100, with paragraph signals of 8/100 and 98/100. This deliberately contrasting example verifies the UI and score provenance. It cannot estimate accuracy on mixed documents in general. Paragraph scores are uncalibrated and their offsets are included in the exported analysis.

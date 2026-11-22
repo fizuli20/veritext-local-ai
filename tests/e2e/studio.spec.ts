@@ -461,3 +461,68 @@ test("rewrite depth reaches the engine and the completed draft keeps its depth l
   ).toBeVisible();
   expect(prompts.at(-1)).toContain("restrained copy edit");
 });
+
+test("keeps the document result available while adding context highlights and after stopping", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor() {
+        const code = `
+          self.onmessage = ({data}) => {
+            const {id, text} = data;
+            const evidence = {status:"signal", verdict:"Elevated AI-like signal", modelScore:0.98, calibratedProbability:null, explanation:"Fixture document result."};
+            const draft = {id, text, evidence, engine:"Fixture detector", latencyMs:25,
+              contextLimit:2, contextTarget:2, sentences:[{start:0,end:20,score:null},{start:20,end:text.length,score:null}], passages:[]};
+            self.postMessage({type:"partial-result", ...draft});
+            setTimeout(() => {
+              draft.sentences[0].score = 0.91;
+              self.postMessage({type:"partial-result", ...draft});
+            }, 400);
+          };
+        `;
+        super(
+          URL.createObjectURL(new Blob([code], { type: "text/javascript" })),
+        );
+      }
+    };
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "AI Detector", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Original text", exact: true })
+    .fill(
+      "The library staff is considering changing the opening hours to make it easier for residents to visit. ".repeat(
+        6,
+      ),
+    );
+  await page.getByRole("button", { name: "Detect text" }).click();
+  await expect(
+    page.getByText("Checked 0 of 2 sentence contexts."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Checked 1 of 2 sentence contexts."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Elevated AI-like signal" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Check more contexts" }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("heading", { name: "Veritext text analysis" }),
+  ).not.toBeVisible();
+  await page.emulateMedia({ media: "print" });
+  await expect(
+    page.getByRole("heading", { name: "Veritext text analysis" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Original text", exact: true }),
+  ).not.toBeVisible();
+  expect((await page.pdf()).subarray(0, 5).toString()).toBe("%PDF-");
+});

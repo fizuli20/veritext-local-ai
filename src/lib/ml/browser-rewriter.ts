@@ -34,20 +34,28 @@ export async function loadBrowserRewriter(
     };
     signal?.addEventListener("abort", abortLoad, { once: true });
     if (signal?.aborted) abortLoad();
-    timeout = setTimeout(() => {
-      worker.terminate();
-      reject(
-        new Error(
-          "Model download timed out after 5 minutes. Check your connection and retry.",
-        ),
-      );
-    }, 300000);
+    timeout = setTimeout(
+      () => {
+        worker.terminate();
+        reject(
+          new Error(
+            "Model setup timed out. Check your connection and retry. Completed model files may be cached.",
+          ),
+        );
+      },
+      tier === "advanced" ? 600000 : 300000,
+    );
   });
   try {
     const loading = CreateWebWorkerMLCEngine(
       worker,
       record.model_id,
-      { initProgressCallback: (report) => onProgress(report.text) },
+      {
+        initProgressCallback: (report) => onProgress(report.text),
+        ...(tier === "advanced"
+          ? { appConfig: { ...prebuiltAppConfig, cacheBackend: "indexeddb" } }
+          : {}),
+      },
       { context_window_size: 4096 },
     );
     const engine = await Promise.race([loading, cancelled]);

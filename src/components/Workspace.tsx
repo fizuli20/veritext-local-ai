@@ -49,6 +49,7 @@ interface Scan {
   revision?: string;
   tier?: DetectorTier;
   contextLimit?: number | null;
+  contextTarget?: number;
   passages?: PassageSignal[];
   eligiblePassageCount?: number;
   sentences: {
@@ -69,6 +70,7 @@ export function Workspace() {
   const [source, setSource] = useState("");
   const [depth, setDepth] = useState<RewriteDepth>("rephrase");
   const [mode, setMode] = useState("standard");
+  const [styleNote, setStyleNote] = useState("");
   const [outputDepth, setOutputDepth] = useState<RewriteDepth>("rephrase");
   const [outputMode, setOutputMode] = useState("standard");
   const [writingTier, setWritingTier] = useState<WritingModelTier>("balanced");
@@ -160,7 +162,11 @@ export function Workspace() {
     if (timer.current) clearTimeout(timer.current);
     setBusy(null);
     setProgress("");
-    setNotice("Stopped. Any partial rewrite is an unfinished draft.");
+    setNotice(
+      busy === "scan"
+        ? "Scan stopped. Completed scores are still available."
+        : "Stopped. Any partial rewrite is an unfinished draft.",
+    );
   }
   function editInput(value: string) {
     setPendingRewrite(false);
@@ -223,6 +229,10 @@ export function Workspace() {
       profile: scan.tier ?? null,
       loadingMs: scan.loadingMs ?? 0,
       contextLimit: scan.contextLimit ?? null,
+      contextTarget: scan.contextTarget ?? 0,
+      contextsScored: scan.sentences.filter(
+        (sentence) => sentence.score !== null,
+      ).length,
       latencyMs: scan.latencyMs,
       contexts: scan.sentences,
       passages: scan.passages ?? [],
@@ -314,8 +324,14 @@ export function Workspace() {
       setSettings(false);
       setNotice("Browser writing model is ready.");
     } catch (err) {
-      if (operation.current === id)
-        setError(err instanceof Error ? err.message : String(err));
+      if (operation.current === id) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(
+          /NetworkError|Failed to fetch|Cache\.add/i.test(message)
+            ? "The model download stopped. Retry to resume from cached files, or choose a smaller model."
+            : message,
+        );
+      }
     } finally {
       if (operation.current === id) {
         setBusy(null);
@@ -349,7 +365,7 @@ export function Workspace() {
     setProgress(
       `Loading neural detector (about ${DETECTOR_PROFILES[detectorTier].downloadMB} MB on first use)…`,
     );
-    setScan(null);
+    if (!includeContexts) setScan(null);
     try {
       if (!detector.current) {
         const worker = new Worker(
@@ -389,11 +405,40 @@ export function Workspace() {
         }
         if (data.type === "phase" && data.id === id) setProgress(data.message);
         if (data.type === "analysis-progress" && data.id === id)
-          setProgress(`Checking context ${data.completed} of ${data.total}…`);
+          setProgress(
+            `Checking context ${data.completed + 1} of ${data.total}…`,
+          );
         if (data.type === "error")
           fail(
             `Neural detector unavailable: ${data.error}. No fallback score was substituted.`,
           );
+        if (data.type === "partial-result" && data.id === id) {
+          const next: Scan = data;
+          setScan((previous) => {
+            if (
+              !includeContexts ||
+              !previous ||
+              previous.text !== next.text ||
+              previous.tier !== next.tier
+            )
+              return next;
+            return {
+              ...next,
+              passages:
+                (next.passages?.length ?? 0) >= (previous.passages?.length ?? 0)
+                  ? next.passages
+                  : previous.passages,
+              sentences: next.sentences.map((sentence, index) => {
+                const earlier = previous.sentences[index];
+                return sentence.score === null &&
+                  earlier?.start === sentence.start &&
+                  earlier.end === sentence.end
+                  ? earlier
+                  : sentence;
+              }),
+            };
+          });
+        }
         if (data.type === "result" && data.id === id) {
           if (timer.current) clearTimeout(timer.current);
           setScan(data);
@@ -462,6 +507,7 @@ export function Workspace() {
         text: original,
         mode,
         depth,
+        styleNote,
         terms: lockedTerms
           .split(",")
           .map((t) => t.trim())
@@ -494,6 +540,9 @@ export function Workspace() {
             stream: true,
             temperature: attempt ? 0.65 : 0.5,
             max_tokens: 1800,
+            ...(browserName === WRITING_MODELS.advanced.id
+              ? { extra_body: { enable_thinking: false } }
+              : {}),
           });
           let draft = "",
             truncated = false;
@@ -531,6 +580,7 @@ export function Workspace() {
     }
   }, [
     activeName,
+    browserName,
     input,
     output,
     source,
@@ -538,6 +588,7 @@ export function Workspace() {
     outputMode,
     outputDepth,
     mode,
+    styleNote,
     lockedTerms,
     depth,
     useLocal,
@@ -704,6 +755,22 @@ export function Workspace() {
                 automatically.
               </span>
             </div>
+          )}
+          {tab === "humanizer" && (
+            <details className="vt-lock-toolbar">
+              <summary>Custom style</summary>
+              <label htmlFor="rewrite-style-note">
+                Describe the voice or audience
+              </label>
+              <input
+                id="rewrite-style-note"
+                disabled={!!busy}
+                value={styleNote}
+                onChange={(event) => setStyleNote(event.target.value)}
+                maxLength={300}
+                placeholder="For example, warm and direct, with short sentences"
+              />
+            </details>
           )}
           <div
             className={`vt-editors ${tab === "detector" ? "vt-detector-editors" : ""}`}
@@ -990,6 +1057,7 @@ export function Workspace() {
                 )
               ) : scan ? (
                 <div className="vt-scan" data-testid="detector-result">
+                  <h1 className="vt-print-title">Veritext text analysis</h1>
                   <p className="vt-eyebrow">{scan.engine}</p>
                   <h2>{scan.evidence.verdict}</h2>
                   {scan.evidence.referenceProbability !== undefined && (
@@ -1055,30 +1123,25 @@ export function Workspace() {
                       ))}
                     </section>
                   )}
-                  {scan.evidence.modelScore !== null &&
-                    scan.sentences.length === 0 && (
-                      <button
-                        className="vt-secondary"
-                        disabled={!!busy}
-                        onClick={() => detect(true)}
-                      >
-                        Inspect sentence contexts <ArrowRight size={15} />
-                      </button>
-                    )}
                   {scan.sentences.length > 0 && (
                     <>
                       <h3>Context highlights</h3>
                       <p className="vt-small">
-                        Amber marks contexts with a model signal of 80/100 or
-                        above. Sentence context scores are not calibrated
-                        probabilities.
+                        Amber marks a signal of 80/100 or higher in the sentence
+                        and its neighbors. Gray marks text with no context score
+                        yet.
                       </p>
-                      {scan.contextLimit && (
-                        <p className="vt-small">
-                          Only the first {scan.contextLimit} contexts were
-                          scored to limit runtime. Remaining text is unscored.
-                        </p>
-                      )}
+                      <p className="vt-small">
+                        Checked{" "}
+                        {
+                          scan.sentences.filter(
+                            (sentence) => sentence.score !== null,
+                          ).length
+                        }{" "}
+                        of {scan.sentences.length} sentence contexts.
+                        {(scan.contextLimit ?? 0) < scan.sentences.length &&
+                          ` A scan can check up to ${scan.contextLimit} contexts.`}
+                      </p>
                       <div className="vt-highlights">
                         {scan.sentences.map((s, i) => (
                           <span key={i}>
@@ -1092,9 +1155,11 @@ export function Workspace() {
                               data-score={s.score}
                               style={{
                                 background:
-                                  s.score !== null && s.score >= 0.8
-                                    ? "#fef08a"
-                                    : "transparent",
+                                  s.score === null
+                                    ? "#f1f3ef"
+                                    : s.score >= 0.8
+                                      ? "#fef08a"
+                                      : "transparent",
                               }}
                               title={
                                 s.score === null
@@ -1110,6 +1175,17 @@ export function Workspace() {
                       </div>
                     </>
                   )}
+                  {scan.sentences.some((sentence) => sentence.score === null) &&
+                    scan.sentences.filter((sentence) => sentence.score !== null)
+                      .length < (scan.contextLimit ?? 0) && (
+                      <button
+                        className="vt-secondary"
+                        disabled={!!busy}
+                        onClick={() => detect(true)}
+                      >
+                        Check more contexts <ArrowRight size={15} />
+                      </button>
+                    )}
                   {scan.evidence.modelScore !== null && (
                     <p className="vt-small">
                       {(scan.latencyMs / 1000).toFixed(1)} seconds
@@ -1124,8 +1200,18 @@ export function Workspace() {
                   <button className="vt-secondary" onClick={saveScan}>
                     Save analysis
                   </button>
+                  {scan.evidence.modelScore !== null && (
+                    <button
+                      className="vt-secondary"
+                      disabled={!!busy}
+                      onClick={() => window.print()}
+                    >
+                      Print / Save PDF
+                    </button>
+                  )}
                   <button
                     className="vt-secondary"
+                    disabled={!!busy}
                     onClick={() => setTab("humanizer")}
                   >
                     Edit this text <ArrowRight size={15} />

@@ -691,3 +691,33 @@ body {
   box-shadow: inset 0 0 0 1px #668156;
 }
 .vt-passage { white-space: pre-wrap; overflow-wrap: anywhere; }
+details.vt-lock-toolbar > summary { cursor: pointer; }
+details.vt-lock-toolbar[open] > input { width: 100%; margin-top: 6px; }
+details.vt-lock-toolbar[open] > label { display: block; margin-top: 8px; }
+.vt-print-title { display: none; }
+
+@media print {
+  .vt-app:has(.vt-scan) :is(.vt-header, .vt-intro, .vt-message, .vt-toolbar, .vt-below, .vt-notes, .vt-footer, .vt-progress, .vt-modal-backdrop),
+  .vt-app:has(.vt-scan) .vt-detector-editors > .vt-pane:first-child,
+  .vt-app:has(.vt-scan) .vt-output > .vt-pane-heading,
+  .vt-scan button {
+    display: none !important;
+  }
+
+  .vt-app:has(.vt-scan) :is(.vt-main, .vt-studio, .vt-output, .vt-scan, .vt-highlights) {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    box-shadow: none;
+    background: white;
+    color: black;
+  }
+
+  .vt-app:has(.vt-scan) .vt-detector-editors { display: block; min-height: 0; }
+  .vt-scan mark { print-color-adjust: exact; }
+  .vt-print-title { display: block; font-size: 24px; margin-bottom: 12px; }
+}

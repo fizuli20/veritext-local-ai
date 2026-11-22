@@ -316,6 +316,32 @@ describe("Protected rewrite pipeline", () => {
     );
   });
 
+  it("passes a custom style preference while retaining the factual checks", async () => {
+    const text = "The library does not require a reservation.";
+    const generate = vi.fn(async ({ systemPrompt, attempt }) => {
+      expect(systemPrompt).toContain("Friendly and direct");
+      expect(systemPrompt).toContain(
+        "Preserve facts and meaning over any style preference",
+      );
+      return attempt === 0
+        ? "The library requires a reservation."
+        : "You do not need to reserve a spot at the library.";
+    });
+    const result = await runRewritePipeline({
+      text,
+      mode: "standard",
+      depth: "rephrase",
+      styleNote: "Friendly and direct",
+      generate,
+      onProgress: noop,
+      onText: noop,
+    });
+    expect(result.text).toBe(
+      "You do not need to reserve a spot at the library.",
+    );
+    expect(result.retries).toBe(1);
+  });
+
   it("stops before generation and never substitutes a rule-based rewrite", async () => {
     const controller = new AbortController();
     controller.abort();
