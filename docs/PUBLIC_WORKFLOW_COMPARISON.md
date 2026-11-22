@@ -24,10 +24,10 @@ ZeroGPT exposes a whole-document percentage, suspect-text highlights, document u
 | Shared passage | ZeroGPT observed result | Veritext Detailed observed result |
 | --- | --- | --- |
 | Built-in 152-word AI-authored library passage | 100% AI/GPT in the previous normal-form test | 98/100, elevated signal, native Chrome |
-| Historical Wikipedia photosynthesis passage, 128 words | 0% AI/GPT, “Human written” | 37/100 raw signal, Inconclusive, 3.6 s warm native Chrome |
-| Factual 96-word AI-authored passage | Submitted; remained pending for several minutes; no score recorded | Comparison incomplete; no number inferred for the public tool |
+| Modified historical Wikipedia photosynthesis passage | 0% AI/GPT, “Human written” | 37/100 raw signal, Inconclusive, 3.6 s warm native Chrome |
+| Factual 96-word AI-authored passage | 80.7% AI/GPT, completed after several minutes | 99/100, elevated signal, 3.0 s with the model already loaded |
 
-The historical human-source case came from English Wikipedia, Photosynthesis revision 1062819171 (2021-12-30), via the pinned TextSight CC-BY-SA-4.0 set. The first native typing operation removed Greek characters; both tools were deliberately given the identical observed 857-character text containing `phs ()` and `sunthesis ()`. This was a modified human-source passage, not an untouched authentication sample. We report that limitation rather than silently treating the texts as identical to the original corpus row.
+The historical human-source case came from English Wikipedia, Photosynthesis revision 1062819171 (2021-12-30), via the pinned TextSight CC-BY-SA-4.0 set. The first native typing operation removed Greek characters; both tools were deliberately given the identical observed 857-character text containing `phs ()` and `sunthesis ()`. This modified human-source passage displayed 128 words in ZeroGPT and 125 in Veritext because the tools count words differently.
 
 A raw model signal and a proprietary percentage have different meanings. We do not force parity with ZeroGPT, learn its decision boundary from a handful of examples, or change a known-human input to a fabricated zero. The existing 394-item empirical comparisons and historical calibration remain the detector evidence. New UI/report features do not change the model or its scoring rules.
 

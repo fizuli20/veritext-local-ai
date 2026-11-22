@@ -47,12 +47,18 @@
       "provenance": "English Wikipedia, Photosynthesis revision 1062819171 (2021-12-30), via pinned TextSight control set. CC BY-SA 4.0. Unicode Greek transliteration was lost during initial typing; BOTH tools received the identical observed 857-character input containing phs () and sunthesis ().",
       "zerogpt": "0% AI GPT; Your Text is Human written",
       "veritextDetailed": "37/100, Inconclusive, 3.6 seconds warm native Chrome.",
-      "limitation": "Light editing/encoding changes and one example; raw model score is not human/AI authorship probability."
+      "limitation": "Light editing/encoding changes and one example; raw model score is not human/AI authorship probability.",
+      "wordCountsDisplayed": {
+        "zeroGPT": 128,
+        "veritext": 125
+      }
     },
     {
       "id": "factual-96",
-      "zerogpt": "Submitted through normal form; remained disabled/pending for several minutes. No completed score recorded.",
-      "limitation": "No score inferred; no refresh loop, private API request or protection bypass."
+      "provenance": "AI-authored Project Atlas test fixture",
+      "zerogpt": "80.7% AI GPT. The public form took several minutes to finish.",
+      "veritextDetailed": "99/100, elevated AI-like signal, 3.0 seconds with the model already loaded in native Chrome.",
+      "limitation": "These scales have different meanings. ZeroGPT completion was observed after moving between tabs, so elapsed time is not directly comparable."
     }
   ],
   "largerModelBaseline": {
