@@ -40,7 +40,17 @@ import {
   type RewriteOutcome,
 } from "@/lib/humanizer/rewrite-pipeline";
 import { WRITING_MODELS, type WritingModelTier } from "@/lib/ml/writing-models";
-import type { PassageSignal } from "@/lib/detector/passages";
+import {
+  summarizePassageSignals,
+  type PassageSignal,
+} from "@/lib/detector/passages";
+import {
+  readWorkspace,
+  WORKSPACE_ENABLED_KEY,
+  WORKSPACE_KEY,
+  type RewriteMode,
+  type WorkspaceSnapshot,
+} from "@/lib/workspace-storage";
 import { computeWordDiff } from "@/lib/nlp/diff";
 
 interface Scan {
@@ -64,6 +74,8 @@ interface Scan {
   }[];
 }
 type Tool = "detector" | "humanizer";
+type DraftSelection = { start: number; end: number };
+type RewriteTarget = "document" | DraftSelection;
 type RewriteScanSource = "original" | "draft";
 type RewriteScanSignal = { text: string; tier: DetectorTier; score: number };
 
@@ -72,6 +84,8 @@ const sample =
 
 export function Workspace() {
   const [interactive, setInteractive] = useState(false);
+  const [rememberWorkspace, setRememberWorkspace] = useState(false);
+  const [storageError, setStorageError] = useState("");
   const [detectorTier, setDetectorTier] = useState<DetectorTier>("detailed");
   const [tab, setTab] = useState<Tool>("humanizer");
   const [rewriteInput, setRewriteInput] = useState("");
@@ -83,10 +97,10 @@ export function Workspace() {
   const [output, setOutput] = useState("");
   const [source, setSource] = useState("");
   const [depth, setDepth] = useState<RewriteDepth>("rephrase");
-  const [mode, setMode] = useState("standard");
+  const [mode, setMode] = useState<RewriteMode>("standard");
   const [styleNote, setStyleNote] = useState("");
   const [outputDepth, setOutputDepth] = useState<RewriteDepth>("rephrase");
-  const [outputMode, setOutputMode] = useState("standard");
+  const [outputMode, setOutputMode] = useState<RewriteMode>("standard");
   const [writingTier, setWritingTier] = useState<WritingModelTier>("balanced");
   const [lockedTerms, setLockedTerms] = useState("");
   const [rewriteReport, setRewriteReport] = useState<RewriteOutcome | null>(
@@ -96,8 +110,9 @@ export function Workspace() {
     source: string;
     output: string;
     engine: string;
-    mode: string;
+    mode: RewriteMode;
     depth: RewriteDepth;
+    report: RewriteOutcome | null;
   } | null>(null);
   const [scan, setScan] = useState<Scan | null>(null);
   const [busy, setBusy] = useState<"scan" | "rewrite" | "load" | null>(null);
@@ -108,7 +123,22 @@ export function Workspace() {
   const [settings, setSettings] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInput = useRef<HTMLInputElement | null>(null);
-  const [pendingRewrite, setPendingRewrite] = useState(false);
+  const draftField = useRef<HTMLTextAreaElement | null>(null);
+  const [pendingRewrite, setPendingRewrite] = useState<RewriteTarget | null>(
+    null,
+  );
+  const [selection, setSelection] = useState<DraftSelection | null>(null);
+  function captureSelection(field: HTMLTextAreaElement) {
+    const { selectionStart: start, selectionEnd: end, value } = field;
+    const next =
+      start < end && value.slice(start, end).trim() ? { start, end } : null;
+    setSelection((previous) =>
+      previous?.start === next?.start && previous?.end === next?.end
+        ? previous
+        : next,
+    );
+  }
+
   const [baseUrl, setBaseUrl] = useState("http://localhost:1234/v1");
   const [models, setModels] = useState<DiscoveredModel[]>([]);
   const [modelId, setModelId] = useState("");
@@ -146,6 +176,121 @@ export function Workspace() {
   );
 
   useEffect(() => {
+    function handleSelection() {
+      const field = draftField.current;
+      if (field && document.activeElement === field) captureSelection(field);
+    }
+    // The native event covers text selection from browser editing controls and
+    // assistive technology, in addition to React's pointer/keyboard selection.
+    document.addEventListener("selectionchange", handleSelection, true);
+    return () =>
+      document.removeEventListener("selectionchange", handleSelection, true);
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(WORKSPACE_ENABLED_KEY) === "yes") {
+        setRememberWorkspace(true);
+        const localCopy = localStorage.getItem(WORKSPACE_KEY);
+        const restored = readWorkspace(localCopy);
+        if (restored) {
+          setRewriteInput(restored.rewriteInput);
+          setDetectorInput(restored.detectorInput);
+          setOutput(restored.output);
+          setSource(restored.source);
+          setLockedTerms(restored.lockedTerms);
+          setStyleNote(restored.styleNote);
+          setMode(restored.mode);
+          setOutputMode(restored.outputMode);
+          setDepth(restored.depth);
+          setOutputDepth(restored.outputDepth);
+          setDetectorTier(restored.detectorTier);
+          setTab(restored.tab);
+          if (restored.output) setEngineName("Restored draft");
+        } else if (localCopy) {
+          setRememberWorkspace(false);
+          setStorageError(
+            "This browser could not restore the saved workspace.",
+          );
+        }
+      }
+    } catch {
+      // An unavailable local store must not block the editor.
+    }
+    function handleStorage(event: StorageEvent) {
+      if (event.key === WORKSPACE_ENABLED_KEY && event.newValue !== "yes")
+        setRememberWorkspace(false);
+    }
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  useEffect(() => {
+    if (!interactive || !rememberWorkspace) return;
+    try {
+      if (localStorage.getItem(WORKSPACE_ENABLED_KEY) !== "yes") return;
+      const snapshot: WorkspaceSnapshot = {
+        version: 1,
+        rewriteInput,
+        detectorInput,
+        output,
+        source,
+        lockedTerms,
+        styleNote,
+        mode,
+        outputMode,
+        depth,
+        outputDepth,
+        detectorTier,
+        tab,
+      };
+      const serialized = JSON.stringify(snapshot);
+      if (serialized.length > 2_000_000)
+        throw new Error("Workspace is too large.");
+      localStorage.setItem(WORKSPACE_KEY, serialized);
+      setStorageError("");
+    } catch {
+      setStorageError(
+        "Could not save this workspace. Recent changes may be missing from the saved copy.",
+      );
+    }
+  }, [
+    interactive,
+    rememberWorkspace,
+    rewriteInput,
+    detectorInput,
+    output,
+    source,
+    lockedTerms,
+    styleNote,
+    mode,
+    outputMode,
+    depth,
+    outputDepth,
+    detectorTier,
+    tab,
+  ]);
+
+  function rememberOnDevice(enabled: boolean) {
+    try {
+      if (enabled) {
+        localStorage.setItem(WORKSPACE_ENABLED_KEY, "yes");
+      } else {
+        localStorage.removeItem(WORKSPACE_ENABLED_KEY);
+        localStorage.removeItem(WORKSPACE_KEY);
+      }
+      setRememberWorkspace(enabled);
+      setStorageError("");
+    } catch {
+      setStorageError(
+        enabled
+          ? "This browser is blocking local workspace storage."
+          : "The saved copy could not be removed. Try again or clear this site's data.",
+      );
+    }
+  }
+
+  useEffect(() => {
     setInteractive(true);
     // Retire the old cache-first shell so deployed fixes cannot be hidden by it.
     navigator.serviceWorker
@@ -166,7 +311,7 @@ export function Workspace() {
   }, []);
 
   function stop() {
-    setPendingRewrite(false);
+    setPendingRewrite(null);
     operation.current++;
     abort.current?.abort();
     browserEngine.current?.interruptGenerate();
@@ -194,7 +339,7 @@ export function Workspace() {
   }
 
   function editInput(value: string, tool = tab) {
-    setPendingRewrite(false);
+    setPendingRewrite(null);
     setError("");
     if (tool === "detector") {
       setDetectorInput(value);
@@ -273,6 +418,7 @@ export function Workspace() {
       latencyMs: scan.latencyMs,
       contexts: scan.sentences,
       passages: scan.passages ?? [],
+      paragraphSignalSummary: summarizePassageSignals(scan.passages ?? []),
       eligiblePassageCount: scan.eligiblePassageCount ?? 0,
       limitation:
         "Model signals are not proof of authorship. Reference estimates describe historical data. Context and paragraph scores are uncalibrated. This file contains the checked text.",
@@ -511,152 +657,196 @@ export function Workspace() {
       setBusy(null);
     }
   }
-  const rewrite = useCallback(async () => {
-    setError("");
-    setNotice("");
-    if (!activeName) {
-      setPendingRewrite(true);
-      setSettings(true);
-      setNotice(
-        "Choose a writing model. Your rewrite will start when it is ready.",
-      );
-      return;
-    }
-    if (rewriteInput.length > 12000) {
-      setError(
-        "Rewrite up to 12,000 characters at a time. Longer text is split into sections to fit the writing model.",
-      );
-      return;
-    }
-    const id = ++operation.current;
-    const original = rewriteInput;
-    setBusy("rewrite");
-    setProgress("Writing a draft…");
-    const controller = new AbortController();
-    abort.current = controller;
-    timer.current = setTimeout(() => {
-      if (operation.current === id) {
-        controller.abort();
-        browserEngine.current?.interruptGenerate();
-      }
-    }, 600000);
-    try {
-      const result = await runRewritePipeline({
-        text: original,
-        mode,
-        depth,
-        styleNote,
-        terms: lockedTerms
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
-        signal: controller.signal,
-        onProgress: (message) => {
-          if (operation.current === id) setProgress(message);
-        },
-        generate: async ({ systemPrompt, userPrompt, attempt }) => {
-          if (useLocal && modelId && connectedUrl)
-            return streamChatCompletion({
-              baseUrl: connectedUrl,
-              modelId,
-              systemPrompt,
-              userPrompt,
-              signal: controller.signal,
-              style: mode === "academic" ? "academic" : "default",
-            });
-          if (!browserEngine.current)
-            throw new Error("Load a writing model before rewriting.");
-          const stream = await browserEngine.current.chat.completions.create({
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt },
-            ],
-            stream: true,
-            temperature: attempt ? 0.65 : 0.5,
-            max_tokens: 1800,
-          });
-          let draft = "",
-            truncated = false;
-          for await (const chunk of stream) {
-            if (controller.signal.aborted || operation.current !== id)
-              throw new Error("Generation stopped.");
-            if (chunk.choices[0]?.finish_reason === "length") truncated = true;
-            draft += chunk.choices[0]?.delta.content ?? "";
-          }
-          if (truncated) throw new RewriteOutputLimitError();
-          return cleanLlmOutput(draft);
-        },
-      });
-      if (operation.current !== id) return;
-      if (!result.changed && output) {
+  const rewrite = useCallback(
+    async (target: RewriteTarget = "document") => {
+      setError("");
+      setNotice("");
+      if (!activeName) {
+        setPendingRewrite(target);
+        setSettings(true);
         setNotice(
-          "No new rewrite passed the preservation checks. Your previous draft is still available.",
+          "Choose a writing model. Your rewrite will start when it is ready.",
         );
         return;
       }
-      if (output)
-        setPreviousDraft({
-          source,
-          output,
-          engine: engineName,
-          mode: outputMode,
-          depth: outputDepth,
-        });
-      setSource(original);
-      setOutputMode(mode);
-      setOutputDepth(depth);
-      setDiff(false);
-      setEngineName(activeName);
-      setOutput(result.text);
-      setRewriteReport(result);
-      setNotice(
-        result.changed
-          ? `Draft ready. ${result.parts} section${result.parts === 1 ? "" : "s"} checked${result.retained ? `; ${result.retained} retained unchanged` : ""}. Review the changes before using the text.`
-          : "The model did not produce a changed draft that passed preservation checks after a retry. The original was retained. Try a larger model or another tone.",
-      );
-    } catch (err) {
-      if (operation.current === id) {
-        const message = controller.signal.aborted
-          ? "The rewrite timed out."
-          : err instanceof Error
-            ? err.message
-            : String(err);
+      const selected = target === "document" ? null : target;
+      const original = selected
+        ? output.slice(selected.start, selected.end)
+        : rewriteInput;
+      if (!original.trim()) return;
+      if (original.length > 12000) {
         setError(
-          output
-            ? message + " Your last completed draft is still available."
-            : message,
+          "Rewrite up to 12,000 characters at a time. Longer text is split into sections to fit the writing model.",
         );
+        return;
       }
-    } finally {
-      if (operation.current === id) {
-        if (timer.current) clearTimeout(timer.current);
-        setBusy(null);
-        setProgress("");
+      const id = ++operation.current;
+      setBusy("rewrite");
+      setProgress(selected ? "Revising the selection…" : "Writing a draft…");
+      const controller = new AbortController();
+      abort.current = controller;
+      timer.current = setTimeout(() => {
+        if (operation.current === id) {
+          controller.abort();
+          browserEngine.current?.interruptGenerate();
+        }
+      }, 600000);
+      try {
+        const result = await runRewritePipeline({
+          text: original,
+          mode,
+          depth,
+          styleNote,
+          terms: lockedTerms
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+          signal: controller.signal,
+          onProgress: (message) => {
+            if (operation.current === id) setProgress(message);
+          },
+          generate: async ({ systemPrompt, userPrompt, attempt }) => {
+            if (useLocal && modelId && connectedUrl)
+              return streamChatCompletion({
+                baseUrl: connectedUrl,
+                modelId,
+                systemPrompt,
+                userPrompt,
+                signal: controller.signal,
+                style: mode === "academic" ? "academic" : "default",
+              });
+            if (!browserEngine.current)
+              throw new Error("Load a writing model before rewriting.");
+            const stream = await browserEngine.current.chat.completions.create({
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt },
+              ],
+              stream: true,
+              temperature: attempt ? 0.65 : 0.5,
+              max_tokens: 1800,
+            });
+            let draft = "",
+              truncated = false;
+            for await (const chunk of stream) {
+              if (controller.signal.aborted || operation.current !== id)
+                throw new Error("Generation stopped.");
+              if (chunk.choices[0]?.finish_reason === "length")
+                truncated = true;
+              draft += chunk.choices[0]?.delta.content ?? "";
+            }
+            if (truncated) throw new RewriteOutputLimitError();
+            return cleanLlmOutput(draft);
+          },
+        });
+        if (operation.current !== id) return;
+        let nextDraft = result.text;
+        if (selected) {
+          const leading = original.match(/^\s*/)?.[0] ?? "";
+          const trailing = original.match(/\s*$/)?.[0] ?? "";
+          nextDraft =
+            output.slice(0, selected.start) +
+            leading +
+            result.text.trim() +
+            trailing +
+            output.slice(selected.end);
+          // The range may cut through a quotation, quantity claim or qualifier.
+          // Review the merged draft against the previous draft, including its surroundings.
+          const mergeIssues = reviewRewrite(
+            output,
+            nextDraft,
+            outputMode,
+            lockedTerms.split(","),
+          );
+          if (mergeIssues.length) {
+            setError("Selection kept unchanged. " + mergeIssues[0]);
+            return;
+          }
+          if (!result.changed || nextDraft === output) {
+            setNotice(
+              "No revision passed the checks for the selection. The draft is still available.",
+            );
+            return;
+          }
+        }
+        if (!result.changed && output) {
+          setNotice(
+            "No new rewrite passed the preservation checks. Your previous draft is still available.",
+          );
+          return;
+        }
+        if (output)
+          setPreviousDraft({
+            source,
+            output,
+            engine: engineName,
+            mode: outputMode,
+            depth: outputDepth,
+            report: rewriteReport,
+          });
+        if (!selected) {
+          setSource(original);
+          setOutputMode(mode);
+        }
+        setOutputDepth(depth);
+        setSelection(null);
+        setDiff(false);
+        setEngineName(activeName);
+        setOutput(nextDraft);
+        setRewriteReport(result);
+        setNotice(
+          selected
+            ? "Selected text revised. Review the updated draft."
+            : result.changed
+              ? `Draft ready. ${result.parts} section${result.parts === 1 ? "" : "s"} checked${result.retained ? `; ${result.retained} retained unchanged` : ""}. Review the changes before using the text.`
+              : "The model did not produce a changed draft that passed preservation checks after a retry. The original was retained. Try a larger model or another tone.",
+        );
+      } catch (err) {
+        if (operation.current === id) {
+          const message = controller.signal.aborted
+            ? "The rewrite timed out."
+            : err instanceof Error
+              ? err.message
+              : String(err);
+          setError(
+            output
+              ? message + " Your last completed draft is still available."
+              : message,
+          );
+        }
+      } finally {
+        if (operation.current === id) {
+          if (timer.current) clearTimeout(timer.current);
+          setBusy(null);
+          setProgress("");
+        }
       }
-    }
-  }, [
-    activeName,
-    rewriteInput,
-    output,
-    source,
-    engineName,
-    outputMode,
-    outputDepth,
-    mode,
-    styleNote,
-    lockedTerms,
-    depth,
-    useLocal,
-    modelId,
-    connectedUrl,
-  ]);
+    },
+    [
+      activeName,
+      rewriteInput,
+      output,
+      source,
+      engineName,
+      outputMode,
+      outputDepth,
+      rewriteReport,
+      mode,
+      styleNote,
+      lockedTerms,
+      depth,
+      useLocal,
+      modelId,
+      connectedUrl,
+    ],
+  );
   // Resume the user's requested rewrite after either engine finishes setup.
   // No automatic downloads: loading still requires the explicit setup action.
   useEffect(() => {
     if (pendingRewrite && activeName && !busy && !connecting) {
-      setPendingRewrite(false);
+      setPendingRewrite(null);
       setSettings(false);
-      void rewrite();
+      void rewrite(pendingRewrite);
     }
   }, [pendingRewrite, activeName, busy, connecting, rewrite]);
 
@@ -679,6 +869,7 @@ export function Workspace() {
       setError("Select and copy the output directly.");
     }
   }
+  const paragraphSummary = summarizePassageSignals(scan?.passages ?? []);
   const originalSignal = rewriteSignals.original;
   const draftSignal = rewriteSignals.draft;
   const comparableSignals =
@@ -752,19 +943,21 @@ export function Workspace() {
           <div className="vt-toolbar">
             {tab === "humanizer" ? (
               <div className="vt-modes" aria-label="Rewrite tone">
-                {[
-                  ["standard", "Standard"],
-                  ["academic", "Academic"],
-                  ["casual", "Casual"],
-                  ["professional", "Professional"],
-                  ["concise", "Shorten"],
-                  ["expand", "Expand"],
-                ].map(([id, label]) => (
+                {(
+                  [
+                    ["standard", "Standard"],
+                    ["academic", "Academic"],
+                    ["casual", "Casual"],
+                    ["professional", "Professional"],
+                    ["concise", "Shorten"],
+                    ["expand", "Expand"],
+                  ] as const
+                ).map(([id, label]) => (
                   <button
                     key={id}
                     disabled={!!busy}
                     aria-pressed={mode === id}
-                    onClick={() => setMode(id!)}
+                    onClick={() => setMode(id)}
                   >
                     {label}
                   </button>
@@ -947,7 +1140,9 @@ export function Workspace() {
                     <button
                       className="vt-primary"
                       disabled={!input.trim() || importing}
-                      onClick={tab === "humanizer" ? rewrite : () => detect()}
+                      onClick={
+                        tab === "humanizer" ? () => rewrite() : () => detect()
+                      }
                     >
                       {tab === "humanizer" ? (
                         <>
@@ -1008,8 +1203,35 @@ export function Workspace() {
                         aria-label="Edited draft"
                         value={output}
                         disabled={!!busy}
-                        onChange={(e) => setOutput(e.target.value)}
+                        onChange={(e) => {
+                          setSelection(null);
+                          setOutput(e.target.value);
+                        }}
+                        ref={draftField}
+                        onSelect={(event) =>
+                          captureSelection(event.currentTarget)
+                        }
                       />
+                    )}
+                    {!diff && (
+                      <div className="vt-provenance vt-selection">
+                        <button
+                          className="vt-secondary"
+                          disabled={!!busy || !selection}
+                          onClick={() => {
+                            if (selection) void rewrite(selection);
+                          }}
+                        >
+                          Revise selection
+                        </button>
+                        <span>
+                          {selection
+                            ? countWords(
+                                output.slice(selection.start, selection.end),
+                              ) + " words selected"
+                            : "Select text in your draft to revise just that part."}
+                        </span>
+                      </div>
                     )}
                     <p className="vt-provenance">
                       {engineName} · {REWRITE_DEPTHS[outputDepth].label}
@@ -1083,7 +1305,8 @@ export function Workspace() {
                               setOutputMode(previousDraft.mode);
                               setOutputDepth(previousDraft.depth);
                               setPreviousDraft(null);
-                              setRewriteReport(null);
+                              setRewriteReport(previousDraft.report);
+                              setSelection(null);
                               setNotice("Previous draft restored.");
                             }}
                           >
@@ -1197,6 +1420,24 @@ export function Workspace() {
                           scan.passages.length &&
                           ` Showing the first ${scan.passages.length} of ${scan.eligiblePassageCount} eligible paragraphs.`}
                       </p>
+                      {paragraphSummary.widelyDifferent && (
+                        <div
+                          className="vt-paragraph-summary"
+                          data-testid="paragraph-signal-summary"
+                        >
+                          <strong>Paragraph signals differ widely</strong>
+                          <span>
+                            Higher signal:{" "}
+                            {paragraphSummary.highSignalParagraphs.join(", ")} ·
+                            Lower signal:{" "}
+                            {paragraphSummary.lowSignalParagraphs.join(", ")}
+                          </span>
+                          <span>
+                            This variation cannot establish who wrote each
+                            paragraph.
+                          </span>
+                        </div>
+                      )}
                       {scan.passages.map((passage) => (
                         <details className="vt-reference" key={passage.start}>
                           <summary>
@@ -1351,6 +1592,22 @@ export function Workspace() {
               : "Text is processed on this device. Model files download from Hugging Face."}
           </span>
         </div>
+        <div className="vt-local-workspace">
+          <label>
+            <input
+              type="checkbox"
+              checked={rememberWorkspace}
+              disabled={!interactive}
+              onChange={(event) => rememberOnDevice(event.target.checked)}
+            />
+            Remember this workspace
+          </label>
+          <p>
+            Save the source, draft and detector text in this browser. Turning
+            this off removes the saved copy.
+          </p>
+          {storageError && <p role="alert">{storageError}</p>}
+        </div>
         <div className="vt-notes">
           <div>
             <h3>Keep your meaning</h3>
@@ -1390,7 +1647,7 @@ export function Workspace() {
           className="vt-modal-backdrop"
           onClick={() => {
             if (!busy) {
-              setPendingRewrite(false);
+              setPendingRewrite(null);
               setSettings(false);
             }
           }}
@@ -1399,7 +1656,7 @@ export function Workspace() {
             role="dialog"
             onKeyDown={(event) => {
               if (event.key === "Escape") {
-                setPendingRewrite(false);
+                setPendingRewrite(null);
                 if (busy === "load") stop();
                 setSettings(false);
               }
@@ -1434,7 +1691,7 @@ export function Workspace() {
                 className="vt-text-button"
                 onClick={() => {
                   if (busy === "load") stop();
-                  setPendingRewrite(false);
+                  setPendingRewrite(null);
                   setSettings(false);
                 }}
               >

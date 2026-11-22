@@ -483,6 +483,19 @@ describe("Protected rewrite pipeline", () => {
     expect(result.checks[0]?.reason).toContain("output limit");
   });
 
+  it("catches a qualified claim whose effect is kept but assigned to something else", () => {
+    const original =
+      "A small change to the timetable may help more readers than an expensive renovation.";
+    const drifted =
+      "Checking existing services may help more readers than an expensive renovation.";
+    const legitimate =
+      "A small timetable adjustment may help more readers than a costly renovation.";
+    expect(reviewRewrite(original, drifted)).toContain(
+      "Possibility wording changed. The subject of a qualified claim may have changed.",
+    );
+    expect(reviewRewrite(original, legitimate)).toEqual([]);
+  });
+
   it("stops before generation and never substitutes a rule-based rewrite", async () => {
     const controller = new AbortController();
     controller.abort();

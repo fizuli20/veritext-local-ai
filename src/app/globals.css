@@ -366,6 +366,38 @@ body {
   font-size: 10px;
   color: #8a9485;
 }
+.vt-local-workspace {
+  margin: 16px 0;
+  padding: 12px 15px;
+  border: 1px solid #dce4d7;
+  border-radius: 7px;
+  background: #f7faf5;
+  color: #475d43;
+  font-size: 12px;
+}
+.vt-local-workspace label, .vt-selection {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vt-local-workspace input {
+  accent-color: #486044;
+}
+.vt-local-workspace p {
+  margin: 4px 0 0;
+}
+.vt-paragraph-summary {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  border: 1px solid #e6dfb9;
+  border-radius: 7px;
+  background: #fffae9;
+  color: #635123;
+  font-size: 12px;
+}
 .vt-notes {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -697,7 +729,7 @@ details.vt-lock-toolbar[open] > label { display: block; margin-top: 8px; }
 .vt-print-title { display: none; }
 
 @media print {
-  .vt-app:has(.vt-scan) :is(.vt-header, .vt-intro, .vt-message, .vt-toolbar, .vt-below, .vt-notes, .vt-footer, .vt-progress, .vt-modal-backdrop),
+  .vt-app:has(.vt-scan) :is(.vt-header, .vt-intro, .vt-message, .vt-toolbar, .vt-below, .vt-notes, .vt-local-workspace, .vt-footer, .vt-progress, .vt-modal-backdrop),
   .vt-app:has(.vt-scan) .vt-detector-editors > .vt-pane:first-child,
   .vt-app:has(.vt-scan) .vt-output > .vt-pane-heading,
   .vt-scan button {

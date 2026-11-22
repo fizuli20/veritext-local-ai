@@ -1,3 +1,15 @@
+# Veritext 5.0 workspace validation
+
+Select text in the edited draft and choose Revise selection to send that range to the same writing engine. The rest of the draft remains byte-for-byte identical. The merged draft is checked against its prior version so that a selection that cuts through a protected quote or other checked span cannot bypass its protection. Undo restores the previous draft. A real Chrome run with Qwen 2.5 1.5B revised one selected sentence in 0.8 seconds and retained its exact surrounding text. This was a warm, single-device observation.
+
+An earlier real-model draft kept the word "may" while assigning a result to a different subject. The rewrite review now flags that pattern when the draft keeps distinctive wording from the effect but drops all distinctive subject wording in the related qualified claim. The browser retest kept the specific timetable change and the uncertainty around its benefit. This is a conservative check with regression coverage and does not verify every meaning change.
+
+The detector shows a paragraph variation summary when its checked passages contain both a raw signal of at least 80/100 and one of at most 20/100. In a real mixed-document test, a public-domain Lewis Carroll excerpt and Veritext's generated library sample produced **2.7/100** and **97.6/100** as separate paragraph signals. The combined document scored **82.4/100**. This demonstrates the display on one controlled example. It does not establish mixed authorship or broader model accuracy. [Source of the historical passage](https://www.gutenberg.org/files/928/928-h/928-h.htm)
+
+Opt-in workspace storage was tested by saving, reloading, checking the three exact text fields, then turning it off and verifying the saved copy was removed. Saved state includes text and editing preferences. Inference evidence and running model sessions are generated anew. Browser fixtures separately verify revision, protected quote rejection, undo, and the JSON paragraph summary.
+
+---
+
 # Veritext 4.6.6 rewrite review and detector comparison
 
 The Humanizer and Detector have separate text fields. Checking the original or the edited draft preserves both editor texts. The Humanizer shows the two document signals together once both exact versions have been scanned with the same model. Editing either text hides its stale comparison. This is a comparison of writing signals, with no inference about who wrote the text.

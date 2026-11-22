@@ -7,7 +7,7 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     product: "Veritext",
-    version: "4.6.6",
+    version: "5.0.0",
     zeroKeyMandate: true,
     externalApiKeysRequired: false,
     engines: {
@@ -33,6 +33,7 @@ export async function GET() {
         automaticRuleFallback: false,
         semanticGuarantee: false,
         protectedSpans: true,
+        selectedTextRevision: true,
         rewriteDepths: ["polish", "rephrase"],
         customStyle: "Optional local voice or audience preference",
         documentImport: "Browser-local TXT, Markdown, DOCX and text-based PDF",
@@ -42,6 +43,7 @@ export async function GET() {
       },
       privacy: {
         browserWorkspaceTextUploadedToVercel: false,
+        workspaceStorage: "Opt-in local browser storage",
         localServerReceivesRewriteText: true,
         legacyApiReceivesSubmittedText: true,
         modelDownloads: "Hugging Face and MLC model hosts",

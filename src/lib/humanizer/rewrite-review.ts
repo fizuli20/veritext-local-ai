@@ -42,6 +42,43 @@ export function closingRecommendation(original: string): string | undefined {
 
 export const CLOSING_OMISSION = "Possible omission in the closing sentence";
 
+const contentAnchors = (text: string) =>
+  (text.toLowerCase().match(/[\p{L}]{5,}/gu) ?? []).map((word) =>
+    word.slice(0, 5),
+  );
+
+function changedSubjectOfQualifiedClaim(
+  original: string,
+  candidate: string,
+): boolean {
+  if (!(original.match(POSSIBILITY) ?? []).length) return false;
+  const rewrittenClaims = tokenizeSentences(candidate)
+    .filter(({ text }) => text.match(POSSIBILITY))
+    .map(({ text }) => new Set(contentAnchors(text)));
+  return tokenizeSentences(original).some(({ text }) => {
+    const qualifier = text.matchAll(POSSIBILITY).next().value;
+    if (!qualifier) return false;
+    const subject = [
+      ...new Set(contentAnchors(text.slice(0, qualifier.index))),
+    ];
+    const effect = [
+      ...new Set(
+        contentAnchors(text.slice(qualifier.index + qualifier[0].length)),
+      ),
+    ];
+    if (subject.length < 3 || effect.length < 2) return false;
+    // Only warn when the effect still looks like the original but the subject's
+    // distinctive wording has completely disappeared from every matching claim.
+    const related = rewrittenClaims.filter(
+      (words) => effect.filter((word) => words.has(word)).length >= 2,
+    );
+    return (
+      related.length > 0 &&
+      related.every((words) => subject.every((word) => !words.has(word)))
+    );
+  });
+}
+
 function closingSentenceLooksOmitted(
   original: string,
   candidate: string,
@@ -52,15 +89,11 @@ function closingSentenceLooksOmitted(
 
   // Require loss of several distinctive words. If the sentence count stays
   // the same, also require the rest of the draft to still resemble the source.
-  const anchors = (text: string) =>
-    (text.toLowerCase().match(/[\p{L}]{5,}/gu) ?? []).map((word) =>
-      word.slice(0, 5),
-    );
-  const preceding = new Set(anchors(original.slice(0, closing.start)));
+  const preceding = new Set(contentAnchors(original.slice(0, closing.start)));
   const distinctive = new Set(
-    anchors(closing.text).filter((word) => !preceding.has(word)),
+    contentAnchors(closing.text).filter((word) => !preceding.has(word)),
   );
-  const rewritten = new Set(anchors(candidate));
+  const rewritten = new Set(contentAnchors(candidate));
   if (
     distinctive.size < 3 ||
     [...distinctive].some((word) => rewritten.has(word))
@@ -185,6 +218,10 @@ export function reviewRewrite(
   if (possibilities(original) !== possibilities(candidate))
     issues.push(
       "Possibility wording changed; check whether a qualified claim became certain.",
+    );
+  else if (changedSubjectOfQualifiedClaim(original, candidate))
+    issues.push(
+      "Possibility wording changed. The subject of a qualified claim may have changed.",
     );
   if (closingSentenceLooksOmitted(original, candidate))
     issues.push(CLOSING_OMISSION + ". Keep the final substantive point.");

@@ -45,3 +45,20 @@ export function eligiblePassages(text: string): PassageSpan[] {
     ? []
     : spans;
 }
+
+/** These are raw paragraph signals. A split signal does not imply mixed authorship. */
+export function summarizePassageSignals(passages: PassageSignal[]) {
+  const highSignalParagraphs: number[] = [];
+  const lowSignalParagraphs: number[] = [];
+  for (const passage of passages) {
+    if (passage.score >= 0.8) highSignalParagraphs.push(passage.paragraph);
+    else if (passage.score <= 0.2) lowSignalParagraphs.push(passage.paragraph);
+  }
+  return {
+    paragraphsScored: passages.length,
+    highSignalParagraphs,
+    lowSignalParagraphs,
+    widelyDifferent:
+      highSignalParagraphs.length > 0 && lowSignalParagraphs.length > 0,
+  };
+}

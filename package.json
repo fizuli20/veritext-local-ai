@@ -1,6 +1,6 @@
 {
   "name": "veritext-local-ai",
-  "version": "4.6.6",
+  "version": "5.0.0",
   "private": true,
   "type": "module",
   "scripts": {
