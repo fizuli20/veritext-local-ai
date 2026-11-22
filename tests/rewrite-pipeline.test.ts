@@ -5,6 +5,7 @@ import {
   splitRewrite,
   runRewritePipeline,
 } from "@/lib/humanizer/rewrite-pipeline";
+import { reviewRewrite } from "@/lib/humanizer/rewrite-review";
 const noop = () => {};
 describe("Protected rewrite pipeline", () => {
   it("recovers from broken markers by editing surrounding prose while retaining fact-bearing sentences exactly", async () => {
@@ -313,6 +314,74 @@ describe("Protected rewrite pipeline", () => {
     );
     expect(result.checks[0]?.reason).toContain(
       "Protected quantity claim changed",
+    );
+  });
+
+  it("catches values reassigned between study groups in separate sentences", () => {
+    const source =
+      "The morning-light group gained 12 grams. The evening-light group gained 7 grams.";
+    const swapped =
+      "The afternoon trays recorded a gain of 12 grams. The morning-light group gained 7 grams.";
+    expect(reviewRewrite(source, swapped)).toEqual([
+      "Protected quantity claim changed: The morning-light group gained 12 grams.",
+      "Protected quantity claim changed: The evening-light group gained 7 grams.",
+    ]);
+  });
+
+  it("keeps the terminal claim when repeated drafts drop it", async () => {
+    const source =
+      "The west entrance will be closed for repairs. Visitors should enter through the east doors. Staff will post signs around the building. The library will keep its usual hours throughout the repair.";
+    const draft =
+      "Use the east doors while crews repair the west entrance. Staff will post signs around the building.";
+    const generate = vi.fn(async ({ userPrompt, attempt }) => {
+      if (attempt === 1)
+        expect(userPrompt).toContain("original final sentence verbatim");
+      if (attempt >= 2)
+        expect(userPrompt).not.toContain("usual hours throughout");
+      return draft;
+    });
+    const result = await runRewritePipeline({
+      text: source,
+      mode: "standard",
+      depth: "rephrase",
+      onProgress: noop,
+      onText: noop,
+      generate,
+    });
+    expect(result.text).toBe(
+      draft + " The library will keep its usual hours throughout the repair.",
+    );
+    expect(result.checks[0]?.reason).toContain(
+      "Possible omission in the closing sentence",
+    );
+  });
+
+  it("keeps a closing recommendation and its condition together", async () => {
+    const first = "The team compared two planting schedules.";
+    const ending =
+      "The team recommends repeating the experiment with the shelves assigned at random before drawing a conclusion.";
+    const editedFirst = "The researchers tested two planting schedules.";
+    const shortened =
+      "The team recommends randomizing the shelves before drawing a conclusion.";
+    const result = await runRewritePipeline({
+      text: first + " " + ending,
+      mode: "standard",
+      depth: "rephrase",
+      onProgress: noop,
+      onText: noop,
+      generate: async ({ attempt, systemPrompt }) => {
+        if (attempt < 2) {
+          expect(systemPrompt).toContain(
+            "closing recommendation and its conditions",
+          );
+          return editedFirst + " " + shortened;
+        }
+        return editedFirst;
+      },
+    });
+    expect(result.text).toBe(editedFirst + " " + ending);
+    expect(result.checks[0]?.reason).toContain(
+      "Protected closing recommendation changed",
     );
   });
 

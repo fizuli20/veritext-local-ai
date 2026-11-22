@@ -1,3 +1,28 @@
+# Veritext 4.6.2 genre comparison and rewrite regression tests
+
+The same public or fictional inputs were submitted to the normal public [ZeroGPT detector](https://www.zerogpt.com/) and to Veritext 4.6.1. The input labels came from provenance. ZeroGPT's percentage and Veritext's raw model signal measure different things.
+
+| Passage | Known source | ZeroGPT public result | Veritext Detailed |
+| --- | --- | --- | --- |
+| Library entrance notice | Synthetic | 100% AI GPT | Abstained, under 80 words |
+| Seedling pilot-study summary | Synthetic | 100% AI GPT | Abstained, under 80 words |
+| Mina and the station clock | Synthetic | 100% AI GPT | 76/100, inconclusive |
+| *Alice's Adventures in Wonderland*, chapter I opening | [Lewis Carroll, Project Gutenberg](https://www.gutenberg.org/files/928/928-h/928-h.htm) | 0% AI GPT | 3/100, low signal |
+
+Veritext's 80-word minimum stays in effect. In a real CPU inference check on 48 excerpts from the previously examined TextSight set, the same Detailed model and historical elevated-signal rule flagged **8/24 AI excerpts** at the first 70 words, versus **16/24** on the fuller excerpts. It flagged 0/24 human excerpts in either condition. At raw score 0.5, short excerpts flagged 5/24 human examples and full excerpts flagged 2/24. The samples were chosen by fixed hash order, 12 each from published academic and encyclopedic AI categories and human Wikipedia and PMC groups. This is a small paired stress test on familiar data. It does not validate 80 words as a precise cutoff or establish accuracy relative to ZeroGPT. [Per-passage scores and method](validation/short-text-4.6.2.json)
+
+The three synthetic passages were also submitted to the public [HumanizeAI editor](https://www.humanizeai.pro/). Each tool was checked once per passage, with one later real-model retest of the Veritext research failure. Review was manual. The tools' rewrite settings have different meanings.
+
+| Passage | HumanizeAI result | Veritext browser result |
+| --- | --- | --- |
+| Notice | Rephrased and dropped the final statement that normal library hours remain in effect. | Kept regular hours, entrance restrictions, and repair uncertainty in a 6.0-second run with Qwen 2.5 3B. |
+| Research | Retained both measurements and dropped the recommendation to repeat the experiment. | The first candidate revision partly kept the point but reduced it to randomizing shelves. On the final build's 16.0-second retest, the browser model retained both group measurements and the full recommendation to repeat the experiment with randomized shelves. The remaining edits were modest. |
+| Fiction | Rephrased substantially and changed the wording inside the note's direct quotation. | Preserved the direct quotation and the ending. The 15.2-second draft changed the character's action from counting lit windows to watching them. |
+
+The final build rejects changed quantity relationships across sentences in the same section. It retries a suspected dropped ending and can keep the original ending during recovery. It protects closing recommendations paired with a condition in the tested forms. These checks do not establish complete semantic fidelity. Three targeted regression tests passed, with 111 unit tests total.
+
+---
+
 # Veritext 4.6.1 workflow and local model validation
 
 The detector shows the document score as soon as it is ready, then adds paragraph signals and the first eight neighboring sentence-context scores. Check more contexts expands the scan to up to 60 contexts, preserving completed highlights while additional work runs. A stopped scan preserves completed results. JSON reports include context coverage, and the print layout can be saved as PDF using the browser. Context scores remain uncalibrated model signals. The existing detector and scoring thresholds were retained.

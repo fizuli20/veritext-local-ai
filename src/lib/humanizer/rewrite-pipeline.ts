@@ -1,6 +1,8 @@
 import { countWords, tokenizeSentences } from "../nlp/tokenizer";
 import {
   reviewRewrite,
+  CLOSING_OMISSION,
+  closingRecommendation,
   preservationInstructions,
   quantityClaims,
   rewriteExtent,
@@ -203,6 +205,8 @@ export async function runRewritePipeline(options: {
     let accepted: string | null = null;
     let feedback = "";
     let usableLightEdit: string | null = null;
+    const protectRecommendation = Boolean(closingRecommendation(originalPart));
+    let keepClosingSentence = protectRecommendation;
     const checkExtent =
       depth === "rephrase" &&
       countWords(originalPart) >= 60 &&
@@ -217,7 +221,10 @@ export async function runRewritePipeline(options: {
         systemPrompt:
           rewriteInstructions(mode, depth, styleNote) +
           (preserveQuantityClaims
-            ? " Keep any sentence reporting two or more quantities unchanged, including the actions and subjects tied to those amounts."
+            ? " Keep sentences reporting distinct amounts unchanged, including the actions and subjects tied to those amounts."
+            : "") +
+          (protectRecommendation
+            ? " Keep the original closing recommendation and its conditions word for word."
             : "") +
           (generationLocks.locks.length
             ? ` Preserve every ${locked.prefix}_number_END marker exactly once. Markers stand for protected source text; never modify them.`
@@ -238,6 +245,9 @@ export async function runRewritePipeline(options: {
         const restored = restoreRewriteSpans(candidate, generationLocks);
         const issues = reviewRewrite(originalPart, restored, mode, terms);
         if (issues.length) {
+          keepClosingSentence ||= issues.some((issue) =>
+            issue.startsWith(CLOSING_OMISSION),
+          );
           checks.push({
             section: i + 1,
             attempt: attempt + 1,
@@ -251,7 +261,8 @@ export async function runRewritePipeline(options: {
               iss.includes("Locked term changed") ||
               iss.includes("Quotation changed") ||
               iss.includes("Negation changed") ||
-              iss.includes("Possibility wording changed"),
+              iss.includes("Possibility wording changed") ||
+              iss.startsWith(CLOSING_OMISSION),
           );
           if (attempt === 0) {
             feedback = preservationInstructions(originalPart, issues);
@@ -336,7 +347,9 @@ export async function runRewritePipeline(options: {
             sentence.text,
           );
         const kind =
-          hasLockedSpan || (hasQualifier && !retryQualified)
+          hasLockedSpan ||
+          (keepClosingSentence && sentence === sentences.at(-1)) ||
+          (hasQualifier && !retryQualified)
             ? "locked"
             : hasQualifier
               ? "qualified"

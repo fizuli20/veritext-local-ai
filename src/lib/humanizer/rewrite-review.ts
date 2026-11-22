@@ -8,16 +8,64 @@ const NUMBER =
   /(?<![\p{L}\p{N}_])(?:[$€£])?[+-]?\d+(?:[,.]\d+)*(?:[eE][+-]?\d+)?(?:\s?%)?/gu;
 const numbers = (text: string) => text.match(NUMBER) ?? [];
 
-/** Keep separate quantities tied to their original actions, units and subjects. */
+/** Keep different measurements tied to their original actions, units and subjects. */
 export function quantityClaims(text: string): string[] {
   if (numbers(text).length < 2) return [];
-  return tokenizeSentences(text)
-    .map((sentence) => sentence.text)
+  const sentences = tokenizeSentences(text).map(({ text }) => ({
+    text,
+    quantities: numbers(text).filter(
+      (value) => !/^(?:19|20)\d{2}$/.test(value),
+    ),
+  }));
+  const distinct = new Set(sentences.flatMap(({ quantities }) => quantities));
+  return sentences
     .filter(
-      (sentence) =>
-        numbers(sentence).filter((value) => !/^(?:19|20)\d{2}$/.test(value))
-          .length >= 2,
+      ({ quantities }) =>
+        quantities.length >= 2 ||
+        (quantities.length === 1 && distinct.size >= 2),
+    )
+    .map(({ text }) => text);
+}
+
+const normalizeWhitespace = (text: string) => text.trim().replace(/\s+/g, " ");
+
+export function closingRecommendation(original: string): string | undefined {
+  const closing = tokenizeSentences(original).at(-1)?.text;
+  if (
+    closing &&
+    /\b(?:recommend(?:s|ed)?|propos(?:e|es|ed))\b.*\b(?:before|until|unless|only if)\b/i.test(
+      closing,
+    )
+  )
+    return closing;
+}
+
+export const CLOSING_OMISSION = "Possible omission in the closing sentence";
+
+function closingSentenceLooksOmitted(
+  original: string,
+  candidate: string,
+): boolean {
+  const sentences = tokenizeSentences(original);
+  const closing = sentences.at(-1);
+  if (sentences.length < 4 || !closing || closing.wordCount < 6) return false;
+  if (tokenizeSentences(candidate).length >= sentences.length) return false;
+
+  // Require a shorter sentence count and total loss of several distinctive
+  // words. Prefix matching allows common inflections without exact phrasing.
+  const anchors = (text: string) =>
+    (text.toLowerCase().match(/[\p{L}]{5,}/gu) ?? []).map((word) =>
+      word.slice(0, 5),
     );
+  const preceding = new Set(anchors(original.slice(0, closing.start)));
+  const distinctive = new Set(
+    anchors(closing.text).filter((word) => !preceding.has(word)),
+  );
+  const rewritten = new Set(anchors(candidate));
+  return (
+    distinctive.size >= 3 &&
+    [...distinctive].every((word) => !rewritten.has(word))
+  );
 }
 
 export function preservationInstructions(
@@ -41,6 +89,11 @@ export function preservationInstructions(
       instructions.push(
         `Keep these qualifiers with their original claims: ${words.join(", ")}. Leave each of those clauses intact if unsure.`,
       );
+  }
+  if (issues.some((issue) => issue.startsWith(CLOSING_OMISSION))) {
+    instructions.push(
+      "Include the original final sentence verbatim if a paraphrase would lose its point.",
+    );
   }
   return instructions.join(" ");
 }
@@ -91,12 +144,20 @@ export function reviewRewrite(
     JSON.stringify(Object.entries(after).sort())
   )
     issues.push("Numbers or amounts changed.");
+  const normalizedDraft = normalizeWhitespace(candidate);
   for (const claim of quantityClaims(original)) {
-    const normalizeWhitespace = (text: string) =>
-      text.trim().replace(/\s+/g, " ");
-    if (!normalizeWhitespace(candidate).includes(normalizeWhitespace(claim)))
-      issues.push(`Protected quantity claim changed: ${claim.slice(0, 140)}`);
+    if (!normalizedDraft.includes(normalizeWhitespace(claim)))
+      issues.push("Protected quantity claim changed: " + claim.slice(0, 140));
   }
+  const recommendation = closingRecommendation(original);
+  if (
+    recommendation &&
+    !normalizedDraft.includes(normalizeWhitespace(recommendation))
+  )
+    issues.push(
+      "Protected closing recommendation changed: " +
+        recommendation.slice(0, 140),
+    );
   const protectedSpans = maskProtectedSpans(original).spans;
   for (const span of protectedSpans) {
     const originalSpan = restoreProtectedSpans(span.original, protectedSpans);
@@ -120,6 +181,8 @@ export function reviewRewrite(
     issues.push(
       "Possibility wording changed; check whether a qualified claim became certain.",
     );
+  if (closingSentenceLooksOmitted(original, candidate))
+    issues.push(CLOSING_OMISSION + "; retain the final substantive point.");
   const ratio = countWords(candidate) / Math.max(1, countWords(original));
   if (!candidate.trim()) issues.push("The model returned no rewrite.");
   if (
@@ -161,7 +224,7 @@ export function rewriteInstructions(
   };
   const depthInstruction =
     depth === "rephrase"
-      ? "Write a fresh version of the passage. Recast sentence structure and use concrete words. Keep every original claim and caveat. Preserve who is acting, exact actions, timing and purpose. Keep recommendations, plans and criteria in their original roles. Leave uncertain phrases and their qualifiers intact if a change risks altering the meaning."
+      ? "Write a fresh version of the passage. Recast sentence structure and use concrete words. Keep every original claim and caveat, including the final substantive point. Preserve who is acting, exact actions, timing and purpose. Keep recommendations, plans and criteria in their original roles. Leave uncertain phrases and their qualifiers intact if a change risks altering the meaning."
       : "Make a restrained copy edit. Keep the existing sequence and most sentence structures; improve clarity where needed.";
   const preference = styleNote.trim().slice(0, 300);
   const custom = preference

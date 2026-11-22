@@ -1,0 +1,674 @@
+{
+  "modelName": "YatoVoid/forsakeai-detector",
+  "revision": "a155f82aeee54d33d8d6e50c963dda591cc548c8",
+  "datasetRevision": "423b1768f0827675295fd6dc3cd255ad2f411183",
+  "method": "First 70 whitespace-delimited words vs full excerpt (512 model token limit) on 12 SHA-ordered excerpts of at least 85 words per category, same previously examined dataset, historical reference rule, no threshold tuning.",
+  "groups": {
+    "human-wikipedia-pre2022": {
+      "n": 12,
+      "labels": [
+        "human"
+      ],
+      "shortRawOverHalf": 3,
+      "shortElevatedRule": 0,
+      "fullRawOverHalf": 2,
+      "fullElevatedRule": 0
+    },
+    "human-pmc-esl": {
+      "n": 12,
+      "labels": [
+        "human"
+      ],
+      "shortRawOverHalf": 2,
+      "shortElevatedRule": 0,
+      "fullRawOverHalf": 0,
+      "fullElevatedRule": 0
+    },
+    "ai-encyclopedic": {
+      "n": 12,
+      "labels": [
+        "ai"
+      ],
+      "shortRawOverHalf": 10,
+      "shortElevatedRule": 5,
+      "fullRawOverHalf": 12,
+      "fullElevatedRule": 11
+    },
+    "ai-academic": {
+      "n": 12,
+      "labels": [
+        "ai"
+      ],
+      "shortRawOverHalf": 10,
+      "shortElevatedRule": 3,
+      "fullRawOverHalf": 10,
+      "fullElevatedRule": 5
+    }
+  },
+  "results": [
+    {
+      "id": "hw-1057856045-2",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.3522148645301504,
+        "reference": 0.03946360727526259
+      },
+      "full": {
+        "p": 0.5065042106685798,
+        "reference": 0.08578856146358785
+      }
+    },
+    {
+      "id": "hw-1062717373-0",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.41913681654572726,
+        "reference": 0.0560296786159091
+      },
+      "full": {
+        "p": 0.31022267875227966,
+        "reference": 0.031104567983918058
+      }
+    },
+    {
+      "id": "hw-1061956435-1",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.08204993645699288,
+        "reference": 0.003914055737954121
+      },
+      "full": {
+        "p": 0.0013517740355607464,
+        "reference": 0.000016928751366360414
+      }
+    },
+    {
+      "id": "hw-1062430031-1",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.3556338801010675,
+        "reference": 0.040207063211874304
+      },
+      "full": {
+        "p": 0.003408033565303979,
+        "reference": 0.00005647433713671188
+      }
+    },
+    {
+      "id": "hw-1062025698-1",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.32701506552672077,
+        "reference": 0.0342826528201293
+      },
+      "full": {
+        "p": 0.017253042446545526,
+        "reference": 0.0004734114661102475
+      }
+    },
+    {
+      "id": "hw-1059395309-0",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.2320532751147545,
+        "reference": 0.018784143352238186
+      },
+      "full": {
+        "p": 0.05307334900884576,
+        "reference": 0.0021374313483340677
+      }
+    },
+    {
+      "id": "hw-1058906150-2",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.6142190425148376,
+        "reference": 0.14241272842808508
+      },
+      "full": {
+        "p": 0.05550836391034794,
+        "reference": 0.002273072774993897
+      }
+    },
+    {
+      "id": "hw-1062254076-2",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.0729710120117309,
+        "reference": 0.003319886280877798
+      },
+      "full": {
+        "p": 0.0051989552824043914,
+        "reference": 0.00009801317974935543
+      }
+    },
+    {
+      "id": "hw-1057361967-2",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.4480604399340091,
+        "reference": 0.06470257757957128
+      },
+      "full": {
+        "p": 0.04560126708975808,
+        "reference": 0.0017376372329920484
+      }
+    },
+    {
+      "id": "hw-1062903075-1",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.20051030197370182,
+        "reference": 0.01480258192219151
+      },
+      "full": {
+        "p": 0.030080694060494635,
+        "reference": 0.0009914717912709067
+      }
+    },
+    {
+      "id": "hw-1057148416-2",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.8513784796935024,
+        "reference": 0.46731915504486776
+      },
+      "full": {
+        "p": 0.6741019735631916,
+        "reference": 0.18920808189110225
+      }
+    },
+    {
+      "id": "hw-1062903075-2",
+      "group": "human-wikipedia-pre2022",
+      "label": "human",
+      "first70": {
+        "p": 0.6195799472072019,
+        "reference": 0.14605237277058325
+      },
+      "full": {
+        "p": 0.037424170007519304,
+        "reference": 0.001329681964022805
+      }
+    },
+    {
+      "id": "esl-PMC13317087-1",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.38282412029513035,
+        "reference": 0.046492694977339474
+      },
+      "full": {
+        "p": 0.052716414042732,
+        "reference": 0.002117766803679994
+      }
+    },
+    {
+      "id": "esl-PMC8671269-0",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.15481173081723856,
+        "reference": 0.009887428262320409
+      },
+      "full": {
+        "p": 0.06760285981246572,
+        "reference": 0.002984479078804738
+      }
+    },
+    {
+      "id": "esl-PMC13061291-0",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.0215671626617941,
+        "reference": 0.000636293386294628
+      },
+      "full": {
+        "p": 0.0018147194122432597,
+        "reference": 0.000024840496715024332
+      }
+    },
+    {
+      "id": "esl-PMC12807398-1",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.05581715987327598,
+        "reference": 0.00229045882927005
+      },
+      "full": {
+        "p": 0.0724300444578063,
+        "reference": 0.0032855471302617933
+      }
+    },
+    {
+      "id": "esl-PMC4972855-1",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.5188617769806577,
+        "reference": 0.0909680253203304
+      },
+      "full": {
+        "p": 0.04870518591304113,
+        "reference": 0.001900662952682568
+      }
+    },
+    {
+      "id": "esl-PMC5052283-1",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.5655798718564726,
+        "reference": 0.11334609955824963
+      },
+      "full": {
+        "p": 0.16534434791581784,
+        "reference": 0.010936143360666969
+      }
+    },
+    {
+      "id": "esl-PMC13316913-0",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.2058447407083053,
+        "reference": 0.015440448104038986
+      },
+      "full": {
+        "p": 0.026608769653001327,
+        "reference": 0.0008415621179352016
+      }
+    },
+    {
+      "id": "esl-PMC13570122-1",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.35286193478292405,
+        "reference": 0.039603540958623784
+      },
+      "full": {
+        "p": 0.2197648031313107,
+        "reference": 0.01717208802747651
+      }
+    },
+    {
+      "id": "esl-PMC12807341-1",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.1562942419551572,
+        "reference": 0.010032101339857578
+      },
+      "full": {
+        "p": 0.030087727437556347,
+        "reference": 0.0009917822129702834
+      }
+    },
+    {
+      "id": "esl-PMC12806895-0",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.27845834820763565,
+        "reference": 0.02563673030981533
+      },
+      "full": {
+        "p": 0.007401556609175029,
+        "reference": 0.000155575064844597
+      }
+    },
+    {
+      "id": "esl-PMC12807340-1",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.12349399652677154,
+        "reference": 0.0070498346588362725
+      },
+      "full": {
+        "p": 0.01644610884726788,
+        "reference": 0.000444369980399476
+      }
+    },
+    {
+      "id": "esl-PMC12954580-1",
+      "group": "human-pmc-esl",
+      "label": "human",
+      "first70": {
+        "p": 0.06830463405388092,
+        "reference": 0.003027648554376753
+      },
+      "full": {
+        "p": 0.017054971011972845,
+        "reference": 0.00046623942274140494
+      }
+    },
+    {
+      "id": "ai2026-gpt-oss-120b-2",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.6263912970661927,
+        "reference": 0.15081746805554655
+      },
+      "full": {
+        "p": 0.9995921326445032,
+        "reference": 0.9995674624456728
+      }
+    },
+    {
+      "id": "ai2026-qwen-3.8-27b-8",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.3530881646898586,
+        "reference": 0.03965254934566855
+      },
+      "full": {
+        "p": 0.9847889739907392,
+        "reference": 0.9535373071221721
+      }
+    },
+    {
+      "id": "ai2026-gpt-4.1-10",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.9460642384751937,
+        "reference": 0.7898251445352132
+      },
+      "full": {
+        "p": 0.999005563330021,
+        "reference": 0.9986224097662622
+      }
+    },
+    {
+      "id": "ai2026-claude-haiku-4-5-0",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.9998016269263058,
+        "reference": 0.9998305378538099
+      },
+      "full": {
+        "p": 0.9999753933846313,
+        "reference": 0.9999887621504479
+      }
+    },
+    {
+      "id": "ai2026-gpt-4.1-0",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.851057267937138,
+        "reference": 0.4664984692653648
+      },
+      "full": {
+        "p": 0.9999501778711758,
+        "reference": 0.9999718828279007
+      }
+    },
+    {
+      "id": "ai2026-claude-haiku-4-5-10",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.9982857714017835,
+        "reference": 0.9972052091900379
+      },
+      "full": {
+        "p": 0.9999168821789245,
+        "reference": 0.9999453069268683
+      }
+    },
+    {
+      "id": "ai2026-qwen-3.8-27b-0",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.42616608603417055,
+        "reference": 0.058043622726420586
+      },
+      "full": {
+        "p": 0.931818405139042,
+        "reference": 0.7309508769106762
+      }
+    },
+    {
+      "id": "ai2026-claude-haiku-4-5-2",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.9970982056451837,
+        "reference": 0.994466445439254
+      },
+      "full": {
+        "p": 0.9997331494013673,
+        "reference": 0.9997508287995108
+      }
+    },
+    {
+      "id": "ai2026-gpt-4.1-8",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.6453364000583569,
+        "reference": 0.16495438044547991
+      },
+      "full": {
+        "p": 0.9992077191131981,
+        "reference": 0.998974698333009
+      }
+    },
+    {
+      "id": "ai2026-gpt-4.1-2",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.992376311885975,
+        "reference": 0.9807252190484823
+      },
+      "full": {
+        "p": 0.9999802052747823,
+        "reference": 0.9999915310693787
+      }
+    },
+    {
+      "id": "ai2026-gpt-oss-120b-0",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.6613715808862921,
+        "reference": 0.1780282420739486
+      },
+      "full": {
+        "p": 0.9998988147896474,
+        "reference": 0.9999293706251303
+      }
+    },
+    {
+      "id": "ai2026-claude-haiku-4-5-4",
+      "group": "ai-encyclopedic",
+      "label": "ai",
+      "first70": {
+        "p": 0.9999108970701412,
+        "reference": 0.9999401325660217
+      },
+      "full": {
+        "p": 0.9999738894357727,
+        "reference": 0.9999878611551635
+      }
+    },
+    {
+      "id": "ai2026-gpt-oss-120b-11",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.6436710696058263,
+        "reference": 0.16365695624167362
+      },
+      "full": {
+        "p": 0.9994771907169786,
+        "reference": 0.9994027051076986
+      }
+    },
+    {
+      "id": "ai2026-claude-opus-5-9",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.8986112032875108,
+        "reference": 0.6074138198849053
+      },
+      "full": {
+        "p": 0.46172675864813834,
+        "reference": 0.06917634091676048
+      }
+    },
+    {
+      "id": "ai2026-claude-opus-5-1",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.7298033416702567,
+        "reference": 0.24819030019837768
+      },
+      "full": {
+        "p": 0.8202176445713469,
+        "reference": 0.39488344790581553
+      }
+    },
+    {
+      "id": "ai2026-qwen-3.8-27b-7",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.30267587615234065,
+        "reference": 0.029743087109630317
+      },
+      "full": {
+        "p": 0.40021129367598757,
+        "reference": 0.05088507500361034
+      }
+    },
+    {
+      "id": "ai2026-claude-haiku-4-5-3",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.9966260631301588,
+        "reference": 0.9932723832600312
+      },
+      "full": {
+        "p": 0.999867034161223,
+        "reference": 0.9998992604098276
+      }
+    },
+    {
+      "id": "ai2026-claude-opus-5-5",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.8670542980328215,
+        "reference": 0.5094261473819827
+      },
+      "full": {
+        "p": 0.8583847622344133,
+        "reference": 0.48563401734495343
+      }
+    },
+    {
+      "id": "ai2026-gpt-4.1-9",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.9966359895693128,
+        "reference": 0.9932980169807014
+      },
+      "full": {
+        "p": 0.9999389322424872,
+        "reference": 0.9999633662911513
+      }
+    },
+    {
+      "id": "ai2026-gpt-4.1-3",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.9043747865276838,
+        "reference": 0.6273463952084161
+      },
+      "full": {
+        "p": 0.9992484673734154,
+        "reference": 0.9990427013174499
+      }
+    },
+    {
+      "id": "ai2026-qwen-3.8-27b-5",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.40552801531326593,
+        "reference": 0.052290727448521764
+      },
+      "full": {
+        "p": 0.7241724396346394,
+        "reference": 0.24137236133016923
+      }
+    },
+    {
+      "id": "ai2026-claude-opus-5-3",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.5963991006620462,
+        "reference": 0.13097432321178287
+      },
+      "full": {
+        "p": 0.9097170080469186,
+        "reference": 0.6463971762649491
+      }
+    },
+    {
+      "id": "ai2026-gpt-oss-120b-9",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.9976240100536078,
+        "reference": 0.9957303769875158
+      },
+      "full": {
+        "p": 0.9996620966086118,
+        "reference": 0.999661326847568
+      }
+    },
+    {
+      "id": "ai2026-claude-opus-5-11",
+      "group": "ai-academic",
+      "label": "ai",
+      "first70": {
+        "p": 0.631104732628671,
+        "reference": 0.15421033385809588
+      },
+      "full": {
+        "p": 0.8663653514071403,
+        "reference": 0.5074885073225774
+      }
+    }
+  ]
+}
