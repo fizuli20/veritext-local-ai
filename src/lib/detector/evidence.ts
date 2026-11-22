@@ -13,6 +13,7 @@ export const DETECTOR_PROFILES = {
     label: "Light · 125 MB",
     engine: "TMR RoBERTa",
     downloadMB: 125,
+    elevatedScoreFloor: 0.8,
   },
   detailed: {
     model: "YatoVoid/forsakeai-detector",
@@ -20,6 +21,8 @@ export const DETECTOR_PROFILES = {
     label: "Detailed · 438 MB",
     engine: "Desklib DeBERTa",
     downloadMB: 438,
+    // Selected on the development genres of the 4.6.3 accuracy benchmark.
+    elevatedScoreFloor: 0.9696255337294803,
   },
 } as const;
 export type DetectorTier = keyof typeof DETECTOR_PROFILES;
@@ -136,7 +139,9 @@ export function describeEvidence(
   // Newer labelled AI samples scored low in the external stress test.
   // Low signal therefore cannot justify a human-authorship conclusion.
   const high =
-    score >= 0.8 && referenceProbability >= 0.8 && interval.lower > 0.5;
+    score >= profile.elevatedScoreFloor &&
+    referenceProbability >= 0.8 &&
+    interval.lower > 0.5;
   const low =
     score <= 0.2 && referenceProbability <= 0.2 && interval.upper < 0.5;
   if (bin.count < 10 || (!high && !low))
@@ -145,7 +150,9 @@ export function describeEvidence(
       status: "uncertain",
       verdict: "Inconclusive",
       explanation:
-        "The raw and reference-calibrated signals are ambiguous or disagree. No authorship conclusion is supported.",
+        referenceProbability >= 0.8 && score < profile.elevatedScoreFloor
+          ? "The historical reference is elevated, but the raw score is below the threshold used to limit false flags. Authorship remains unknown."
+          : "The raw and reference-calibrated signals are ambiguous or disagree. No authorship conclusion is supported.",
     };
   return {
     ...evidence,

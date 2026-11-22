@@ -44,6 +44,51 @@ export default function BenchmarksPage() {
               limits
             </a>
           </p>
+          <h2 className="text-xl mb-3">Detection across writing genres</h2>
+          <p className="text-sm leading-7">
+            We tested four models on 288 English passages from six genres. We
+            chose the Detailed cutoff using three genres and checked it on
+            education, creative writing, and technical writing. On those three
+            held-out genres, the higher cutoff removed three false flags and
+            missed two additional AI passages.
+          </p>
+          <div className="overflow-x-auto my-6">
+            <table className="w-full text-sm text-left leading-8">
+              <thead>
+                <tr>
+                  <th>Held-out genres</th>
+                  <th>Previous cutoff</th>
+                  <th>Current cutoff</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>AI-labelled passages flagged</td>
+                  <td>61 / 72</td>
+                  <td>59 / 72</td>
+                </tr>
+                <tr>
+                  <td>Human-labelled passages flagged</td>
+                  <td>2 / 70</td>
+                  <td>0 / 70</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-sm leading-7">
+            The evaluation includes 70 eligible human passages. Zero false flags
+            in that sample leaves uncertainty about the true rate. The threshold
+            changes the verdict, while model scores and passage highlights
+            continue to show the underlying signals.
+          </p>
+          <p className="text-sm my-5">
+            <a
+              className="underline"
+              href="https://github.com/fizuli20/veritext-local-ai/blob/main/docs/validation/detector-domain-4.6.3.json"
+            >
+              Compare models and per-passage scores
+            </a>
+          </p>
           <h2 className="text-xl mb-3">
             Detailed detector: measured comparison
           </h2>
@@ -98,8 +143,9 @@ export default function BenchmarksPage() {
             on previously examined data, not a blind accuracy test. The UI also
             abstains on ambiguous scores; its verdict rule differs from the
             table’s fixed 0.5 threshold. At its elevated-signal rule, Detailed
-            flagged 40/56 AI-labelled and 4/338 human-labelled passages. Those
-            false positives and misses remain real limitations.
+            flagged 39/56 AI-labelled and 2/334 eligible human-labelled passages
+            with the current cutoff. The previous cutoff flagged 40/56 and
+            4/334, respectively.
           </p>
           <p className="text-sm leading-7">
             For Detailed, calibration was fitted only on 82 historical HC3

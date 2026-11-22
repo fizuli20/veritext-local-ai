@@ -1,3 +1,20 @@
+# Veritext 4.6.3 detector threshold validation
+
+The Detailed model still uses the same weights and reports the same raw scores. Its elevated-signal cutoff moved from an effective **94.85/100** to **96.96/100**, with the existing historical-reference and sample-support checks still applied. The stricter cutoff prioritizes fewer false flags. Scores near the prior cutoff can now be inconclusive.
+
+| Eligible result | Previous cutoff | Current cutoff |
+| --- | ---: | ---: |
+| Held-out genres, AI passages flagged | 61/72 | 59/72 |
+| Held-out genres, human passages flagged | 2/70 | 0/70 |
+| Previously examined 2026 set, AI passages flagged | 40/56 | 39/56 |
+| Previously examined 2026 set, human passages flagged | 4/334 | 2/334 |
+
+We ran CPU inference on 288 passages from six [Learning to Rewrite dataset](https://github.com/ranhli/l2r_data) genres with the current Detailed and Light models, plus GPTTrace Ettin-150M and Ettin-1B. The threshold was selected on research, news and personal communication by maximizing recall under a 5% empirical false-flag cap. Education, creative writing and technical writing were held out from threshold selection. Three human passages across both splits were excluded because the editor would abstain before running inference. On the held-out groups, the two GPTTrace sizes flagged 51/72 and 50/72 AI passages at their development thresholds, compared with 59/72 for Detailed. The equal-weight model combinations tested did not improve on that held-out operating point. They remain evaluation candidates only.
+
+Held-out overall correct counts were the same at the two Detailed cutoffs. Zero false flags in 70 human passages leaves uncertainty about the real rate. The 2026 results replay a separately reported, previously examined corpus. This comparison does not establish a general accuracy rate, training-data independence, or parity with a private detector. [Per-passage results, model revisions and method](validation/detector-domain-4.6.3.json)
+
+---
+
 # Veritext 4.6.2 genre comparison and rewrite regression tests
 
 The same public or fictional inputs were submitted to the normal public [ZeroGPT detector](https://www.zerogpt.com/) and to Veritext 4.6.1. The input labels came from provenance. ZeroGPT's percentage and Veritext's raw model signal measure different things.

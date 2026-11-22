@@ -1,0 +1,1064 @@
+{
+  "version": "4.6.3",
+  "sources": {
+    "l2r": {
+      "url": "https://github.com/ranhli/l2r_data",
+      "revision": "2e0f258faa442b26ff3d28aeddcb13323b6496e3",
+      "paper": "https://aclanthology.org/2025.acl-long.322/"
+    },
+    "textsight": {
+      "url": "https://huggingface.co/datasets/textsightai/ai-text-detection-benchmark-2026",
+      "revision": "423b1768f0827675295fd6dc3cd255ad2f411183"
+    }
+  },
+  "models": [
+    {
+      "key": "detailed",
+      "model": "YatoVoid/forsakeai-detector",
+      "revision": "a155f82aeee54d33d8d6e50c963dda591cc548c8"
+    },
+    {
+      "key": "light",
+      "model": "onnx-community/tmr-ai-text-detector-ONNX",
+      "revision": "b9aa251e5bcda7e429fcc936767d921435945b60"
+    },
+    {
+      "key": "ettin150",
+      "model": "nakas/gpttrace-ettin150-text-v5e",
+      "revision": "9dadc95474b74a7be285866203788a6568b3c216"
+    },
+    {
+      "key": "ettin1b",
+      "model": "nakas/gpttrace-v5-1b",
+      "revision": "3b5461072b28097f81313db4b2c0c7abc155a31d"
+    }
+  ],
+  "protocol": [
+    "Real CPU inference with Transformers.js 4.3.2 and ONNX Runtime Node. Each model used overlapping 480-token windows, 64-token overlap and a token-weighted mean. GPTTrace candidate inputs had invisible formatting stripped. The test harness does not reproduce every step of the vendor deployment.",
+    "Six genres, 48 passages each, 24 human and eight each from GPT-4o, Gemini 1.5 Pro, and Llama 3 70B. Source row IDs are zero-based. Chosen from passages of 80–1200 words by SHA-256 order of veritext-4.7/<id>, excluding exact duplicates.",
+    "The app language and 80-word checks abstain on three human rows. These are listed and excluded from threshold fitting and reported eligible metrics.",
+    "Thresholds selected on AcademicResearch, NewsArticle, and PersonalCommunication only. Maximize AI recall with no more than 5% observed human false flags, breaking ties by fewer false flags then higher cutoff. EducationMaterial, LiteratureCreativeWriting, and TechnicalWriting are held out from threshold selection.",
+    "The Detailed HC3 reference checks remain in the release. Its historical cutoff for an elevated result was effectively 0.9484625767186728. The mean-logit combinations were inspected as offline candidates only.",
+    "Newer TextSight figures replay the known stored scores for all 394 passages and show a separate eligible-only count. The 1B supplemental comparison uses all 56 AI rows and every sixth human row from the same known corpus. No thresholds were fit on TextSight.",
+    "Dataset labels are publisher assertions, prior training overlap is unknown, and held-out sample sizes are small. No private competitor accuracy or real-world rate is inferred."
+  ],
+  "eligibilityExclusions": {
+    "l2r": {
+      "L2R/LiteratureCreativeWriting/human/195": "language-check: ru",
+      "L2R/NewsArticle/human/168": "language-check: es",
+      "L2R/TechnicalWriting/human/178": "under 80 app-counted words"
+    },
+    "modern": {
+      "hw-1059775872-0": "language-check: az",
+      "hw-1062966990-2": "language-check: az",
+      "hw-1062430031-0": "language-check: ar",
+      "hw-1057235981-1": "language-check: es"
+    }
+  },
+  "comparisons": {
+    "detailed": {
+      "threshold": 0.9696255337294803,
+      "development": {
+        "tp": 50,
+        "ai": 72,
+        "fp": 3,
+        "human": 71,
+        "auc": 0.9128
+      },
+      "evaluation": {
+        "tp": 59,
+        "ai": 72,
+        "fp": 0,
+        "human": 70,
+        "auc": 0.9633
+      },
+      "genres": {
+        "AcademicResearch": {
+          "tp": 15,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 0.9115
+        },
+        "EducationMaterial": {
+          "tp": 24,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 1.0
+        },
+        "LiteratureCreativeWriting": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9547
+        },
+        "NewsArticle": {
+          "tp": 16,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9438
+        },
+        "PersonalCommunication": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 3,
+          "human": 24,
+          "auc": 0.8976
+        },
+        "TechnicalWriting": {
+          "tp": 16,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9583
+        }
+      }
+    },
+    "light": {
+      "threshold": 0.982356607913971,
+      "development": {
+        "tp": 50,
+        "ai": 72,
+        "fp": 3,
+        "human": 71,
+        "auc": 0.8951
+      },
+      "evaluation": {
+        "tp": 55,
+        "ai": 72,
+        "fp": 3,
+        "human": 70,
+        "auc": 0.9514
+      },
+      "genres": {
+        "AcademicResearch": {
+          "tp": 11,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 0.8403
+        },
+        "EducationMaterial": {
+          "tp": 22,
+          "ai": 24,
+          "fp": 3,
+          "human": 24,
+          "auc": 0.9705
+        },
+        "LiteratureCreativeWriting": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 1.0
+        },
+        "NewsArticle": {
+          "tp": 21,
+          "ai": 24,
+          "fp": 2,
+          "human": 23,
+          "auc": 0.9529
+        },
+        "PersonalCommunication": {
+          "tp": 18,
+          "ai": 24,
+          "fp": 1,
+          "human": 24,
+          "auc": 0.9219
+        },
+        "TechnicalWriting": {
+          "tp": 14,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9457
+        }
+      }
+    },
+    "ettin150": {
+      "threshold": 0.9998880164000855,
+      "development": {
+        "tp": 44,
+        "ai": 72,
+        "fp": 2,
+        "human": 71,
+        "auc": 0.8537
+      },
+      "evaluation": {
+        "tp": 51,
+        "ai": 72,
+        "fp": 0,
+        "human": 70,
+        "auc": 0.9649
+      },
+      "genres": {
+        "AcademicResearch": {
+          "tp": 12,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 0.8316
+        },
+        "EducationMaterial": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 0.9861
+        },
+        "LiteratureCreativeWriting": {
+          "tp": 20,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9982
+        },
+        "NewsArticle": {
+          "tp": 14,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9728
+        },
+        "PersonalCommunication": {
+          "tp": 18,
+          "ai": 24,
+          "fp": 2,
+          "human": 24,
+          "auc": 0.8385
+        },
+        "TechnicalWriting": {
+          "tp": 12,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9402
+        }
+      }
+    },
+    "ettin1b": {
+      "threshold": 0.9997732346336307,
+      "development": {
+        "tp": 45,
+        "ai": 72,
+        "fp": 2,
+        "human": 71,
+        "auc": 0.8922
+      },
+      "evaluation": {
+        "tp": 50,
+        "ai": 72,
+        "fp": 1,
+        "human": 70,
+        "auc": 0.9516
+      },
+      "genres": {
+        "AcademicResearch": {
+          "tp": 12,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 0.908
+        },
+        "EducationMaterial": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 1,
+          "human": 24,
+          "auc": 0.9583
+        },
+        "LiteratureCreativeWriting": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9837
+        },
+        "NewsArticle": {
+          "tp": 14,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9783
+        },
+        "PersonalCommunication": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 2,
+          "human": 24,
+          "auc": 0.8906
+        },
+        "TechnicalWriting": {
+          "tp": 12,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9638
+        }
+      },
+      "previous2026Subset": {
+        "tp": 17,
+        "ai": 56,
+        "fp": 0,
+        "human": 57
+      }
+    },
+    "detailed+ettin150": {
+      "threshold": 0.9977319493737031,
+      "development": {
+        "tp": 47,
+        "ai": 72,
+        "fp": 1,
+        "human": 71,
+        "auc": 0.8918
+      },
+      "evaluation": {
+        "tp": 53,
+        "ai": 72,
+        "fp": 0,
+        "human": 70,
+        "auc": 0.9774
+      },
+      "genres": {
+        "AcademicResearch": {
+          "tp": 12,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 0.8663
+        },
+        "EducationMaterial": {
+          "tp": 21,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 1.0
+        },
+        "LiteratureCreativeWriting": {
+          "tp": 20,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9982
+        },
+        "NewsArticle": {
+          "tp": 15,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9801
+        },
+        "PersonalCommunication": {
+          "tp": 20,
+          "ai": 24,
+          "fp": 1,
+          "human": 24,
+          "auc": 0.8802
+        },
+        "TechnicalWriting": {
+          "tp": 12,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9674
+        }
+      }
+    },
+    "detailed+ettin1b": {
+      "threshold": 0.99729029319715,
+      "development": {
+        "tp": 44,
+        "ai": 72,
+        "fp": 1,
+        "human": 71,
+        "auc": 0.9145
+      },
+      "evaluation": {
+        "tp": 49,
+        "ai": 72,
+        "fp": 0,
+        "human": 70,
+        "auc": 0.9708
+      },
+      "genres": {
+        "AcademicResearch": {
+          "tp": 10,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 0.9236
+        },
+        "EducationMaterial": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 0.9983
+        },
+        "LiteratureCreativeWriting": {
+          "tp": 18,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9982
+        },
+        "NewsArticle": {
+          "tp": 15,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9855
+        },
+        "PersonalCommunication": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 1,
+          "human": 24,
+          "auc": 0.9219
+        },
+        "TechnicalWriting": {
+          "tp": 12,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9746
+        }
+      },
+      "previous2026Subset": {
+        "tp": 29,
+        "ai": 56,
+        "fp": 0,
+        "human": 57
+      }
+    },
+    "detailed+light": {
+      "threshold": 0.9659689044897507,
+      "development": {
+        "tp": 49,
+        "ai": 72,
+        "fp": 3,
+        "human": 71,
+        "auc": 0.9079
+      },
+      "evaluation": {
+        "tp": 59,
+        "ai": 72,
+        "fp": 0,
+        "human": 70,
+        "auc": 0.9742
+      },
+      "genres": {
+        "AcademicResearch": {
+          "tp": 14,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 0.8872
+        },
+        "EducationMaterial": {
+          "tp": 24,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 1.0
+        },
+        "LiteratureCreativeWriting": {
+          "tp": 20,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9946
+        },
+        "NewsArticle": {
+          "tp": 16,
+          "ai": 24,
+          "fp": 1,
+          "human": 23,
+          "auc": 0.9511
+        },
+        "PersonalCommunication": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 2,
+          "human": 24,
+          "auc": 0.9062
+        },
+        "TechnicalWriting": {
+          "tp": 15,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9583
+        }
+      }
+    },
+    "detailed-current": {
+      "threshold": 0.9484625767186728,
+      "development": {
+        "tp": 50,
+        "ai": 72,
+        "fp": 4,
+        "human": 71,
+        "auc": 0.9128
+      },
+      "evaluation": {
+        "tp": 61,
+        "ai": 72,
+        "fp": 2,
+        "human": 70,
+        "auc": 0.9633
+      },
+      "genres": {
+        "AcademicResearch": {
+          "tp": 15,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 0.9115
+        },
+        "EducationMaterial": {
+          "tp": 24,
+          "ai": 24,
+          "fp": 1,
+          "human": 24,
+          "auc": 1.0
+        },
+        "LiteratureCreativeWriting": {
+          "tp": 20,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9547
+        },
+        "NewsArticle": {
+          "tp": 16,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9438
+        },
+        "PersonalCommunication": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 4,
+          "human": 24,
+          "auc": 0.8976
+        },
+        "TechnicalWriting": {
+          "tp": 17,
+          "ai": 24,
+          "fp": 1,
+          "human": 23,
+          "auc": 0.9583
+        }
+      },
+      "previous2026Subset": {
+        "tp": 40,
+        "ai": 56,
+        "fp": 1,
+        "human": 57
+      }
+    },
+    "light-current": {
+      "threshold": 0.9831520317850821,
+      "development": {
+        "tp": 47,
+        "ai": 72,
+        "fp": 2,
+        "human": 71,
+        "auc": 0.8951
+      },
+      "evaluation": {
+        "tp": 53,
+        "ai": 72,
+        "fp": 3,
+        "human": 70,
+        "auc": 0.9514
+      },
+      "genres": {
+        "AcademicResearch": {
+          "tp": 10,
+          "ai": 24,
+          "fp": 0,
+          "human": 24,
+          "auc": 0.8403
+        },
+        "EducationMaterial": {
+          "tp": 21,
+          "ai": 24,
+          "fp": 3,
+          "human": 24,
+          "auc": 0.9705
+        },
+        "LiteratureCreativeWriting": {
+          "tp": 18,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 1.0
+        },
+        "NewsArticle": {
+          "tp": 19,
+          "ai": 24,
+          "fp": 1,
+          "human": 23,
+          "auc": 0.9529
+        },
+        "PersonalCommunication": {
+          "tp": 18,
+          "ai": 24,
+          "fp": 1,
+          "human": 24,
+          "auc": 0.9219
+        },
+        "TechnicalWriting": {
+          "tp": 14,
+          "ai": 24,
+          "fp": 0,
+          "human": 23,
+          "auc": 0.9457
+        }
+      }
+    }
+  },
+  "textSightFull": {
+    "previous": {
+      "modelOnly": {
+        "tp": 40,
+        "fp": 4,
+        "ai": 56,
+        "human": 338
+      },
+      "eligible": {
+        "tp": 40,
+        "fp": 4,
+        "ai": 56,
+        "human": 334
+      }
+    },
+    "current": {
+      "modelOnly": {
+        "tp": 39,
+        "fp": 2,
+        "ai": 56,
+        "human": 338
+      },
+      "eligible": {
+        "tp": 39,
+        "fp": 2,
+        "ai": 56,
+        "human": 334
+      }
+    }
+  },
+  "roundedBenchmarkNote": "Each scores array follows the models array order."
+,
+  "l2rScores": [
+    {"id":"L2R/AcademicResearch/human/6","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"d32ad128286046e95f2407c8d8fd97244eec4a64a2673b6054d2f3eef99912fa","scores":[0.003296084310475535,0.06238599494099617,0.01057858204311782,0.0005426019141687974]},
+    {"id":"L2R/AcademicResearch/human/106","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"ce590539d55b0e2373c980955eb5bc239f119aff3dc8f915971f5c3780c047d2","scores":[0.06460265473327327,0.433023065328598,0.019009680456146327,0.013155861454717137]},
+    {"id":"L2R/AcademicResearch/human/75","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"6466743330de03bfe04ac48ebb4567038153ad479d9b14198134b120e01a9fb6","scores":[0.34769715276315843,0.9724587202072144,0.11723925434310194,0.03505746268041722]},
+    {"id":"L2R/AcademicResearch/human/164","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"5412d55911afe93920ae36f2e5a9d805c2243ff3bc3fe1940a34236d2ccb9580","scores":[0.17596893897868482,0.15242905914783478,0.002713272084944177,0.0013285688546826552]},
+    {"id":"L2R/AcademicResearch/human/64","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"f8d031a84b13d2faace71eb36888ae668431b4c6dcbc8d593ab0b0347935ddf2","scores":[0.392771081336156,0.9823092222213745,0.04744568758861899,0.2572693502457796]},
+    {"id":"L2R/AcademicResearch/human/29","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"6c9e90ce1b7ed8953c549c07f9c8bb812fb464b08a0c55059fca0cfdf277c8e7","scores":[0.7721455285185198,0.975091278553009,0.9792626729274685,0.9129687326344936]},
+    {"id":"L2R/AcademicResearch/human/134","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"8a3f2e8abb6f4c60beb109b5e1506039a96702111edeeac68f103cb781c57212","scores":[0.1230217927396754,0.9632697701454163,0.47622070868520694,0.0027395964357145304]},
+    {"id":"L2R/AcademicResearch/human/23","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"edff1066d61fd6d26d97c54a491f97d8e0df353ff339995f2bf775d80d977841","scores":[0.05018846673496567,0.856407642364502,0.08301264917005297,0.012997396234275557]},
+    {"id":"L2R/AcademicResearch/human/68","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"8ba56bf9cfd02a85d0da484995b255c64884381957f8e9715023a327d251f240","scores":[0.037074149069147994,0.01761525496840477,0.0008464237252029803,0.0001407887490304204]},
+    {"id":"L2R/AcademicResearch/human/31","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"7b39e32ff5eab98d527c44fb90c6d50669db002eec46ba66bb1073ebf89cdf4a","scores":[0.006231893933638395,0.02773965150117874,0.0009071552483576281,0.0005190555728410277]},
+    {"id":"L2R/AcademicResearch/human/46","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"398d64a25985d844931d9b2bf2fb5c0ed9c93aeab7a56c973b4b4bffdc4cb951","scores":[0.07598098556367834,0.09354767203330994,0.010356660311626695,0.0001352937980426743]},
+    {"id":"L2R/AcademicResearch/human/50","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"8bbf69046fa1846f3aee256037e39098214f6675f377971ec58ab60e8c498894","scores":[0.292652127231399,0.040204938501119614,0.009806774497680637,0.0004187825972937592]},
+    {"id":"L2R/AcademicResearch/human/40","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"411948a63d5f13de0e7b45c00b3f166a82f83e745ca0de67a2380e40513fd870","scores":[0.07939226785734985,0.09580941498279572,0.0011952917620224309,0.000960303479501152]},
+    {"id":"L2R/AcademicResearch/human/97","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"a5ebef8102b6c7c0f2b993a2b6e515183b80887b8a27351e9d6f667ad17177da","scores":[0.07279069554236771,0.3891333341598511,0.0448587611407572,0.0809151289194305]},
+    {"id":"L2R/AcademicResearch/human/195","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"1fa3f4f3fc1c76be723b8e2a7087f63d883a9bc2e07aee105efc9de6c3c3c71c","scores":[0.1712363184125355,0.07792288810014725,0.4801839298240043,0.04060953179639059]},
+    {"id":"L2R/AcademicResearch/human/35","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"453c34a68604fc25150f5c7be791ae1a6659426919301c8be20643a2ed3d5512","scores":[0.020987953053423363,0.036886319518089294,0.2896183980457363,0.027208609944938605]},
+    {"id":"L2R/AcademicResearch/human/189","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"b2f3020c48f05bdeee64a9a1267b005edc0b8666df923f26b54659a21ddf9db3","scores":[0.0944809455921747,0.06288625299930573,0.0002187769714873455,0.0004234357476553816]},
+    {"id":"L2R/AcademicResearch/human/118","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"58155db6e4f5ab4569576091a1220a8b3a07e43fb428fb1624de2fe2848057f8","scores":[0.4752511123693242,0.9667885899543762,0.04437390537506189,0.3270581089912352]},
+    {"id":"L2R/AcademicResearch/human/148","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"d0c3add4be61bbd48f646d29e5c619e57ae3d31f863aa484891eee7d1cd83c67","scores":[0.507403748017105,0.8711983561515808,0.01196075450285198,0.030770439983123423]},
+    {"id":"L2R/AcademicResearch/human/187","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"d2cb1c02286be24e8b098ce938bfa4eb06b194fec706be2c7b9507f207fd748d","scores":[0.11399395468881675,0.02174692414700985,0.0007520575896733926,0.0005035600409685402]},
+    {"id":"L2R/AcademicResearch/human/42","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"7e55ae6f0d1268b1ce0bfa80d350cbd0cefcdd670c0087e9ad005c877e79021d","scores":[0.05435258561698595,0.26909586787223816,0.15995292270193734,0.0016645675700230958]},
+    {"id":"L2R/AcademicResearch/human/10","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"4f594a7cab1a4d1e31be7e71f30e350f15e1debd74330a3ac42f1f8ebfc6577b","scores":[0.6001494548295434,0.027518589049577713,0.04900968020795832,0.2056738395315919]},
+    {"id":"L2R/AcademicResearch/human/92","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"3a7fea30dfdd6210f1aa978fa1e3803211d907b999ff7bd2f5991992145f169b","scores":[0.08362639837623319,0.08720078319311142,0.023020798814424426,0.002107098926679586]},
+    {"id":"L2R/AcademicResearch/human/88","split":"development","domain":"AcademicResearch","generator":"human","label":"human","sha256OfCollapsedWhitespace":"fbed72a835f710b0b2b5a7ae26a89647105aa18bc217f266d594cddb9f0492c1","scores":[0.0903800862905476,0.046831805258989334,0.008517004861897368,0.006565580234217912]},
+    {"id":"L2R/AcademicResearch/GPT-4o/20","split":"development","domain":"AcademicResearch","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"dc9177116b382ba5581bb5ff8d0cd95f7e535e535b27a19b2fc1ab38359cc5e8","scores":[0.932704477560846,0.9830887317657471,0.9999492341328728,0.9999926262401697]},
+    {"id":"L2R/AcademicResearch/GPT-4o/193","split":"development","domain":"AcademicResearch","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"3b7a496d52973ada7c8d3e29a105f7d3b8483d0e86c4bb6b14d2533a4f441899","scores":[0.8244045889507172,0.9856403470039368,0.9999144431422216,0.9998701444995658]},
+    {"id":"L2R/AcademicResearch/GPT-4o/138","split":"development","domain":"AcademicResearch","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"cf1b96f436d4c3e8fb8ae82ec9ab45bb542221558fc75fb4afb4419d11fa52b8","scores":[0.43251292588071893,0.979220449924469,0.02176897903798243,0.13155262667895606]},
+    {"id":"L2R/AcademicResearch/GPT-4o/43","split":"development","domain":"AcademicResearch","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"e971f01cf3dabfc1320ad045d7aeb66cb6f50332da18578c009d9be41c708e0d","scores":[0.21032638357404929,0.7989263534545898,0.007424264794432498,0.0024440086894633823]},
+    {"id":"L2R/AcademicResearch/GPT-4o/198","split":"development","domain":"AcademicResearch","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"ae5ac6629ca5ddd7198ffc74fa1c15abc601218a1eb3fc76074d92c72aa0d110","scores":[0.5376100246202187,0.07168623805046082,0.003025830224801528,0.9792607119744228]},
+    {"id":"L2R/AcademicResearch/GPT-4o/122","split":"development","domain":"AcademicResearch","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"1a49e74d81eb0a689d6d2bd6c3b75dc36fd77d5375041c40a0564d743d5bbdb7","scores":[0.9696255337294803,0.9209952354431152,0.9990822832941749,0.9299434751054342]},
+    {"id":"L2R/AcademicResearch/GPT-4o/95","split":"development","domain":"AcademicResearch","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"cacdefefcaa48f16ee5614913eeb94786f49d4e0bd4aea2095276947cfc87b30","scores":[0.07372483861159021,0.09092602133750916,0.00010776276176849506,0.0006252546190649408]},
+    {"id":"L2R/AcademicResearch/GPT-4o/107","split":"development","domain":"AcademicResearch","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"bf232350b07eab4b20ff4f31c848d90dd82e37e6f0e0bb9547a50a241a2e89c9","scores":[0.9982354085103107,0.986873984336853,0.9999638046744589,0.9998742094796742]},
+    {"id":"L2R/AcademicResearch/Gemini-1.5-Pro/1","split":"development","domain":"AcademicResearch","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"7e7f3f0c6ae9fe9211a4e5e1eb2ba71b89af081dd2affce19d22b342fe8ff63b","scores":[0.7520801729671913,0.8496798872947693,0.9999548954840046,0.9999131373190405]},
+    {"id":"L2R/AcademicResearch/Gemini-1.5-Pro/32","split":"development","domain":"AcademicResearch","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"1584281ea402ba2091a6a742bc941a15e82655f3d2c09969d98a59d7acefaa87","scores":[0.9999453854182238,0.9866063594818115,0.9999999645340981,0.9999999592047027]},
+    {"id":"L2R/AcademicResearch/Gemini-1.5-Pro/74","split":"development","domain":"AcademicResearch","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"554b5c70700ac955c6649eedd6731b25c651eb26b63d831ad39afbf8ecb243f3","scores":[0.9988423250976493,0.9861021637916565,0.9999995435149868,0.9999992192203377]},
+    {"id":"L2R/AcademicResearch/Gemini-1.5-Pro/134","split":"development","domain":"AcademicResearch","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"bf4e4d966c40bdb7cb3f9977b8d1ece686433e3c8b43f2291b6ecc45114dff43","scores":[0.9996871217899391,0.9865233898162842,0.9999983298901033,0.9999995538408163]},
+    {"id":"L2R/AcademicResearch/Gemini-1.5-Pro/166","split":"development","domain":"AcademicResearch","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"add512954930a689f77b4df162f1150bc2653f5ad301230540abfa20669512fa","scores":[0.996591446523248,0.9857832193374634,0.999999886142707,0.999999731915477]},
+    {"id":"L2R/AcademicResearch/Gemini-1.5-Pro/8","split":"development","domain":"AcademicResearch","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"ce4eed04e4eb904c9b56196150c00d3e90d239cc0469761956f8db3482bc8a77","scores":[0.999746236102052,0.9864153861999512,0.9999963310754596,0.9999995629461477]},
+    {"id":"L2R/AcademicResearch/Gemini-1.5-Pro/40","split":"development","domain":"AcademicResearch","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"c686b066f9c3bdc2981d504bbbaa501b30bef6866a6cc21b04a8b6170688c6a4","scores":[0.999357808303377,0.9840663075447083,0.9999978419703832,0.9999996345930122]},
+    {"id":"L2R/AcademicResearch/Gemini-1.5-Pro/153","split":"development","domain":"AcademicResearch","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"a8fcb1ca029a9921abfafaa0e4d0393fd8919d3dcc90e1951b42a363b196bd30","scores":[0.9991050876815096,0.982160210609436,0.9999928828112181,0.9999992181067265]},
+    {"id":"L2R/AcademicResearch/Llama-3-70B/70","split":"development","domain":"AcademicResearch","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"7012b772b7b0526b0c4b655303fa90a4b662b3d51538f909b9e3eb94f1ecaaf0","scores":[0.02144407913970876,0.04373140633106232,0.020292798260156324,0.060112077102190895]},
+    {"id":"L2R/AcademicResearch/Llama-3-70B/111","split":"development","domain":"AcademicResearch","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"d94cbae0cef7290fc9c94c124eb11f964224f5e2add4e5c0be00cfd46f3b573e","scores":[0.9844599926443067,0.0881880521774292,0.032304892502181555,0.015481199882602709]},
+    {"id":"L2R/AcademicResearch/Llama-3-70B/83","split":"development","domain":"AcademicResearch","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"5a9d2f212de129d3448df5f9141f9cee9e64d8117f382ebadd95d5431c65ec18","scores":[0.9968566769160332,0.9869692921638489,0.9996027843291565,0.9951076731865277]},
+    {"id":"L2R/AcademicResearch/Llama-3-70B/122","split":"development","domain":"AcademicResearch","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"1ed89cad5d276abd2a4c1cd9d01dc6fbf91c83eb0f3313a084ed08f881585621","scores":[0.9998131820044912,0.9862990975379944,0.9999970680392123,0.9999974934618958]},
+    {"id":"L2R/AcademicResearch/Llama-3-70B/185","split":"development","domain":"AcademicResearch","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"23f2d916b2b316eaa7bdc81c09c48de44ef77f4cbf644127626f62e775ea929a","scores":[0.9373025421140014,0.3678226172924042,0.8148015898174958,0.045211042721097904]},
+    {"id":"L2R/AcademicResearch/Llama-3-70B/106","split":"development","domain":"AcademicResearch","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"fea5599822dc95461c59bae4d5447bf9c20ff6295cde61a189d0d661a602de99","scores":[0.9944326101100792,0.981181800365448,0.9488905252380126,0.9589255522461312]},
+    {"id":"L2R/AcademicResearch/Llama-3-70B/118","split":"development","domain":"AcademicResearch","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"1793d4e5deaf251f92048f488be91216d2ec142cdabe5e306b7cbf9320851791","scores":[0.9958732125299989,0.9823021292686462,0.9987545438382402,0.9973739920821365]},
+    {"id":"L2R/AcademicResearch/Llama-3-70B/22","split":"development","domain":"AcademicResearch","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"2e1dc7b925060ed3b524a1c92e52fa12a9ce76efe3441ed2edc02f8984becd00","scores":[0.993114357767091,0.9772031307220459,0.9903156125018588,0.9957562563467011]},
+    {"id":"L2R/EducationMaterial/human/31","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"d4bbff3c0b9ac2badbd49e566c5d71773be19b4e4cf15143109f399829d5615f","scores":[0.03857986182339602,0.029091570526361465,0.0001344742141219804,0.00022952498336606254]},
+    {"id":"L2R/EducationMaterial/human/166","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"9d4f7aedd9920bc235a38c91e90fd8e84100b72f9514e997672651bdaafc4b05","scores":[0.051792447282046024,0.13977232575416565,0.00011037371535785086,0.00017018575016511877]},
+    {"id":"L2R/EducationMaterial/human/96","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"344e42a1c2a560b7329be448f9341f0df40a23503381affdd1337b58938b1fdc","scores":[0.3890874347106084,0.984442949295044,0.0001505972743997961,0.9984922844004215]},
+    {"id":"L2R/EducationMaterial/human/198","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"7261e6933ee6e2857b9ffd1e0a5719770104c0b5f2a04fa6cb4426a529d7f4d8","scores":[0.968620461843371,0.07436800748109818,0.002032907919302075,0.04859794127735089]},
+    {"id":"L2R/EducationMaterial/human/84","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"f38d801762210ed5ca8a6f60a68678a0ee9e9e5dd14ce69c2d35b01d99f45db7","scores":[0.4440161978868845,0.9649497866630554,0.00010883848924762297,0.0013450060420270645]},
+    {"id":"L2R/EducationMaterial/human/181","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"6d2078873f743b14b9d4670154f52e62581ca1e4b335c1d2a50da7a02e268c6d","scores":[0.09450428318077879,0.07584956288337708,0.0002389896692918972,0.018282066617024154]},
+    {"id":"L2R/EducationMaterial/human/39","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"56060326efbbe0e56d6ece23856712fa9abc2db7c626f143f2164abddf08a428","scores":[0.026390952382250733,0.9744895100593567,0.9984068843486846,0.8418804263794124]},
+    {"id":"L2R/EducationMaterial/human/139","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"b204709c01e9d7ce0550c2fce5130ef09da8b3d3d079c958e3fbcd9bd3776487","scores":[0.0346392986202183,0.9817377924919128,0.9694767324595456,0.9958723825203346]},
+    {"id":"L2R/EducationMaterial/human/179","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"a2ce9f24aded09301965744e995555e3c33f82a7fba43b30ac8966b9d676b63e","scores":[0.004082829432633453,0.013814879581332207,6.883356394898835e-05,4.5794792240727836e-05]},
+    {"id":"L2R/EducationMaterial/human/118","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"776498439fb117dacc9e1040ea9985ea8b6ba772710e1a47a9ca2f108471956a","scores":[0.2925298546414046,0.3698759078979492,6.890994594353538e-05,0.00020063653251120616]},
+    {"id":"L2R/EducationMaterial/human/110","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"26d581adff0ffc8693ff4509601ac84e11434970a0541ec5eb81ff6548a16263","scores":[0.5343561640412012,0.044266177548302546,0.6288832919146923,0.9887524806391702]},
+    {"id":"L2R/EducationMaterial/human/159","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"19a40988e59c1771dc80563bfbb89e5bcf5593597d1ddf67f375ae9ae85d9207","scores":[0.7539264664692609,0.034397244453430176,5.3610916449430616e-05,0.0008318128773644703]},
+    {"id":"L2R/EducationMaterial/human/56","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"ab8d102021350fd9f2af9f0a1c40b1d43bece19ac605970881440a0a07179fa6","scores":[0.025057086935443982,0.7888173460960388,0.0003661286158093831,0.009878973870771435]},
+    {"id":"L2R/EducationMaterial/human/104","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"607b27d0b6acbf47f610d46bec643ec642f34fb59117db861b863a8f6e06b4cc","scores":[0.0028351126906115344,0.2914392650127411,9.627772519297583e-05,0.0011123085134687367]},
+    {"id":"L2R/EducationMaterial/human/192","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"211992834365c16a09b2832f821d5b56e3834a6c5b32a6ce5cbc071b8c37b296","scores":[0.4647085269549893,0.9807160496711731,0.00241709700517449,0.5899831502367049]},
+    {"id":"L2R/EducationMaterial/human/49","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"4591fe0f1c2b183fd494519455e76ae7aa12ecf8418abc28448d764888eead62","scores":[0.1661313747992799,0.962006624922695,0.04529378874573951,0.08832576856365475]},
+    {"id":"L2R/EducationMaterial/human/97","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"8248d3baa8ac1e04560e6d7336d24a8dfb416907596db2b130a22e605138d827","scores":[0.5707654121932945,0.9637244343757629,0.9905668275057437,0.9999133043949904]},
+    {"id":"L2R/EducationMaterial/human/100","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"32399a1661da0f6ecfb909c100be2a7dabf437eaa4cea37369fb1b966f153088","scores":[0.8064133412809051,0.024767886847257614,7.588827775087586e-05,0.00020986722944271898]},
+    {"id":"L2R/EducationMaterial/human/116","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"4eecc50777e9728a762b015d292d4c656bd89bf0ad8c1e75d7d5c375d41e024c","scores":[0.02215322360033493,0.017324253916740417,0.0004795369253129644,0.001305376341508571]},
+    {"id":"L2R/EducationMaterial/human/29","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"39a5dbe81f78bfdfad0fbf22da2128261011acf906dd0c4dfe081610f37ee4a3","scores":[0.11162215127937028,0.051603127270936966,0.045630236390820034,0.9271793687886757]},
+    {"id":"L2R/EducationMaterial/human/124","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"979df8d42bf4918e214ebc84e75c1ce89ed08f9123aefb1933978ed4a3bc5425","scores":[0.09683877044484973,0.6877576112747192,8.958104612816339e-05,0.006959785204527133]},
+    {"id":"L2R/EducationMaterial/human/111","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"b768ff953056fc2a33de8cb82b046ec35931ca8672a9b2a388e4ca02b31ffa3f","scores":[0.5189467893415528,0.09212256222963333,1.5342456550019513e-05,0.00041899143874826343]},
+    {"id":"L2R/EducationMaterial/human/172","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"b6f0d994c6a4afd6bb8d5532bf6c993f801d851770c19ff1dd5e643a8da51716","scores":[0.1069072479114417,0.9840787053108215,0.9995327486845156,0.9994224004972485]},
+    {"id":"L2R/EducationMaterial/human/24","split":"evaluation","domain":"EducationMaterial","generator":"human","label":"human","sha256OfCollapsedWhitespace":"c6a12c71f7e13624305214fa88e57e2e80c0c777037c45798eeb4e3e2c1297e2","scores":[0.9172627687820797,0.9842594265937805,0.17412264115440804,0.973233603269835]},
+    {"id":"L2R/EducationMaterial/GPT-4o/27","split":"evaluation","domain":"EducationMaterial","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"86413a35a32a8f1e06951d39626f91b2e0c4448aa45d7d7fd81de2a805ea9ca5","scores":[0.9977382252811345,0.98482745885849,0.9998540043297534,0.9811452374308129]},
+    {"id":"L2R/EducationMaterial/GPT-4o/48","split":"evaluation","domain":"EducationMaterial","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"a7658144916ca557bb17dc93a447b60e655485adda9a77fc9b44b7899bd61057","scores":[0.9996767195039865,0.9867975115776062,0.9999938713305607,0.9999992070579607]},
+    {"id":"L2R/EducationMaterial/GPT-4o/52","split":"evaluation","domain":"EducationMaterial","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"2241205a8963d1eaa3ce9d9a96623dd0c0cdd76b0981731fd518bff1250efc5a","scores":[0.9912032758052453,0.9829220771789551,0.9981183568707901,0.9989138694028388]},
+    {"id":"L2R/EducationMaterial/GPT-4o/158","split":"evaluation","domain":"EducationMaterial","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"e666c6f603fa973bc3809ff2a91f4081776adb6a2564ae8a5b7ffe951f1a703b","scores":[0.9999181731928422,0.98676997423172,0.9999482079816683,0.999998985737919]},
+    {"id":"L2R/EducationMaterial/GPT-4o/148","split":"evaluation","domain":"EducationMaterial","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"46bdac3fbb5c17fd346fef3dd4bd288220c1d7aadf90e1b5d8e3c30d480ae48b","scores":[0.9999466160424298,0.9868956208229065,0.9999988570766027,0.9999996683758855]},
+    {"id":"L2R/EducationMaterial/GPT-4o/64","split":"evaluation","domain":"EducationMaterial","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"f7add61f73da2e39fbf9ab49a6a14ff8e243a3e12016031af5ee03f06c43549a","scores":[0.9999891530195415,0.987206220626831,0.9999999316395455,0.999999953731722]},
+    {"id":"L2R/EducationMaterial/GPT-4o/34","split":"evaluation","domain":"EducationMaterial","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"51b0ccbd4293b7a494ad81fc028eafe5cd863302b2a2488762170c3639a2106b","scores":[0.9984383704512002,0.9840767979621887,0.9999488679155591,0.9910723201807711]},
+    {"id":"L2R/EducationMaterial/GPT-4o/50","split":"evaluation","domain":"EducationMaterial","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"298e3561065e6ddb394e993d234ad6b4c1e11ef22fc0210de5100a91fee047e7","scores":[0.9962682087552869,0.9728479385375977,0.9980259486415901,0.96772360410506]},
+    {"id":"L2R/EducationMaterial/Gemini-1.5-Pro/25","split":"evaluation","domain":"EducationMaterial","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"d2aac4113584c170c214e568de9157107f8af68058ab93174e19c030c2e8bd6a","scores":[0.9999894922754984,0.9874212145805359,0.99999999394236,0.9999999976573466]},
+    {"id":"L2R/EducationMaterial/Gemini-1.5-Pro/5","split":"evaluation","domain":"EducationMaterial","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"04ec3117391fb1654673dde1d95a5ca0777e94e5bf2128bfde5db54e51f6819d","scores":[0.9999880210185278,0.9870839715003967,0.9999999876176066,0.9999999760119173]},
+    {"id":"L2R/EducationMaterial/Gemini-1.5-Pro/17","split":"evaluation","domain":"EducationMaterial","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"50c5bc49318707103b344c5502f0b423ffa53e6b5863eb4d3bd2627f79031567","scores":[0.9999899851609771,0.986072838306427,0.9999999936808046,0.9999999991747963]},
+    {"id":"L2R/EducationMaterial/Gemini-1.5-Pro/2","split":"evaluation","domain":"EducationMaterial","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"d92045480a10a325a09ead3290ceec36d2b910c94b64ae0ba9c01f8ac3f631df","scores":[0.9997457224140128,0.987023651599884,0.9999991011996583,0.9999998158729942]},
+    {"id":"L2R/EducationMaterial/Gemini-1.5-Pro/95","split":"evaluation","domain":"EducationMaterial","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"fc32471758be9c4c47a6832678f3937f6f2a4aed2af292f6cdcd59bb909bfc9b","scores":[0.999976022838779,0.985519015930108,0.9999929028209945,0.9999952608396214]},
+    {"id":"L2R/EducationMaterial/Gemini-1.5-Pro/94","split":"evaluation","domain":"EducationMaterial","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"57c3968e8df55d8bb64203e00f3140ec21e1651b65de9a64ffd673561d9edff0","scores":[0.999992993790351,0.9875556230545044,0.9999999981517198,0.9999999993896307]},
+    {"id":"L2R/EducationMaterial/Gemini-1.5-Pro/43","split":"evaluation","domain":"EducationMaterial","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"07750f6a0e9b1eab24e8b5fc3f937512f0d498a538caa51c4b21687c47dc752a","scores":[0.9999878420530405,0.9873954653739929,0.9999999944268068,0.9999999926554071]},
+    {"id":"L2R/EducationMaterial/Gemini-1.5-Pro/104","split":"evaluation","domain":"EducationMaterial","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"214a5ce1a59d23a59564d305fea7f5ad1976b44ae3cf6f4a239e8da8832e2b7f","scores":[0.9996757422544804,0.9861136674880981,0.9999998417195785,0.9999999563467105]},
+    {"id":"L2R/EducationMaterial/Llama-3-70B/152","split":"evaluation","domain":"EducationMaterial","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"117f5209cb2f96c7a94f63ec7a1f666c76a1a155e0a0e9f4b35897c6987ba9e8","scores":[0.9999661334489633,0.9858982563018799,0.9999996863110172,0.9999989348163331]},
+    {"id":"L2R/EducationMaterial/Llama-3-70B/164","split":"evaluation","domain":"EducationMaterial","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"6456e267dfc21b09cbe65de8bbc35a7e410276c46ea0e39f2f70f627052dcb40","scores":[0.9992737364126706,0.985500693321228,0.9999960964004261,0.9999953483130459]},
+    {"id":"L2R/EducationMaterial/Llama-3-70B/4","split":"evaluation","domain":"EducationMaterial","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"71b28f885bfe5045e10354e496ff7aef662a03a09f544e9836aabba1c9fb18a1","scores":[0.9999870240435996,0.9865920543670654,0.9999925650438156,0.999999736311755]},
+    {"id":"L2R/EducationMaterial/Llama-3-70B/106","split":"evaluation","domain":"EducationMaterial","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"71e2b7477f6eb5de640a224bdfbd75be9383958143f97e3dfdc086faf77eb388","scores":[0.9996348946451903,0.9769265651702881,0.9996788302593985,0.9999675777804568]},
+    {"id":"L2R/EducationMaterial/Llama-3-70B/120","split":"evaluation","domain":"EducationMaterial","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"498c5453b20b1289d3fbb14de9be04496b62361bebf0170da21fa0ed21a7b1ec","scores":[0.9999762691110775,0.9868846535682678,0.9999953954048127,0.9999983844662791]},
+    {"id":"L2R/EducationMaterial/Llama-3-70B/29","split":"evaluation","domain":"EducationMaterial","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"665c4df8824e88d2f333c30599de37a0ec8417c644bd3d74b6304196510e670e","scores":[0.9999816169517364,0.987631618976593,0.9999999550147078,0.9999999714948586]},
+    {"id":"L2R/EducationMaterial/Llama-3-70B/171","split":"evaluation","domain":"EducationMaterial","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"bff1bb3a380520533660f457fc054aa36daa7dd9d19ed30578f636129e251cfb","scores":[0.9999728066594422,0.9874411821365356,0.9999988876981459,0.9999997829854669]},
+    {"id":"L2R/EducationMaterial/Llama-3-70B/56","split":"evaluation","domain":"EducationMaterial","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"6563a0fed9200b01777e080a0a7f5c539bedd602bcc5b2aa08ff92d017c0ec18","scores":[0.9996675792727984,0.9865996241569519,0.9419957525937086,0.8683454610583983]},
+    {"id":"L2R/LiteratureCreativeWriting/human/106","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"8868950a9aba71fba406120d52570875d6bfcdebfec6259c05d16ac982a9b4b9","scores":[0.00512474025019645,0.05013374984264374,3.892504080612737e-05,5.292191496528812e-05]},
+    {"id":"L2R/LiteratureCreativeWriting/human/3","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"aaaa0167899b0c6fb1a79535f92b319cda64b067d4cb9d1c068147e95b9db229","scores":[0.07472443419663508,0.7694087028503418,1.8103350066149824e-05,4.958962801303462e-05]},
+    {"id":"L2R/LiteratureCreativeWriting/human/156","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"0d645ba5ee2ba86d5fa432b5422046628336fc949a9662dc77b62ad633d2ea79","scores":[0.0643514857583839,0.0308556542953565,1.5303020928063572e-05,5.8585912168618493e-05]},
+    {"id":"L2R/LiteratureCreativeWriting/human/90","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"85aa3431826a69235e9cf247f6497caae461b9df9da262b96949cee4f6d219cb","scores":[0.0027233218710624118,0.014899482019245625,2.1278106643171323e-05,3.575869592623716e-05]},
+    {"id":"L2R/LiteratureCreativeWriting/human/134","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"6484b2803eaf4e08065e9f89806ea75fb54d032aeb75b8836bcc657c96239c7c","scores":[0.013273832062112438,0.03348337108551384,0.0006800345315171782,0.1920088698430718]},
+    {"id":"L2R/LiteratureCreativeWriting/human/23","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"2f749f1c1510464f17500fd48903b80b23b17e12f9d3ef43f2f9d920d469a553","scores":[0.8574188719898165,0.6338916420936584,9.586313979389282e-05,5.027005147047602e-05]},
+    {"id":"L2R/LiteratureCreativeWriting/human/49","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"565a82f04eefae694f5c57e02f06a51bb384359e43c19f168dec4eb99120567a","scores":[0.030340264373916178,0.5386301020937642,0.04895281877949635,0.04922539356748447]},
+    {"id":"L2R/LiteratureCreativeWriting/human/147","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"e75b8fbb648e4b4ff0b5f481f7431950bbc044705ebd33e8778d8df0ee7f44ce","scores":[0.010960626315836941,0.026328343898057938,0.003719942792010686,0.0003900726880758406]},
+    {"id":"L2R/LiteratureCreativeWriting/human/29","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"3e01dead07417601d54002bd0c94903db874ed1571ed34ec9522ee5f3b52f32c","scores":[0.007157314268024435,0.024976486340165138,4.2103316480109304e-05,1.4119061748548438e-05]},
+    {"id":"L2R/LiteratureCreativeWriting/human/109","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"2878730c78bfc0191e4cf37fa3ac907ffec3ef7d139c391494e4106867c7d265","scores":[0.23032706160020752,0.866831362247467,0.0069610887303345826,0.3685984920125653]},
+    {"id":"L2R/LiteratureCreativeWriting/human/75","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"daced82042871e973398c3d3cf96cbac7354bc5921c13cf662d6806774a2bfbd","scores":[0.01935226061073804,0.1326766163110733,0.0007920497080978504,0.001904093734873276]},
+    {"id":"L2R/LiteratureCreativeWriting/human/136","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"ebedc3f3424104f364dc8c246faad1f9cf6741b62608381e4ab6afa993b272e1","scores":[0.0028047879738358835,0.011487191542983055,0.00022949959911603828,8.155594700631846e-05]},
+    {"id":"L2R/LiteratureCreativeWriting/human/195","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"15bd080e7cd1129db59a476fd84e82e356728b754d7f0f9513a4280e211dc5fa","scores":[0.0037173653248373266,0.013088342733681202,6.139645940241797e-05,2.6598633951046896e-05]},
+    {"id":"L2R/LiteratureCreativeWriting/human/168","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"9b43b84a38f22813b2ae92a558ed42d223b0a14df4aa05f55c34a1781c601094","scores":[0.28371487786461624,0.7185823096443344,0.003240929590956403,0.028334762284950778]},
+    {"id":"L2R/LiteratureCreativeWriting/human/54","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"67602519898de1bd4458febb9efab4816e113b4748a7f7e8c3a6e6337692bbe4","scores":[0.32769544319393845,0.10427936166524887,0.9855575561921277,0.0445436798954916]},
+    {"id":"L2R/LiteratureCreativeWriting/human/137","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"9925e7b3f393d3b1bbe86d4fde2d4441cec7bcb25f9dff03aa602aa2a9072bfe","scores":[0.0036377094364280224,0.016355054453015327,4.0085341879379387e-05,4.4219860160260596e-05]},
+    {"id":"L2R/LiteratureCreativeWriting/human/52","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"4ae6bb71189b87aa62d8eb09c6b89f0e4ea1b6fb8ac4137c99412baced1c2549","scores":[0.014136721387663611,0.8439165949821472,0.00028310784708122173,9.185350650099935e-05]},
+    {"id":"L2R/LiteratureCreativeWriting/human/120","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"36245c2870de59c82a58514d7b01e5d670e76af013a023d59e738667c33fd756","scores":[0.22064837359372388,0.043027687817811966,0.0020454650440970747,0.028137463292210122]},
+    {"id":"L2R/LiteratureCreativeWriting/human/111","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"6a082b5baa1cf9819ad32bd5eaf4e09d74b9d9d2e6936cc6f2a7eea92f949146","scores":[0.5920537512731605,0.4048963785171509,0.08641390791480903,0.6169637377545086]},
+    {"id":"L2R/LiteratureCreativeWriting/human/160","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"4a3d13d9bd9c89395e463ba8f4060ca36dcdabd5edb819c794923977a0d6d6b9","scores":[0.3196513686102222,0.22662833721741385,0.10610852679664613,0.5784162739842432]},
+    {"id":"L2R/LiteratureCreativeWriting/human/149","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"c573517fa9b468b4687af40ee234ea61540aac4f140df266ebdbb0930a766573","scores":[0.0355805817772143,0.08665600419044495,0.0017891042335162373,0.0007341391461498433]},
+    {"id":"L2R/LiteratureCreativeWriting/human/148","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"ed0a97d1ac7852e72b2a919ac579f44e0cee926d56012606b960e32a35bd6193","scores":[0.03951812305491283,0.34448012709617615,0.9379857166628689,0.0006486960410152072]},
+    {"id":"L2R/LiteratureCreativeWriting/human/79","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"28f618bd4b63c67af7803b0f6d9d0ddccb558194039e45f49af247a41ae8c2f9","scores":[0.0027393704157137886,0.01478944718837738,6.263786590918723e-05,2.2129720707983826e-05]},
+    {"id":"L2R/LiteratureCreativeWriting/human/142","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"76e3a8f496a97c1f1136dae9af2f4aaeff639c6ab8e3fbdc2f26bf4858d11983","scores":[0.10996471885966995,0.02186720226327882,0.00021198977503111117,0.0004849412783224214]},
+    {"id":"L2R/LiteratureCreativeWriting/GPT-4o/40","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"5c2b87dd4342a2c4f5157f74940d61a034d7f7ccb7770b7f9e91da46899e8c1e","scores":[0.04705316455025449,0.9717487096786499,0.977905593398314,0.9509607419013529]},
+    {"id":"L2R/LiteratureCreativeWriting/GPT-4o/68","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"565ef107e619cbae7101208af63de045b1d81ad7c220d165b21cf32065d05763","scores":[0.9746040099826967,0.9839558601379395,0.9999739158043431,0.9995526439569014]},
+    {"id":"L2R/LiteratureCreativeWriting/GPT-4o/56","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"1807d08f6fddd982e664849072f5a6d24ea79f6237ccc7c1a4048a6a37fd6a25","scores":[0.9948767397658114,0.9846337998614592,0.9999468378196077,0.9998976737449483]},
+    {"id":"L2R/LiteratureCreativeWriting/GPT-4o/127","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"d3e6a4138ca2a757bedb95d53496db2312103562f5ada179a9236b1f77a2b558","scores":[0.999828852461928,0.983911395072937,0.9999807411036356,0.996743469073929]},
+    {"id":"L2R/LiteratureCreativeWriting/GPT-4o/192","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"fc85ddf302b10ff0abae9a246747b591034854cb94703a9d0b7021ce0b3ebb2d","scores":[0.9563063374303047,0.9849672431815161,0.999993965530271,0.9999994718326053]},
+    {"id":"L2R/LiteratureCreativeWriting/GPT-4o/147","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"d10b09ebcd52c58a4603e0a9f058f77d86a54b64ce122edea8dd00fb5c1c5af6","scores":[0.9239987579357195,0.9583495855331421,0.9998528323238502,0.9997964491384759]},
+    {"id":"L2R/LiteratureCreativeWriting/GPT-4o/159","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"bf24347975fc8a9996bdaed071b5d5f87c13026f656a44eb2b082e5dbebddf83","scores":[0.9997488369199222,0.9014225602149963,0.9980444754490935,0.0015257551372421523]},
+    {"id":"L2R/LiteratureCreativeWriting/GPT-4o/12","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"b9df6fbad104c4bfc52afe3bf07c5b37e8a027ad4641378fd8219c75aa27f67c","scores":[0.9994862776079046,0.9855176301482107,0.9999995791548849,0.9999985521000992]},
+    {"id":"L2R/LiteratureCreativeWriting/Gemini-1.5-Pro/28","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"f1c62dcc90b50c0a691c1ee8f3f5a310b2d2eaa6e7bad84c661bdaa7f43bae84","scores":[0.9984781842730941,0.9851839542388916,0.9999972955818993,0.9999974690653766]},
+    {"id":"L2R/LiteratureCreativeWriting/Gemini-1.5-Pro/132","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"d8c74aceb1989330a83b94e020c121bc008014899250832483432dd85ace9812","scores":[0.9999054144358447,0.9848857522010803,0.9999929287928214,0.999999658435521]},
+    {"id":"L2R/LiteratureCreativeWriting/Gemini-1.5-Pro/115","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"d7bc232ce3b44f1247216b2f0285495a815692fba5f3c31ae755e875ab729c93","scores":[0.9999828339359152,0.987140417098999,0.9999999410708965,0.9999999851275608]},
+    {"id":"L2R/LiteratureCreativeWriting/Gemini-1.5-Pro/45","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"aefe5891eb5deed3131f554b827546978fdcbd022b2685dfbd0e9cfc6107bb18","scores":[0.999980899792801,0.9871542453765869,0.9999999948487349,0.9999999986227593]},
+    {"id":"L2R/LiteratureCreativeWriting/Gemini-1.5-Pro/18","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"42c9deb22bec96889b23d08ffc4caebbe4330bffbf56aace2633714e1b3b962f","scores":[0.9999707498420308,0.9856720035140579,0.9999999231265765,0.9999998770089183]},
+    {"id":"L2R/LiteratureCreativeWriting/Gemini-1.5-Pro/126","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"0bb217292e0f03fa27cbcd8cf6407ba939c358a7d12f0519ca99549a9e5b7835","scores":[0.9998994013318656,0.98521957051663,0.9999987929823548,0.999999387696907]},
+    {"id":"L2R/LiteratureCreativeWriting/Gemini-1.5-Pro/63","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"4e19a37bfa3ef40a307390c85baaca420ee0a32e3d73853ea193e69801cb7175","scores":[0.985358052456576,0.9827044010162354,0.9999348155457954,0.9999896738296525]},
+    {"id":"L2R/LiteratureCreativeWriting/Gemini-1.5-Pro/10","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"8953ebcf809a88fea639ae715eccde92a4bc359f5949aef969f6eb27fd81a43e","scores":[0.9997936798503652,0.9852332472801208,0.9999999367329748,0.9999999609783348]},
+    {"id":"L2R/LiteratureCreativeWriting/Llama-3-70B/193","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"0b004daf2bd12a64d746789f724d55efad941ae1e56c301267c5f7946767be88","scores":[0.9998002147403342,0.9598853460619642,0.9998079611122404,0.9997884814117706]},
+    {"id":"L2R/LiteratureCreativeWriting/Llama-3-70B/85","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"fb8af3b4b3c8915aa486f046b179557a02415ded2ab817ede4d0187a4e542d82","scores":[0.9999519905240515,0.9865774390896566,0.9999998103235818,0.9999998639923497]},
+    {"id":"L2R/LiteratureCreativeWriting/Llama-3-70B/156","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"78b554f4f15839597bdbc6f2f20e59489ba8864872fe70fd297f0b2e32506559","scores":[0.9998659056668843,0.9847925305366516,0.9999939188789722,0.9999944002658526]},
+    {"id":"L2R/LiteratureCreativeWriting/Llama-3-70B/18","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"82c1ae278494bd0982e04284bb14d13bf99731db43de5620b4d480b58cac8407","scores":[0.05491742662916349,0.982049286365509,0.9999259178965826,0.9994358484452495]},
+    {"id":"L2R/LiteratureCreativeWriting/Llama-3-70B/89","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"dc75d3b5216d21ff39d702bcfdb95ab35ad64277ecdf0d0d2ec040e39226bb20","scores":[0.9995055683459375,0.9861984252929688,0.9999934204155135,0.9999747531251817]},
+    {"id":"L2R/LiteratureCreativeWriting/Llama-3-70B/182","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"71b0fcaec7d6787f22864c817e50a6b7b82b23f85673db59d61a5b740a22c6f7","scores":[0.9998284562657664,0.9854599237442017,0.9999003716799127,0.9998912736706478]},
+    {"id":"L2R/LiteratureCreativeWriting/Llama-3-70B/134","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"2ead95827feec29280fc990e304b9ca6e8342f0dc1c2430e97ce33b6595a1e1e","scores":[0.9995787539185093,0.9858720302581787,0.9999940524007304,0.9999998684466819]},
+    {"id":"L2R/LiteratureCreativeWriting/Llama-3-70B/107","split":"evaluation","domain":"LiteratureCreativeWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"fe9b36f2c5a138688fac55e9e98423edd1efe0cee6be718353c939f1e62fd806","scores":[0.25573090111512203,0.9832126498222351,0.999976914314349,0.9999722062718307]},
+    {"id":"L2R/NewsArticle/human/102","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"c2affd7e61d1ff08a98ee05a36819a4dcb1db81ce33a30b42be639b181b0240f","scores":[0.02093173095465816,0.1589035213100632,0.13656048209430588,0.16504951531323625]},
+    {"id":"L2R/NewsArticle/human/25","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"0d7930a54957f3cb64a3d4fbe4f5efe9a9bedee958fe318fffe9594c47d7e00e","scores":[0.05465618797638464,0.19442058196496884,0.21587725734969357,0.27603579130917477]},
+    {"id":"L2R/NewsArticle/human/194","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"344c8816bea25fbd89fcc724c9b7fcc69d241343f5ef7a6295034d9231567959","scores":[0.11314989945410574,0.5995363840517008,0.8238495040627482,0.7161321671322324]},
+    {"id":"L2R/NewsArticle/human/6","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"46fc967d6a49c59207105b923d776e9b8d2cf90d9a69233f4e2c49f7a672d421","scores":[0.07869270654838148,0.07516372632123754,0.08144490225500073,0.9881474436506373]},
+    {"id":"L2R/NewsArticle/human/18","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"afaac4b085c6c6ebc126a702b31c5d9b11602e6e7e11947770583064a08916d4","scores":[0.008544950097649275,0.030453065927116035,0.16791436705999063,0.1667701648621286]},
+    {"id":"L2R/NewsArticle/human/90","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"4c711abeea71a34572176012c3b5c946dee3a6bb313a0d5f7433033d76b83d21","scores":[0.3662122018963167,0.12218051178837722,0.7074543683031469,0.18961752639173743]},
+    {"id":"L2R/NewsArticle/human/186","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"5ae76e27d6d73fdcd819b39380cc5737acf7524a72fc54395a03592acbf935d5","scores":[0.024609482230733924,0.7411434054374695,0.0008733722360424258,0.00049169549552738]},
+    {"id":"L2R/NewsArticle/human/70","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"b53aa597181d194a20e91a0ec04fd33c7964bc32a519bc7b40794e027a05c41f","scores":[0.785728824051825,0.9485993385314941,0.9862452654068447,0.0029054790198584815]},
+    {"id":"L2R/NewsArticle/human/82","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"4acd990ddc950825066c7917fd78412bf1ed0620ba6558a2dcee5ecd8b8f3f85","scores":[0.008594537170469775,0.012384788133203983,0.00011889650760671699,0.0001876143266074435]},
+    {"id":"L2R/NewsArticle/human/145","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"ffa936be8d9b5a2ac5fc793bd8832d3339780c75f6d9f4570ed7d56ef8311cad","scores":[0.7874627332686737,0.4064813256263733,0.00019156693016393646,0.000372012275479516]},
+    {"id":"L2R/NewsArticle/human/75","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"838b8cb3b4fa6b573e2b89349f1a3ce6ac34717a57569f820dda5afedaab5101","scores":[0.9373669059237205,0.9828424453735352,0.8698758442702802,0.026018237787042313]},
+    {"id":"L2R/NewsArticle/human/22","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"5dd90eebb20171fee740781a0865ac1ce1e47ec466714b28a5518d72914c55de","scores":[0.07117930040579384,0.012619752436876297,0.00034862145326675396,0.00042799612334421314]},
+    {"id":"L2R/NewsArticle/human/118","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"91a3fd7f71b099f2b8805c96d6cde9a604523da82759781cd673e91cf1b466a3","scores":[0.12782473966480634,0.9806360006332397,0.9734858451367617,0.00449031329532404]},
+    {"id":"L2R/NewsArticle/human/139","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"98fb44172bae1f6e510fb643d7a2fcf2b3177ed9345bcba93d4e17bf934ed724","scores":[0.05732868793406107,0.03331703320145607,0.04896226976346771,0.0008432196116020538]},
+    {"id":"L2R/NewsArticle/human/178","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"74dc4ee03c38a5f3ed95be2cd4b02743e7b3fb0ac2330ebc45bdf63fa16b09e8","scores":[0.023246287688657205,0.02004726231098175,0.0004232059320219243,0.00019226687031827404]},
+    {"id":"L2R/NewsArticle/human/170","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"abb3ab2c99a166259dd2678457501d944b0fdacae78761abc080ce9093d94fc8","scores":[0.061523547351833206,0.7753638029098511,0.0006618084417365047,6.47306673499292e-05]},
+    {"id":"L2R/NewsArticle/human/79","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"71484740f8883d07bb8eb54eec3e998716715862b0fdc472d24f9409a69c8873","scores":[0.006406267169392667,0.015994347631931305,0.015858948651098385,0.014886070821072551]},
+    {"id":"L2R/NewsArticle/human/124","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"35226f5f9e3ed8e217904256f93c27279c5a229a560a1b26f85f6d7fd8df69e4","scores":[0.49006141700996636,0.8716980218887329,0.007160215361690868,0.00599217034770465]},
+    {"id":"L2R/NewsArticle/human/60","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"f919d157dc54843348eab9de6be4f1c732de6f47127bef82ed5b02f49d2b0815","scores":[0.03089347951280445,0.2657999098300934,0.07686757029698328,0.0029328705639645684]},
+    {"id":"L2R/NewsArticle/human/168","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"49cb38de1cd21d31940d99e652ff77ae26796c66619fe4b0549513dc7a09fa98","scores":[0.08691434990642206,0.02031002752482891,0.004472455578191117,0.2719966297140061]},
+    {"id":"L2R/NewsArticle/human/39","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"47e875b1a2b79efcc6caff3cdbcca211610990a07da392fe83fbfdd92cc8870a","scores":[0.08445823589330474,0.9500765204429626,0.026810357637636787,0.0497932703673398]},
+    {"id":"L2R/NewsArticle/human/45","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"c0be77ef01e5da19a83cf68bd39764d141f9d5d48a973f66ac53eaa74bb38482","scores":[0.014171553433774145,0.024272669106721878,0.0012550585140976484,0.0002197421832349072]},
+    {"id":"L2R/NewsArticle/human/180","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"0d6f3707c3b9aa6c4fb92a988e3cfa501aaab986c61f5f0a6607ca2c2e0ee8ef","scores":[0.5644559203718454,0.9833699464797974,0.9965842925607306,0.8366112899059845]},
+    {"id":"L2R/NewsArticle/human/195","split":"development","domain":"NewsArticle","generator":"human","label":"human","sha256OfCollapsedWhitespace":"3343aac1dae79af2e112cba3c794a1c4119f6f75b4021f0b4d552d07e465d389","scores":[0.1290415630687608,0.8687613010406494,0.08678063406347013,0.005602423049174775]},
+    {"id":"L2R/NewsArticle/GPT-4o/148","split":"development","domain":"NewsArticle","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"4cf41d6f2f32d3e7a7a773c43ee5616a470de72c2e19760b42ea7c187ae5dbbd","scores":[0.6060533550461629,0.9848278164863586,0.9969357857365866,0.9953319194132069]},
+    {"id":"L2R/NewsArticle/GPT-4o/181","split":"development","domain":"NewsArticle","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"c0dfb1c06948b378bc23c3a9d2f140d41d6d11ca836cc3b7af7f469230d96556","scores":[0.8168680804028939,0.9852752685546875,0.9988014383988816,0.9996731307271577]},
+    {"id":"L2R/NewsArticle/GPT-4o/12","split":"development","domain":"NewsArticle","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"b977a000d45a9310ba5a8fd97c502bc1072daa31c4a390aa3fa9fc2444386fda","scores":[0.9996755053698382,0.9867613911628723,0.9999899933617543,0.9999814839287423]},
+    {"id":"L2R/NewsArticle/GPT-4o/64","split":"development","domain":"NewsArticle","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"63fab8c3f6b403e46b5193213be27ae20e58937ba83660b7e46be56a17c6efaa","scores":[0.6377156298717765,0.9854902625083923,0.9999109086249862,0.9986022112872186]},
+    {"id":"L2R/NewsArticle/GPT-4o/105","split":"development","domain":"NewsArticle","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"2b4cf4ec97563963434c4a5d78b35ffb760c7cbf6db65d90d8a1b983f7e78e88","scores":[0.3581915965147361,0.9716964364051819,0.9203072459989414,0.9341801154623856]},
+    {"id":"L2R/NewsArticle/GPT-4o/133","split":"development","domain":"NewsArticle","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"0819ee5174fecc7695445a1df76d812ac9e25c6975528f0fffc930fa7519cb9b","scores":[0.9998182687103309,0.9862014651298523,0.9999959731690786,0.9998256013987198]},
+    {"id":"L2R/NewsArticle/GPT-4o/88","split":"development","domain":"NewsArticle","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"31d04658c55b1b94aa3ba2cb1e2c1b7e3f17c9606c36e23d3a77489dd29c7eed","scores":[0.30679613440658215,0.982356607913971,0.9999298182811819,0.9999535421079367]},
+    {"id":"L2R/NewsArticle/GPT-4o/1","split":"development","domain":"NewsArticle","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"4bb4ca5a6752726253c0675eb1efeffce519bbb0251c65494d838b6110f5408d","scores":[0.998981071044909,0.9857988357543945,0.9987262783130598,0.7705323055690979]},
+    {"id":"L2R/NewsArticle/Gemini-1.5-Pro/94","split":"development","domain":"NewsArticle","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"ee9fdb2d67e0f635ba735ee72e7068111e239700a98f550a26d84c2d0d53285b","scores":[0.9999535645423123,0.985153317451477,0.9999970409405068,0.9999995267003395]},
+    {"id":"L2R/NewsArticle/Gemini-1.5-Pro/44","split":"development","domain":"NewsArticle","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"0c220cff75d249f1cc8c13aaa959fca1ef2d9374fede3e162223b17ef2016299","scores":[0.9991890313477015,0.9860149025917053,0.9987079417266956,0.9999722573597492]},
+    {"id":"L2R/NewsArticle/Gemini-1.5-Pro/59","split":"development","domain":"NewsArticle","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"166da033ba4e2333039712d6faa0dc3b8c66928e820ef3dee2bcfe6e8f042fc8","scores":[0.999978433412684,0.9874050617218018,0.9999999897468849,0.9999999927972103]},
+    {"id":"L2R/NewsArticle/Gemini-1.5-Pro/99","split":"development","domain":"NewsArticle","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"dbc3c7ac945acbd25299a07d87676dc6c69e4262716952f566601db8b3cdaaef","scores":[0.9999546044690494,0.9869181513786316,0.9999804854191028,0.999999920617822]},
+    {"id":"L2R/NewsArticle/Gemini-1.5-Pro/1","split":"development","domain":"NewsArticle","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"6cd8c8484a43d055269355b82dc7d13621487c36701e8b1234995d38246c21f0","scores":[0.9984215891937706,0.9857826232910156,0.9999971408045982,0.9999982206390127]},
+    {"id":"L2R/NewsArticle/Gemini-1.5-Pro/155","split":"development","domain":"NewsArticle","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"acdd07f697b390f259a47cb9c9658272ea6bc5cb46f5357d41e8b89eb61a3921","scores":[0.9988594783540842,0.9849955439567566,0.9983797063727962,0.9999933168538151]},
+    {"id":"L2R/NewsArticle/Gemini-1.5-Pro/140","split":"development","domain":"NewsArticle","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"276a5d25e6d6ca73eed2b3bc508cec69d5b0a281c44587c31645d29ab3d2dd26","scores":[0.9999856715993394,0.987445592880249,0.9999999853535206,0.9999999932831236]},
+    {"id":"L2R/NewsArticle/Gemini-1.5-Pro/4","split":"development","domain":"NewsArticle","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"701fbf19124937acefa593701d78d5099103b1b5e91b8ff49fff780200cfcbd1","scores":[0.9918335033808613,0.9864140748977661,0.9830407330430256,0.9991041914814378]},
+    {"id":"L2R/NewsArticle/Llama-3-70B/83","split":"development","domain":"NewsArticle","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"ba28e88216641b6103c30661f6a5b82bfa705fc5baaa5987af354389f04c29c3","scores":[0.8729007581140148,0.9827588796615601,0.9998961700733722,0.9561653017621372]},
+    {"id":"L2R/NewsArticle/Llama-3-70B/147","split":"development","domain":"NewsArticle","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"083ac09299b3fda28456281e987ab80dabc78cbf3ff6ba6627fc5cb189ebc92c","scores":[0.9999849939961423,0.9876492023468018,0.9999999799672772,0.9999999758174581]},
+    {"id":"L2R/NewsArticle/Llama-3-70B/170","split":"development","domain":"NewsArticle","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"3590775a57238ac915e244028be9f695459bceef42700ac159912ffd5d966342","scores":[0.999980576021212,0.9875296950340271,0.9999999240076407,0.9999999864385875]},
+    {"id":"L2R/NewsArticle/Llama-3-70B/117","split":"development","domain":"NewsArticle","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"187f17efeca3a24a3ef333a5cfa472043fff8276083d95881f9e2c7d5f0d0fbe","scores":[0.9994286843080745,0.9873507618904114,0.9999999711626858,0.999997999034262]},
+    {"id":"L2R/NewsArticle/Llama-3-70B/141","split":"development","domain":"NewsArticle","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"0f4fd845958b1e487c1a5f944d673dec056575bed0d0c49264cf00a3dc1febe6","scores":[0.8817055495651702,0.9843365550041199,0.9663927976627071,0.3428374406661961]},
+    {"id":"L2R/NewsArticle/Llama-3-70B/113","split":"development","domain":"NewsArticle","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"9d317320597f20252d7099075c0fdb230d7826593fefc6d2b2d8397709e1b386","scores":[0.9997667852212078,0.980503261089325,0.9998119359888871,0.9994953452331523]},
+    {"id":"L2R/NewsArticle/Llama-3-70B/195","split":"development","domain":"NewsArticle","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"57c33c1ac0e97c0459a850c1b617fba6bed6ea7ae5490cf057ec9b21dcfa512e","scores":[0.9999470586261985,0.9871355295181274,0.9999998806303804,0.9999998167739669]},
+    {"id":"L2R/NewsArticle/Llama-3-70B/18","split":"development","domain":"NewsArticle","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"0755de243790514f7561be194d741a19f5e343fb069678355f4cebadde623efb","scores":[0.08365797838595222,0.034627553362112776,0.20269805467419869,0.18725519709196056]},
+    {"id":"L2R/PersonalCommunication/human/127","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"b6d4b58b04fe89854ef0320e8880ca9e63809f168c17417960cec0c0c7b8cb3f","scores":[0.09363983263771945,0.7698689699172974,0.9971724546343735,0.8534870747543326]},
+    {"id":"L2R/PersonalCommunication/human/190","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"b5af41439def4605fc172058f19ed3ad3ad20053a457be2449cf17eadba4e86a","scores":[0.0989550671876039,0.9633708596229553,0.9812865220073732,0.99955165010013]},
+    {"id":"L2R/PersonalCommunication/human/121","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"6373a46f1d7f20c6872ffcd4fc382722c5716885b37f21ce2a246d4502ccac62","scores":[0.031796929196012305,0.40420350432395935,0.07370295114947503,0.9972428181979052]},
+    {"id":"L2R/PersonalCommunication/human/194","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"cf233fae02fa04d9237e90e7968b4dd7d5576f6e9cd836bc7b34e8ac5560bc6d","scores":[0.8165032017124809,0.7058125138282776,0.9948421436940431,0.7515339025910386]},
+    {"id":"L2R/PersonalCommunication/human/55","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"da336f8346fce7219a8d686ce68894f6ef2c5ef7d28cd8ff6d3c580f1f99550a","scores":[0.9244096951007797,0.8415642380714417,0.9999351511701788,0.8761050209705044]},
+    {"id":"L2R/PersonalCommunication/human/43","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"51d85a7f3407beafca8e5e2a525b6ba5501f3fb5d85b0fcc96c4b8e38ff75994","scores":[0.39703710824925964,0.5372823476791382,0.9337347419752273,0.038047634348457676]},
+    {"id":"L2R/PersonalCommunication/human/189","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"cc6bd196b9b181dbe8b9bf1989778e8986fa90a8a88dc6e064903538fdcc1312","scores":[0.084962634896509,0.9834104180335999,0.9990551714244948,0.9743212145025684]},
+    {"id":"L2R/PersonalCommunication/human/107","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"e81a148d3efcca16cff74fae54d2f701d6d2563bc3c4eb6c2634bf190ef1e02f","scores":[0.06340337068952244,0.9493504166603088,0.9618621968480194,0.9997560386769146]},
+    {"id":"L2R/PersonalCommunication/human/160","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"6f086f90f76309126c099cadc66f8e638c4d890e6480f717ea14835b3a32144e","scores":[0.06583553559578627,0.01928630843758583,0.7363152405888022,0.83348859938414]},
+    {"id":"L2R/PersonalCommunication/human/44","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"0e68aadce177e57d353ebd3526d3b59428d9d9ab89bb500e7b95df7537641cea","scores":[0.8618979930081279,0.948011577129364,0.9998736877360622,0.9998540907548148]},
+    {"id":"L2R/PersonalCommunication/human/144","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"ff22e9dd43117bc90d631ab4e0c3aa5b65049f73de596a21ee487dfdba6c01f7","scores":[0.23396217146833945,0.6679043769836426,0.9991812807570861,0.09451441338235403]},
+    {"id":"L2R/PersonalCommunication/human/71","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"8522371d01e683671741c2c3fda3b3876b028cfee0273d639ac7a37ed5e84f7a","scores":[0.9683776627662719,0.9734460115432739,0.9996798879421808,0.9997325515439435]},
+    {"id":"L2R/PersonalCommunication/human/94","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"45b65aedb4199d3bc77bbd137969bf732c44e5ff2a68a17a1798c288aea7e3cd","scores":[0.998150745928396,0.9692203998565674,0.9999928414135204,0.9953186185249525]},
+    {"id":"L2R/PersonalCommunication/human/68","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"fd555923c19eee7e76e0e1450e6d3dc85c655f084d4dfe27877cd612503e3288","scores":[0.012267588741933037,0.17616061866283417,0.015979627001223885,0.986064590152586]},
+    {"id":"L2R/PersonalCommunication/human/36","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"7b37c20af093e6391cd7ec0832025278bd8049297a246b94635b1c509bdbe583","scores":[0.8737364847068604,0.8509206771850586,0.9993823806650186,0.7153076123101295]},
+    {"id":"L2R/PersonalCommunication/human/106","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"708c1d2e913912b37ee465e9cc93d78dfad25b6c2daf110d3e63a115d56d9af3","scores":[0.32514232762465173,0.8446511030197144,0.9828431526585076,0.8096184716612268]},
+    {"id":"L2R/PersonalCommunication/human/195","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"29f5464c7e092751cf95b5c0b9353d5962ceb0797a7df655a2fec9ba586670c4","scores":[0.636635808250749,0.9621239304542542,0.9997127898220077,0.99754838519705]},
+    {"id":"L2R/PersonalCommunication/human/181","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"929eecf1900244c0b1b38acad5d1e08aa91d24b65d77855012c4e67e2d628652","scores":[0.9852271801087206,0.8143128752708435,0.9995691064362967,0.999291130749995]},
+    {"id":"L2R/PersonalCommunication/human/137","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"ec7ef334bdb056315eb79ad8f85a67cb4fb9050b654339f39a8849de0270f0ee","scores":[0.19413911349563992,0.8711156845092773,0.9989261350088935,0.992576449368031]},
+    {"id":"L2R/PersonalCommunication/human/164","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"df6c69cc5094a9b50b21a9c2aa932fabba86f0ad06a9c0e6949732205ddcf2d9","scores":[0.5739151380128413,0.9547333121299744,0.9990987396032632,0.9990475546430481]},
+    {"id":"L2R/PersonalCommunication/human/146","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"131665f394749fc6306e01b6e7c6ff6058ac20529ec9520a33fc4b13d0bedbae","scores":[0.04862759773760369,0.7694349884986877,0.9979576055469571,0.03498150621189837]},
+    {"id":"L2R/PersonalCommunication/human/187","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"c6444c808dc5262cfceabe65166482ce3d0e9aa988bb3ec89926af567a19031e","scores":[0.29887168738755254,0.06275513768196106,0.9987499787034262,0.9992020811739186]},
+    {"id":"L2R/PersonalCommunication/human/104","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"bc0ced0beb444bb317753f1db3662909ed4fdbdfdf7db1dd97f4d4a380e6c0bc","scores":[0.9403605319576148,0.9626577496528625,0.9998253264704399,0.9512622824580736]},
+    {"id":"L2R/PersonalCommunication/human/155","split":"development","domain":"PersonalCommunication","generator":"human","label":"human","sha256OfCollapsedWhitespace":"a9169a67218b639ffa3efe578824ae8bfb88afeb4d5db65d0ec02dad9636b193","scores":[0.9736426526127384,0.9523639678955078,0.9995109377785241,0.999947952028896]},
+    {"id":"L2R/PersonalCommunication/GPT-4o/114","split":"development","domain":"PersonalCommunication","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"09411c4516ae5c87a16be39981630dd007e77d30ab42a762ab73a8fb88c4b829","scores":[0.6853193396559729,0.10515700280666351,0.010181393140968914,0.07136508818531305]},
+    {"id":"L2R/PersonalCommunication/GPT-4o/23","split":"development","domain":"PersonalCommunication","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"cc06f66703902de13bc96fa42bd6d983973db381a4f35d68c424af0801e9ab10","scores":[0.3139541359592142,0.8624346256256104,0.9413882442502414,0.9988616041765669]},
+    {"id":"L2R/PersonalCommunication/GPT-4o/109","split":"development","domain":"PersonalCommunication","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"3adb23b256b1f5a702c5fc861f9cf491dbb7b2bc83b50a455ac6eb87925a65f1","scores":[0.9997043370364376,0.9858965277671814,0.9999934240099572,0.9998614067595819]},
+    {"id":"L2R/PersonalCommunication/GPT-4o/121","split":"development","domain":"PersonalCommunication","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"16f71d5be88bd137f2658e38f94d4bd52bf00006aeb64f37514dbe64deb31000","scores":[0.37898260214380797,0.9851956963539124,0.9994344124057994,0.9999740190677107]},
+    {"id":"L2R/PersonalCommunication/GPT-4o/49","split":"development","domain":"PersonalCommunication","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"21ccda215abb50062aa160190e8a193e076ab86c9f00793feb525d24b11953c5","scores":[0.9999181347151377,0.9863590002059937,0.9999998772570274,0.999999818874416]},
+    {"id":"L2R/PersonalCommunication/GPT-4o/164","split":"development","domain":"PersonalCommunication","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"af2a43e5f51eea48d1c122f730a2e4b33c7d4e51e282f8ec7dac6da317c4316e","scores":[0.9965196118531785,0.9838641881942749,0.9998880164000855,0.9998743551921381]},
+    {"id":"L2R/PersonalCommunication/GPT-4o/144","split":"development","domain":"PersonalCommunication","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"2bfeebfa005db6e4c000c4cf913bcac36a0ab675f24b281965d35a21a5e68509","scores":[0.9959231244676007,0.961383044719696,0.9999640665973605,0.885009921701903]},
+    {"id":"L2R/PersonalCommunication/GPT-4o/167","split":"development","domain":"PersonalCommunication","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"c59f33e6c490ead65a363ba876fdeade1ed835ed3cf9378845174284175a2a2b","scores":[0.9931553278639149,0.9845651388168335,0.9999993295597637,0.9999985286369324]},
+    {"id":"L2R/PersonalCommunication/Gemini-1.5-Pro/136","split":"development","domain":"PersonalCommunication","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"b892863b48774c3239512a138c7b7af0910cd71359cad732235924dcd6f9cd14","scores":[0.9895547167250517,0.9853261709213257,0.9999621980709644,0.9999992187477404]},
+    {"id":"L2R/PersonalCommunication/Gemini-1.5-Pro/56","split":"development","domain":"PersonalCommunication","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"000e7a61b0648357e3b8d1e30cffd7b8b4775000686d35c00cc7eed983be53c1","scores":[0.9774269960126152,0.9871696829795837,0.9999999382991975,0.999999990954565]},
+    {"id":"L2R/PersonalCommunication/Gemini-1.5-Pro/36","split":"development","domain":"PersonalCommunication","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"9765fcdd16c15a14b83930a0c129c8c398949f15e9033bde0f748119efe7adcc","scores":[0.9998980478094536,0.9849868416786194,0.9999993887389852,0.999999876358681]},
+    {"id":"L2R/PersonalCommunication/Gemini-1.5-Pro/143","split":"development","domain":"PersonalCommunication","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"7467a4868fa84fbfbcc3da5b98cbcb74c0c968aa447068e59274995c03986b73","scores":[0.8372671790562535,0.9838938117027283,0.9999777243934378,0.9999892157673504]},
+    {"id":"L2R/PersonalCommunication/Gemini-1.5-Pro/174","split":"development","domain":"PersonalCommunication","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"ff8d0dc20eb909560b7a8e7175cf3245a4a3085580a4bb7015e8d989f050e1a0","scores":[0.9951393568360691,0.9848020672798157,0.9999980177473986,0.9999986671702586]},
+    {"id":"L2R/PersonalCommunication/Gemini-1.5-Pro/73","split":"development","domain":"PersonalCommunication","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"2e2bbd1062ec7c12bb497d14bf4d23711332df8d2d4ce3c07664de543f062bae","scores":[0.8314993718085255,0.9849545955657959,0.9999837240304025,0.9999969712467195]},
+    {"id":"L2R/PersonalCommunication/Gemini-1.5-Pro/167","split":"development","domain":"PersonalCommunication","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"a484efb18edf50fb9d591d29a6b613ba50337cb9090dcf869f1e4a9c75188d0e","scores":[0.999532808252618,0.9849030375480652,0.999947377592272,0.9999944374862706]},
+    {"id":"L2R/PersonalCommunication/Gemini-1.5-Pro/93","split":"development","domain":"PersonalCommunication","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"f0506f3386693c56c443524a4405be837a889c944290d54c6f8348543571cf35","scores":[0.9995663616957275,0.9854493141174316,0.9999995636258473,0.9999998883963785]},
+    {"id":"L2R/PersonalCommunication/Llama-3-70B/94","split":"development","domain":"PersonalCommunication","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"42ad8527646898f569fd8afd306c023b9c95295aed4bf2b25a6ec4836957f2ac","scores":[0.9999710461263321,0.9847000241279602,0.9999995204142084,0.9997732346336307]},
+    {"id":"L2R/PersonalCommunication/Llama-3-70B/162","split":"development","domain":"PersonalCommunication","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"8cb657069bf163f35b11a1270b6fb48081e6f07609226b9ed68aacdeb3742685","scores":[0.9837712876298261,0.9690362215042114,0.9856693359845685,0.9984651886487979]},
+    {"id":"L2R/PersonalCommunication/Llama-3-70B/149","split":"development","domain":"PersonalCommunication","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"1926fa605e16ce7502f04aa4526b6702da064aa6d2775d2d2a4cc837b491c131","scores":[0.9998459907935855,0.9867526292800903,0.9995448495370568,0.9999818850099964]},
+    {"id":"L2R/PersonalCommunication/Llama-3-70B/36","split":"development","domain":"PersonalCommunication","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"fcd350f3b0862b201f5e918ff2d3473c25c611c3be4e37a50caa07b155a93b1b","scores":[0.9991190580751961,0.9849989414215088,0.9999997773178378,0.9999970792595184]},
+    {"id":"L2R/PersonalCommunication/Llama-3-70B/1","split":"development","domain":"PersonalCommunication","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"5ff22d9a09d34004bb151f33ca8148b4be686ee4a2dc25dc4689cbdce9a7a7ed","scores":[0.9999608512439443,0.9868990778923035,0.9999998539549851,0.9999999621016747]},
+    {"id":"L2R/PersonalCommunication/Llama-3-70B/155","split":"development","domain":"PersonalCommunication","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"666bfc2458018df0dcea59bf610c9fadd81f54a7e85998fedfbaf99f5f69a4c0","scores":[0.9998446492191312,0.980205774307251,0.999994051578228,0.9999996181275076]},
+    {"id":"L2R/PersonalCommunication/Llama-3-70B/124","split":"development","domain":"PersonalCommunication","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"63da417f78bc983e65efeeec1981faab94b41d014371ca262f6281a541716f0e","scores":[0.9990501858084542,0.9861339330673218,0.9999895146432285,0.9997942030066324]},
+    {"id":"L2R/PersonalCommunication/Llama-3-70B/194","split":"development","domain":"PersonalCommunication","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"83bf4d38f38a39a385d1c5762551a2b3f42cab508a72e993db9a630414bafd23","scores":[0.9989818080526929,0.972061276435852,0.9992765530432989,0.9996031830514164]},
+    {"id":"L2R/TechnicalWriting/human/195","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"190445fe451c074d58ec4e83ae73a8721bea5e696c49bbb09dbc4a2ea88c6c1d","scores":[0.21046687474819817,0.0622733011841774,0.0002537447848783346,1.840593183902057e-05]},
+    {"id":"L2R/TechnicalWriting/human/118","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"59375218d4b4ea0818585be9b4c15f9602c1a30022b81ed7a88761f32260fb0e","scores":[0.5046175392726997,0.6727311611175537,0.0011752445134772707,2.0302646696730197e-05]},
+    {"id":"L2R/TechnicalWriting/human/141","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"252ec08c840cd302114f7b507705952d1fd969213c07e2658d2919b4bcbbb33a","scores":[0.003827655062791542,0.018701573833823204,5.616386013500787e-05,5.300970037799842e-05]},
+    {"id":"L2R/TechnicalWriting/human/151","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"7407f857dba6c2c530601038906e71594281c1e2872954869be0700d3458b0db","scores":[0.031029620077395383,0.07678267359733582,0.00045708897683576416,0.0006851265871033157]},
+    {"id":"L2R/TechnicalWriting/human/76","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"0a238efcae8e0e359e59eee75f115c65f13b78a5c8f369ea0bf9f37473ab075f","scores":[0.0015820859385434457,0.02889322116971016,1.3893025853091126e-05,3.679302406014658e-05]},
+    {"id":"L2R/TechnicalWriting/human/94","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"834e97373315efde81f6c5c5849cfd4f1bf4b4da9da6fd03770f770ec7de2526","scores":[0.13614588950628775,0.7370815873146057,0.0002459471851157159,9.662697786107405e-05]},
+    {"id":"L2R/TechnicalWriting/human/111","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"000b6f759bd63693e28e00a9a3ae1c7c26638c98fcd7aaf0fc6934f397d2a9d1","scores":[0.027436105883382748,0.014537106268107891,2.7470605556949036e-05,0.0001121140322820879]},
+    {"id":"L2R/TechnicalWriting/human/110","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"e9ab163b2a68d745553b649f9eead466bc89b279f8333dd209a7bcbb19983712","scores":[0.42642518418238573,0.10099243372678757,0.03951445589979567,0.009540390874926979]},
+    {"id":"L2R/TechnicalWriting/human/132","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"68d4bdc5e3a54bfbbcce4971bb13da0dc40f2186484c6cca210fd7ab07174ead","scores":[0.24501565393755978,0.6092580556869507,0.0017748372337774005,0.00029159654844648027]},
+    {"id":"L2R/TechnicalWriting/human/55","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"c52ee825b276f3c7d33b21b85613333a2ea8afdd49dbd20aae047ab13732018e","scores":[0.17371902449201074,0.019544603303074837,8.123415323824284e-06,1.696171686784268e-05]},
+    {"id":"L2R/TechnicalWriting/human/30","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"06c47e366caee4c2d91eb0fbae96be439b269e6a7a60de564ade0bfb697b12ba","scores":[0.0025930627427239563,0.019746357575058937,0.00015475982780004737,9.531861096422155e-05]},
+    {"id":"L2R/TechnicalWriting/human/2","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"c89155a215ba166c02b35fc8455715cf939d299c71b030beff17c99a47290288","scores":[0.007580092457623742,0.06928194314241409,0.01514129993420954,0.0023862034135249278]},
+    {"id":"L2R/TechnicalWriting/human/78","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"4ca226cb3d35120d5c348ac4b19e9df605bd0b624bde2a1fb79b60030f4390ee","scores":[0.006374690883992079,0.03584080561995506,0.0018313371090782015,0.0004990993149451287]},
+    {"id":"L2R/TechnicalWriting/human/74","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"f53f82c884c3704dc2c39749f923a62726c3697844872e00c439446ab7cabf58","scores":[0.009784920118405269,0.04797699302434921,2.4961416428418597e-05,7.236967156428617e-05]},
+    {"id":"L2R/TechnicalWriting/human/155","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"aece270227da0a5f624ca351fae93f33bf98d4b4dc57dc13715565ad123b0231","scores":[0.12572261035448656,0.01981983333826065,0.00023998705348348334,3.106434328283122e-05]},
+    {"id":"L2R/TechnicalWriting/human/199","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"3c97a3ffbca34f6c6311b89a7a5f961fa04c8550ab616556a2fedbd544fc2247","scores":[0.026074637299904495,0.016386616975069046,0.001857867939911009,0.0008699640255126662]},
+    {"id":"L2R/TechnicalWriting/human/41","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"619851a004f4b560444b1e1e8ac675b4ec3138d8321ff9991933cfc6ac164a4d","scores":[0.649265713858324,0.08185669034719467,0.004327639620110055,0.0007362920384046188]},
+    {"id":"L2R/TechnicalWriting/human/181","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"56d1e4dde344b95e73943ee57051ebdbdf3586daf8e2e62c8da1ba041dd48dc9","scores":[0.02277422021850275,0.04015510156750679,0.06751800009330738,0.0030290645318274572]},
+    {"id":"L2R/TechnicalWriting/human/183","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"812f319c7ca671ee714897c2191bfad17cd2b9b44b5bd8cbe0ef272a6ac0564b","scores":[0.040364736073296444,0.07529033720493317,0.020506672872490802,0.0579813239047133]},
+    {"id":"L2R/TechnicalWriting/human/178","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"bd81b6555f6634035d0aa0bbde23df9b1db52e1b9d36c0f2b56c499005a40264","scores":[0.9654729231495915,0.9417365193367004,0.9982048422933382,0.31628103227563953]},
+    {"id":"L2R/TechnicalWriting/human/113","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"abc923a1bde8a4eb31cc3ec3e7459c7b26a7dcd7272d3015882101a66d910a02","scores":[0.01456818242168539,0.03441623970866203,0.0004848474664271354,0.00016871701088813027]},
+    {"id":"L2R/TechnicalWriting/human/65","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"2fde099649d030c7f590189ef9dd1287d22106abbc102b312569301b1cef9263","scores":[0.0032806012050277623,0.017986496910452843,1.6123189105489204e-05,2.6286151448465218e-05]},
+    {"id":"L2R/TechnicalWriting/human/60","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"df0ff2cc655b8537df5b0c6a5c17def63c943d2487eb4501c1e31d48ac20a01c","scores":[0.9659732051158254,0.9498492479324341,0.030532137157976678,0.20703137081031434]},
+    {"id":"L2R/TechnicalWriting/human/102","split":"evaluation","domain":"TechnicalWriting","generator":"human","label":"human","sha256OfCollapsedWhitespace":"7b9703be876a576b70b61cba39fd88a44c773c4a631b38ff983dbbebdca0e5d8","scores":[0.06382542501416838,0.02036537602543831,0.00092546027499324,0.00022617490655668144]},
+    {"id":"L2R/TechnicalWriting/GPT-4o/79","split":"evaluation","domain":"TechnicalWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"28de245faeab7e7a74c22d17a30824dc18e26a6c6bd54ffb99236cb52fb44d73","scores":[0.5223774186533442,0.23823994398117065,0.043354331777975576,0.006290267245688462]},
+    {"id":"L2R/TechnicalWriting/GPT-4o/16","split":"evaluation","domain":"TechnicalWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"ee1c41d5919576bab0fedb9a0e7799b2a5477c3f14c2cc28889a10090ce0c90b","scores":[0.9995256196224204,0.05048152059316635,0.04253491848489064,0.822597833542826]},
+    {"id":"L2R/TechnicalWriting/GPT-4o/187","split":"evaluation","domain":"TechnicalWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"ea35df5823bd3e0be2d947cf35059e69a9bf06b57e1bf017cf3650360cd1e1ad","scores":[0.5933047682951708,0.9748650193214417,0.005615576650245107,0.01929589849735174]},
+    {"id":"L2R/TechnicalWriting/GPT-4o/98","split":"evaluation","domain":"TechnicalWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"6968cedb8bb51f2ec141401111190dc0f70d330c079e598948ba0a2176f1e1d0","scores":[0.9165287536588876,0.9856651425361633,0.9999925397197003,0.9999575160366002]},
+    {"id":"L2R/TechnicalWriting/GPT-4o/74","split":"evaluation","domain":"TechnicalWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"53f6eb8ece72816e8e1244f8afd458e15748bd3679631ae2e561e19325a88f71","scores":[0.8923262797888366,0.9557324051856995,0.007340180290399818,0.08394121960469818]},
+    {"id":"L2R/TechnicalWriting/GPT-4o/109","split":"evaluation","domain":"TechnicalWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"c1e0ea8cf6c2d2bafffeebd97438b1d335ca74a1763d068daaa57983bee63c22","scores":[0.9928649844248181,0.9849547743797302,0.8597889391276238,0.7851222586929149]},
+    {"id":"L2R/TechnicalWriting/GPT-4o/70","split":"evaluation","domain":"TechnicalWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"efd78a7b46ebd44a48adf6ee5e20ee9f51ba7de234604eff469b90fb0e46aac2","scores":[0.9080997207599025,0.9768646359443665,0.9995879437867159,0.9997621591282952]},
+    {"id":"L2R/TechnicalWriting/GPT-4o/64","split":"evaluation","domain":"TechnicalWriting","generator":"GPT-4o","label":"ai","sha256OfCollapsedWhitespace":"ec0b72fd091336f3cebf125dc2494b6e472c947e0de23d4374292af23e844f6b","scores":[0.0503744561194918,0.10903853178024292,0.00492892856791382,0.0006942952122675084]},
+    {"id":"L2R/TechnicalWriting/Gemini-1.5-Pro/159","split":"evaluation","domain":"TechnicalWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"b5f407d0bcb0afcf40f6d54a86d429656374762c1463cd1f80f9c63ed1c9d7ae","scores":[0.9738899139203141,0.9846621155738831,0.9999919694671494,0.9999517013829282]},
+    {"id":"L2R/TechnicalWriting/Gemini-1.5-Pro/24","split":"evaluation","domain":"TechnicalWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"d0db7683ddeeba14d89e6d609b504538cbd172b151c0d8c36e3820cb27cd953b","scores":[0.9969933194141306,0.9845067858695984,0.9999584240410916,0.9999837677351135]},
+    {"id":"L2R/TechnicalWriting/Gemini-1.5-Pro/135","split":"evaluation","domain":"TechnicalWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"eebda35f71f6de074f1b7dda85f815a2a1579403e5460362dd8843c9bc0f9232","scores":[0.9998701321165981,0.9863890409469604,0.9999996139973613,0.9999996352753933]},
+    {"id":"L2R/TechnicalWriting/Gemini-1.5-Pro/141","split":"evaluation","domain":"TechnicalWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"bf1788de29523de71f8040087b1ba8a14e0b94b810a9ed1aacb7aca62bb3ce3b","scores":[0.9999476269561264,0.9861581325531006,0.9999999846761953,0.9999999592825171]},
+    {"id":"L2R/TechnicalWriting/Gemini-1.5-Pro/122","split":"evaluation","domain":"TechnicalWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"5cdc242bfd1c840efe5bfe794fd5123306303439ee86e319d433b5fb1905e0b5","scores":[0.9999684717912055,0.9862568974494934,0.9999999891872393,0.9999999917969448]},
+    {"id":"L2R/TechnicalWriting/Gemini-1.5-Pro/169","split":"evaluation","domain":"TechnicalWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"6583b5d9c50a491aefa17b6472246fb91fb0e51592decaeba39730f465f8058b","scores":[0.999941587594347,0.986648440361023,0.9999999936036936,0.999999990645066]},
+    {"id":"L2R/TechnicalWriting/Gemini-1.5-Pro/138","split":"evaluation","domain":"TechnicalWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"35aa9ba196c347c02fa88d51949357d7813b111b4e334d0e0c221c3ee37c1320","scores":[0.990453607768319,0.9866891503334045,0.9999932885658748,0.9999627207625528]},
+    {"id":"L2R/TechnicalWriting/Gemini-1.5-Pro/30","split":"evaluation","domain":"TechnicalWriting","generator":"Gemini-1.5-Pro","label":"ai","sha256OfCollapsedWhitespace":"db41d8899d97902214ca6aa091baab6d6ba8a6ad65607759c85b9c673e343d6c","scores":[0.9999473732764432,0.9864118199669913,0.9999999616892274,0.9999999605186278]},
+    {"id":"L2R/TechnicalWriting/Llama-3-70B/17","split":"evaluation","domain":"TechnicalWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"1ecc8d0861f91d48eb1c6c618cc355cf122cd4d79b0a68b0b1fdf7a9681b4839","scores":[0.9830408801111519,0.9856909513473511,0.9999875362847216,0.9999940558454962]},
+    {"id":"L2R/TechnicalWriting/Llama-3-70B/194","split":"evaluation","domain":"TechnicalWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"dde66a0eba5677f7b57024e6ab3fbbe6aa8190f2324958938c530d89fdfcf876","scores":[0.9939398274310426,0.9851739406585693,0.999999976230555,0.9999991822734131]},
+    {"id":"L2R/TechnicalWriting/Llama-3-70B/40","split":"evaluation","domain":"TechnicalWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"2655f9782002c79551dd8e2f0561366b9bce47b4911a88ad2e365d6447e71fdf","scores":[0.9685589515704067,0.9725461602210999,0.0181086618076411,0.8379823841507483]},
+    {"id":"L2R/TechnicalWriting/Llama-3-70B/189","split":"evaluation","domain":"TechnicalWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"d0fdc704ce0f97646319c94dcdced78bcedaf94b31b8b680899312a658da481d","scores":[0.9804956396223912,0.8075599074363708,0.9985164121364121,0.9704352680643369]},
+    {"id":"L2R/TechnicalWriting/Llama-3-70B/74","split":"evaluation","domain":"TechnicalWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"a162ce95a9fdfa7561b0c212acf6e8e81b308a429712115525d524d621c51c5f","scores":[0.9918449278206115,0.9862189888954163,0.041265922152257196,0.9975162776913823]},
+    {"id":"L2R/TechnicalWriting/Llama-3-70B/53","split":"evaluation","domain":"TechnicalWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"94b7818c8855e0e271c5041821008eba73df796a854df558f5a6b73489c7838b","scores":[0.9998182059717959,0.9858134388923645,0.9999998183586744,0.9999976307172433]},
+    {"id":"L2R/TechnicalWriting/Llama-3-70B/81","split":"evaluation","domain":"TechnicalWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"6e041b99a7cce17354dd48557c9476771cfe92937f6517c4872b8560332752d1","scores":[0.20886591922890765,0.05532703548669815,0.002820960432558559,0.000688814317206039]},
+    {"id":"L2R/TechnicalWriting/Llama-3-70B/8","split":"evaluation","domain":"TechnicalWriting","generator":"Llama-3-70B","label":"ai","sha256OfCollapsedWhitespace":"d8e0bb3059f9e60e456189b1f1ab22e2fbf4fedf478803a82d1b8d61c813c7bf","scores":[0.9923920210862067,0.8890811800956726,0.007238353761074128,0.36605888426417704]}
+  ],
+  "additionalTextSightEttin1bScores": [
+    {"id":"hw-1062819171-0","generator":"human-wikipedia-pre2022","label":"human","score":0.0017225421417679855},
+    {"id":"hw-1062883000-0","generator":"human-wikipedia-pre2022","label":"human","score":4.58453696983367e-05},
+    {"id":"hw-1059154147-0","generator":"human-wikipedia-pre2022","label":"human","score":0.044681119604312605},
+    {"id":"hw-1057361967-0","generator":"human-wikipedia-pre2022","label":"human","score":0.0003197205162475179},
+    {"id":"hw-1059775872-0","generator":"human-wikipedia-pre2022","label":"human","score":0.06294299314065407},
+    {"id":"hw-1062966990-0","generator":"human-wikipedia-pre2022","label":"human","score":0.00022626420261897455},
+    {"id":"hw-1057148416-0","generator":"human-wikipedia-pre2022","label":"human","score":3.330057249358066e-05},
+    {"id":"hw-1062667869-0","generator":"human-wikipedia-pre2022","label":"human","score":0.0005393002025936875},
+    {"id":"hw-1062669591-0","generator":"human-wikipedia-pre2022","label":"human","score":0.0019142749319909476},
+    {"id":"hw-1062100671-0","generator":"human-wikipedia-pre2022","label":"human","score":5.1927450037608775e-05},
+    {"id":"hw-1062021634-0","generator":"human-wikipedia-pre2022","label":"human","score":0.00021617288113958641},
+    {"id":"hw-1062289989-0","generator":"human-wikipedia-pre2022","label":"human","score":0.0005157802899020792},
+    {"id":"hw-1062717373-0","generator":"human-wikipedia-pre2022","label":"human","score":0.0008446570527509506},
+    {"id":"hw-1062956936-0","generator":"human-wikipedia-pre2022","label":"human","score":7.440072425592297e-05},
+    {"id":"hw-1062757362-0","generator":"human-wikipedia-pre2022","label":"human","score":0.00026515956468591093},
+    {"id":"hw-1059395309-0","generator":"human-wikipedia-pre2022","label":"human","score":4.4646126471351735e-05},
+    {"id":"hw-1062695566-0","generator":"human-wikipedia-pre2022","label":"human","score":8.970940135850011e-05},
+    {"id":"hw-1062425626-0","generator":"human-wikipedia-pre2022","label":"human","score":0.00021288967680141785},
+    {"id":"hw-1060874348-0","generator":"human-wikipedia-pre2022","label":"human","score":0.0006024425449402521},
+    {"id":"hw-1062486454-0","generator":"human-wikipedia-pre2022","label":"human","score":0.0011980650785441494},
+    {"id":"hw-1062430031-0","generator":"human-wikipedia-pre2022","label":"human","score":0.0018868036166036516},
+    {"id":"hw-1057311111-1","generator":"human-wikipedia-pre2022","label":"human","score":0.00020184835410866944},
+    {"id":"hw-1062141666-1","generator":"human-wikipedia-pre2022","label":"human","score":4.447256317796291e-05},
+    {"id":"hw-1061490129-1","generator":"human-wikipedia-pre2022","label":"human","score":0.0017141412877227057},
+    {"id":"hw-1062025698-1","generator":"human-wikipedia-pre2022","label":"human","score":0.0003965578141127625},
+    {"id":"hw-1061956435-1","generator":"human-wikipedia-pre2022","label":"human","score":0.0002434308127562339},
+    {"id":"esl-PMC7619454-0","generator":"human-pmc-esl","label":"human","score":8.582082898266531e-05},
+    {"id":"esl-PMC12806983-0","generator":"human-pmc-esl","label":"human","score":0.0006441345150973221},
+    {"id":"esl-PMC12806895-1","generator":"human-pmc-esl","label":"human","score":0.007561850698978667},
+    {"id":"esl-PMC12807363-1","generator":"human-pmc-esl","label":"human","score":0.001073783152805978},
+    {"id":"esl-PMC12807238-1","generator":"human-pmc-esl","label":"human","score":0.00856930632974968},
+    {"id":"esl-PMC8338870-1","generator":"human-pmc-esl","label":"human","score":0.795362747156331},
+    {"id":"esl-PMC12807257-0","generator":"human-pmc-esl","label":"human","score":0.0027916945069176046},
+    {"id":"esl-PMC13316911-0","generator":"human-pmc-esl","label":"human","score":0.027229511925791164},
+    {"id":"esl-PMC13317726-0","generator":"human-pmc-esl","label":"human","score":0.00018670647473902863},
+    {"id":"esl-PMC13316913-1","generator":"human-pmc-esl","label":"human","score":0.0004862434686380937},
+    {"id":"esl-PMC12807014-1","generator":"human-pmc-esl","label":"human","score":0.0017335378062185466},
+    {"id":"esl-PMC13061290-1","generator":"human-pmc-esl","label":"human","score":0.00855698949521254},
+    {"id":"esl-PMC12807180-1","generator":"human-pmc-esl","label":"human","score":0.015042173538365884},
+    {"id":"esl-PMC12806996-1","generator":"human-pmc-esl","label":"human","score":0.6163706331948525},
+    {"id":"esl-PMC12806974-1","generator":"human-pmc-esl","label":"human","score":0.0008596702314868811},
+    {"id":"esl-PMC8338861-1","generator":"human-pmc-esl","label":"human","score":0.9906777703419225},
+    {"id":"esl-PMC8648692-1","generator":"human-pmc-esl","label":"human","score":0.022725470701398107},
+    {"id":"esl-PMC8648660-0","generator":"human-pmc-esl","label":"human","score":0.024066353461458433},
+    {"id":"esl-PMC7717057-0","generator":"human-pmc-esl","label":"human","score":0.00048588821559443143},
+    {"id":"esl-PMC13316906-0","generator":"human-pmc-esl","label":"human","score":0.16951089348895693},
+    {"id":"esl-PMC8671269-0","generator":"human-pmc-esl","label":"human","score":0.9936804901512133},
+    {"id":"esl-PMC13316903-0","generator":"human-pmc-esl","label":"human","score":0.7746012198173413},
+    {"id":"esl-PMC12807378-0","generator":"human-pmc-esl","label":"human","score":0.24571994494451294},
+    {"id":"esl-PMC12806902-0","generator":"human-pmc-esl","label":"human","score":0.003340656416122862},
+    {"id":"esl-PMC11581751-0","generator":"human-pmc-esl","label":"human","score":4.541800432575456e-05},
+    {"id":"esl-PMC13570122-0","generator":"human-pmc-esl","label":"human","score":0.0027302669465540854},
+    {"id":"esl-PMC11468146-0","generator":"human-pmc-esl","label":"human","score":0.0020178127804150714},
+    {"id":"esl-PMC10805468-0","generator":"human-pmc-esl","label":"human","score":0.027910353253800136},
+    {"id":"esl-PMC7363737-0","generator":"human-pmc-esl","label":"human","score":0.007557327022599095},
+    {"id":"esl-PMC12994296-0","generator":"human-pmc-esl","label":"human","score":0.002618845303325589},
+    {"id":"esl-PMC12876752-0","generator":"human-pmc-esl","label":"human","score":0.8709457349187342},
+    {"id":"ai2026-claude-opus-5-0","generator":"claude-opus-5","label":"ai","score":0.00031277427306438543},
+    {"id":"ai2026-claude-opus-5-1","generator":"claude-opus-5","label":"ai","score":5.702242651226249e-05},
+    {"id":"ai2026-claude-opus-5-2","generator":"claude-opus-5","label":"ai","score":0.903754548436161},
+    {"id":"ai2026-claude-opus-5-3","generator":"claude-opus-5","label":"ai","score":0.6714308971667176},
+    {"id":"ai2026-claude-opus-5-4","generator":"claude-opus-5","label":"ai","score":0.9478296383061919},
+    {"id":"ai2026-claude-opus-5-5","generator":"claude-opus-5","label":"ai","score":0.00020526488804093973},
+    {"id":"ai2026-claude-opus-5-6","generator":"claude-opus-5","label":"ai","score":0.4995333814485499},
+    {"id":"ai2026-claude-opus-5-7","generator":"claude-opus-5","label":"ai","score":0.4187493330654516},
+    {"id":"ai2026-claude-opus-5-8","generator":"claude-opus-5","label":"ai","score":0.00031347715328379906},
+    {"id":"ai2026-claude-opus-5-9","generator":"claude-opus-5","label":"ai","score":0.0017477545747399583},
+    {"id":"ai2026-claude-opus-5-10","generator":"claude-opus-5","label":"ai","score":0.032929640591882935},
+    {"id":"ai2026-claude-opus-5-11","generator":"claude-opus-5","label":"ai","score":0.0007117030903717425},
+    {"id":"ai2026-gpt-4.1-0","generator":"gpt-4.1","label":"ai","score":0.999998046267063},
+    {"id":"ai2026-gpt-4.1-1","generator":"gpt-4.1","label":"ai","score":0.998526897907415},
+    {"id":"ai2026-gpt-4.1-2","generator":"gpt-4.1","label":"ai","score":0.9999997858745914},
+    {"id":"ai2026-gpt-4.1-3","generator":"gpt-4.1","label":"ai","score":0.8772221172368625},
+    {"id":"ai2026-gpt-4.1-4","generator":"gpt-4.1","label":"ai","score":0.9999873115173025},
+    {"id":"ai2026-gpt-4.1-5","generator":"gpt-4.1","label":"ai","score":0.9993088401366447},
+    {"id":"ai2026-gpt-4.1-6","generator":"gpt-4.1","label":"ai","score":0.99999593783424},
+    {"id":"ai2026-gpt-4.1-7","generator":"gpt-4.1","label":"ai","score":0.8401608998138583},
+    {"id":"ai2026-gpt-4.1-8","generator":"gpt-4.1","label":"ai","score":0.9984641484656334},
+    {"id":"ai2026-gpt-4.1-9","generator":"gpt-4.1","label":"ai","score":0.9998461016269551},
+    {"id":"ai2026-gpt-4.1-10","generator":"gpt-4.1","label":"ai","score":0.9999994363786638},
+    {"id":"ai2026-gpt-4.1-11","generator":"gpt-4.1","label":"ai","score":0.9974330307520682},
+    {"id":"ai2026-gpt-oss-120b-0","generator":"gpt-oss-120b","label":"ai","score":0.9999993669634398},
+    {"id":"ai2026-gpt-oss-120b-1","generator":"gpt-oss-120b","label":"ai","score":0.3030064859585279},
+    {"id":"ai2026-gpt-oss-120b-2","generator":"gpt-oss-120b","label":"ai","score":0.9999994302510264},
+    {"id":"ai2026-gpt-oss-120b-3","generator":"gpt-oss-120b","label":"ai","score":0.5659122028152808},
+    {"id":"ai2026-gpt-oss-120b-5","generator":"gpt-oss-120b","label":"ai","score":0.08631363764635328},
+    {"id":"ai2026-gpt-oss-120b-6","generator":"gpt-oss-120b","label":"ai","score":0.999997955827324},
+    {"id":"ai2026-gpt-oss-120b-7","generator":"gpt-oss-120b","label":"ai","score":0.9985102315576144},
+    {"id":"ai2026-gpt-oss-120b-8","generator":"gpt-oss-120b","label":"ai","score":0.9999994556387326},
+    {"id":"ai2026-gpt-oss-120b-10","generator":"gpt-oss-120b","label":"ai","score":0.39696794859928675},
+    {"id":"ai2026-gpt-oss-120b-11","generator":"gpt-oss-120b","label":"ai","score":0.6667226426072583},
+    {"id":"ai2026-claude-haiku-4-5-0","generator":"claude-haiku-4-5","label":"ai","score":0.9999995067963435},
+    {"id":"ai2026-claude-haiku-4-5-1","generator":"claude-haiku-4-5","label":"ai","score":0.9967453529504294},
+    {"id":"ai2026-claude-haiku-4-5-2","generator":"claude-haiku-4-5","label":"ai","score":0.9999996708260374},
+    {"id":"ai2026-claude-haiku-4-5-3","generator":"claude-haiku-4-5","label":"ai","score":0.9990188257817891},
+    {"id":"ai2026-claude-haiku-4-5-4","generator":"claude-haiku-4-5","label":"ai","score":0.9999946913098777},
+    {"id":"ai2026-claude-haiku-4-5-5","generator":"claude-haiku-4-5","label":"ai","score":0.9996118620141329},
+    {"id":"ai2026-claude-haiku-4-5-6","generator":"claude-haiku-4-5","label":"ai","score":0.9999980353395675},
+    {"id":"ai2026-claude-haiku-4-5-7","generator":"claude-haiku-4-5","label":"ai","score":0.9991392787840867},
+    {"id":"ai2026-claude-haiku-4-5-8","generator":"claude-haiku-4-5","label":"ai","score":0.9999999369654743},
+    {"id":"ai2026-claude-haiku-4-5-9","generator":"claude-haiku-4-5","label":"ai","score":0.99999058000112},
+    {"id":"ai2026-claude-haiku-4-5-10","generator":"claude-haiku-4-5","label":"ai","score":0.9999997378774093},
+    {"id":"ai2026-claude-haiku-4-5-11","generator":"claude-haiku-4-5","label":"ai","score":0.9831339643277273},
+    {"id":"ai2026-gpt-oss-120b-4","generator":"gpt-oss-120b","label":"ai","score":0.9997340281200386},
+    {"id":"ai2026-gpt-oss-120b-9","generator":"gpt-oss-120b","label":"ai","score":0.9992037829167075},
+    {"id":"ai2026-qwen-3.8-27b-0","generator":"qwen-3.8-27b","label":"ai","score":0.006759509979296972},
+    {"id":"ai2026-qwen-3.8-27b-2","generator":"qwen-3.8-27b","label":"ai","score":0.37592506118225677},
+    {"id":"ai2026-qwen-3.8-27b-3","generator":"qwen-3.8-27b","label":"ai","score":0.0015284802114675872},
+    {"id":"ai2026-qwen-3.8-27b-5","generator":"qwen-3.8-27b","label":"ai","score":0.00034167325391297536},
+    {"id":"ai2026-qwen-3.8-27b-7","generator":"qwen-3.8-27b","label":"ai","score":0.0006985586542824024},
+    {"id":"ai2026-qwen-3.8-27b-8","generator":"qwen-3.8-27b","label":"ai","score":0.38122904639913624},
+    {"id":"ai2026-qwen-3.8-27b-9","generator":"qwen-3.8-27b","label":"ai","score":0.004273995729099901},
+    {"id":"ai2026-qwen-3.8-27b-11","generator":"qwen-3.8-27b","label":"ai","score":0.0033231834407971513}
+  ]
+}

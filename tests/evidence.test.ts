@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DETECTOR_PROFILES,
   wilsonInterval,
   describeEvidence,
   parseAiScore,
@@ -69,6 +70,17 @@ describe("Detection evidence boundaries", () => {
     ).toContain(
       "Possibility wording changed; check whether a qualified claim became certain.",
     );
+  });
+  it("requires the measured Detailed threshold even when the historical reference is elevated", () => {
+    const threshold = DETECTOR_PROFILES.detailed.elevatedScoreFloor;
+    const below = describeEvidence(english, threshold - 0.0001, "detailed");
+    const atThreshold = describeEvidence(english, threshold, "detailed");
+    expect(below.referenceProbability).toBeGreaterThan(0.8);
+    expect(below.verdict).toBe("Inconclusive");
+    expect(below.modelScore).toBe(threshold - 0.0001);
+    expect(below.explanation).toContain("limit false flags");
+    expect(atThreshold.verdict).toBe("Elevated AI-like signal");
+    expect(atThreshold.calibratedProbability).toBeNull();
   });
   it("covers every token without overflowing or repeating the final overlap", () => {
     const ids = Array.from({ length: 1000 }, (_, i) => i);
