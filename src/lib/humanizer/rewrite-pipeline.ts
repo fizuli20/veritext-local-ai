@@ -7,7 +7,7 @@ import {
   conditionalInstructions,
   preservationInstructions,
   quantityClaims,
-  qualifiedReferences,
+  protectedQualifiedSentences,
   rewriteExtent,
   rewriteQualifierInstructions,
   rewriteInstructions,
@@ -269,7 +269,7 @@ export async function runRewritePipeline(options: {
     let usableLightEdit: string | null = null;
     const recommendation = closingRecommendation(originalPart);
     const conditional = conditionalInstructions(originalPart);
-    const references = qualifiedReferences(originalPart);
+    const qualifiedStatements = protectedQualifiedSentences(originalPart);
     let keepClosingSentence = Boolean(recommendation);
     let outputLimited = false;
     const checkExtent =
@@ -279,7 +279,7 @@ export async function runRewritePipeline(options: {
     const fixedSentences = new Set([
       ...protectedAmounts,
       ...conditional,
-      ...references,
+      ...qualifiedStatements,
     ]);
     if (recommendation) fixedSentences.add(recommendation);
     const fixedWordCount = [...fixedSentences].reduce(
@@ -311,8 +311,8 @@ export async function runRewritePipeline(options: {
             (protectedAmounts.length
               ? " Keep sentences reporting distinct amounts unchanged, including the actions and subjects tied to those amounts."
               : "") +
-            (references.length
-              ? " Keep any sentence beginning with It or They that describes a benefit with can, could, may or might word for word."
+            (qualifiedStatements.length
+              ? " Keep these qualified sentences word for word: benefits beginning with It or They, and contrasts joined by while or whereas. Keep the actions tied to the correct people."
               : "") +
             (conditional.length
               ? " Keep any opening prerequisite and its full list of instructions in the original sentence, word for word."

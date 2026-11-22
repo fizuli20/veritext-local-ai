@@ -52,13 +52,14 @@ export function conditionalInstructions(original: string): string[] {
     );
 }
 
-export function qualifiedReferences(original: string): string[] {
+export function protectedQualifiedSentences(original: string): string[] {
   return tokenizeSentences(original)
     .map(({ text }) => text)
     .filter(
       (text) =>
-        /^(?:it|they)\s+(?:gives?|offers?|provides?)\b/i.test(text) &&
-        text.match(POSSIBILITY),
+        Boolean(text.match(POSSIBILITY)) &&
+        (/^(?:it|they)\s+(?:gives?|offers?|provides?)\b/i.test(text) ||
+          /,\s+(?:while|whereas)\s+/i.test(text)),
     );
 }
 
@@ -307,10 +308,10 @@ export function reviewRewrite(
         "Protected conditional instructions changed. Preserve the prerequisite and its full list of actions.",
       );
   }
-  for (const claim of qualifiedReferences(original)) {
+  for (const claim of protectedQualifiedSentences(original)) {
     if (!normalizedDraft.includes(normalizeWhitespace(claim)))
       issues.push(
-        "Protected referenced claim changed. Retain the statement and its original subject.",
+        "Protected qualified claim changed. Retain its original subjects and their separate actions.",
       );
   }
   if (introducedClaim(original, candidate, context))

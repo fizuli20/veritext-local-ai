@@ -1,3 +1,11 @@
+# Veritext 5.0.2 library-sample follow-up
+
+A repeat test caught two more issues. The model combined the separate benefits for adults and students, and one recovery pass included a generated preamble. Regression tests cover both cases. The editor retains the conditional sentence linking each group to its own benefit and strips the preamble before reviewing a candidate.
+
+The final warm browser run with Llama 3.2 3B on the same 152-word library sample finished in 26.9 seconds with five retries. The draft kept staff responsible for answering questions, retained the separate adult and student benefits, preserved the expansion checklist and timetable caveat, and opened at the top. One of three source sections was retained unchanged. This run measures one sample on one device.
+
+---
+
 # Veritext 5.0.1 library-sample rewrite regression
 
 The reported Llama 3B output made only light changes and substituted an ambiguous pronoun for staff in the request to leave time for answering questions. Regression tests include that exact sentence. The editor now checks that explicit actors stay attached to coordinated duties. It retains a referenced qualified claim and keeps a qualified checklist with its prerequisite. Additional checks cover the store, new service, and new outcome introduced in intermediate real-model experiments. These checks are conservative and cannot establish complete semantic fidelity.

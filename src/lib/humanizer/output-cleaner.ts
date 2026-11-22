@@ -19,9 +19,9 @@ const THINKING_TAG_REGEXES = [
 ];
 
 const PREAMBLE_REGEXES = [
-  /^(?:here(?:'s| is) (?:a |the )?(?:rewritten|humanized|revised|updated|edited)? ?(?:version|text|draft|passage|response)?(?: of (?:the |this )?(?:text|passage|article|draft))?(?::|\n+))/i,
-  /^(?:sure!?|certainly!?|of course!?)(?:, )?(?:here(?:'s| is) (?:a |the )?(?:rewritten|revised|humanized)? ?(?:text|version)?(?: of (?:the |this )?(?:text|passage))?(?::|\n+))/i,
-  /^(?:below is (?:the|a) (?:rewritten|humanized|revised) (?:version|text)(?: of (?:the |this )?(?:text|passage))?(?::|\n+))/i,
+  /^(?:here(?:'s| is) (?:a |the )?(?:rewritten|humanized|revised|updated|edited)? ?(?:version|text|draft|passage|response|excerpt)?(?: of (?:the |this )?(?:text|passage|article|draft|excerpt))?(?::|\n+))/i,
+  /^(?:sure!?|certainly!?|of course!?)(?:, )?(?:here(?:'s| is) (?:a |the )?(?:rewritten|revised|humanized)? ?(?:text|version|excerpt)?(?: of (?:the |this )?(?:text|passage))?(?::|\n+))/i,
+  /^(?:below is (?:the|a) (?:rewritten|humanized|revised) (?:version|text|excerpt)(?: of (?:the |this )?(?:text|passage))?(?::|\n+))/i,
   /^(?:i(?:'ve| have) (?:rewritten|humanized|revised) (?:this|the text|the passage)(?::|\n+))/i,
 ];
 

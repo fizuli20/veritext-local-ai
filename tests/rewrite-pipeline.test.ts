@@ -6,7 +6,10 @@ import {
   runRewritePipeline,
 } from "@/lib/humanizer/rewrite-pipeline";
 import { reviewRewrite } from "@/lib/humanizer/rewrite-review";
-import { RewriteOutputLimitError } from "@/lib/humanizer/output-cleaner";
+import {
+  cleanLlmOutput,
+  RewriteOutputLimitError,
+} from "@/lib/humanizer/output-cleaner";
 const noop = () => {};
 describe("Protected rewrite pipeline", () => {
   it("recovers from broken markers by editing surrounding prose while retaining fact-bearing sentences exactly", async () => {
@@ -619,6 +622,19 @@ describe("Protected rewrite pipeline", () => {
         "A library is in the neighborhood. " + source,
       ),
     ).not.toContain(restriction);
+  });
+
+  it("protects distinct actions in a qualified contrast and removes an excerpt preamble", () => {
+    const original =
+      "Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded.";
+    const conflated =
+      "Evening classes and quiet rooms can help adults and students access online services and work effectively when home is crowded.";
+    expect(reviewRewrite(original, conflated).join(" ")).toContain(
+      "Protected qualified claim changed",
+    );
+    expect(
+      cleanLlmOutput("Here is the rewritten excerpt:\n\n" + original),
+    ).toBe(original);
   });
 
   it("stops before generation and never substitutes a rule-based rewrite", async () => {
