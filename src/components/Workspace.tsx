@@ -63,6 +63,7 @@ const sample =
   "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.";
 
 export function Workspace() {
+  const [interactive, setInteractive] = useState(false);
   const [detectorTier, setDetectorTier] = useState<DetectorTier>("detailed");
   const [tab, setTab] = useState<"detector" | "humanizer">("humanizer");
   const [input, setInput] = useState("");
@@ -132,6 +133,7 @@ export function Workspace() {
   );
 
   useEffect(() => {
+    setInteractive(true);
     // Retire the old cache-first shell so deployed fixes cannot be hidden by it.
     navigator.serviceWorker
       ?.getRegistrations()
@@ -848,7 +850,7 @@ export function Workspace() {
                 id="source-text"
                 aria-label="Original text"
                 value={input}
-                disabled={!!busy || importing}
+                disabled={!interactive || !!busy || importing}
                 onChange={(e) => editInput(e.target.value)}
                 maxLength={20000}
                 placeholder={

@@ -41,6 +41,36 @@ test("focused workspace, no automatic downloads, accessible setup, responsive la
   expect(errors).toEqual([]);
 });
 
+test("waits until the editor can retain text on a slow first load", async ({
+  page,
+}) => {
+  let loadScripts = () => {};
+  const scriptsReady = new Promise<void>((resolve) => {
+    loadScripts = resolve;
+  });
+  await page.route("**/_next/static/chunks/**", async (route) => {
+    if (route.request().resourceType() === "script") await scriptsReady;
+    return route.continue();
+  });
+  try {
+    await page.goto("/", { waitUntil: "commit" });
+    await expect(
+      page.getByRole("textbox", { name: "Original text", exact: true }),
+    ).toBeDisabled();
+  } finally {
+    loadScripts();
+  }
+  const editor = page.getByRole("textbox", {
+    name: "Original text",
+    exact: true,
+  });
+  await editor.fill(source);
+  await expect(editor).toHaveValue(source);
+  await expect(
+    page.getByRole("button", { name: "Rewrite", exact: true }),
+  ).toBeEnabled();
+});
+
 test("short and non-English text receive no fake score", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "AI Detector", exact: true }).click();

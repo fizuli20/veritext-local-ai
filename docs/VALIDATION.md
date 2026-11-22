@@ -1,3 +1,9 @@
+# Veritext 4.6.4 first-load reliability
+
+The source editor now waits for the browser application to initialize before accepting typing. A delayed-script browser test reproduces the early-input condition on 4.6.3 and passes with the fix. The 4.6.3 detector release was independently checked in production with actual browser inference. The human technical-writing probe scored 96.61/100 and was correctly reported as inconclusive under the new cutoff. The built-in AI library example scored 97.57/100 and still returned an elevated signal.
+
+---
+
 # Veritext 4.6.3 detector threshold validation
 
 The Detailed model still uses the same weights and reports the same raw scores. Its elevated-signal cutoff moved from an effective **94.85/100** to **96.96/100**, with the existing historical-reference and sample-support checks still applied. The stricter cutoff prioritizes fewer false flags. Scores near the prior cutoff can now be inconclusive.
