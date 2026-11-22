@@ -2,6 +2,7 @@ import { countWords, tokenizeSentences } from "../nlp/tokenizer";
 import {
   reviewRewrite,
   preservationInstructions,
+  quantityClaims,
   rewriteExtent,
   rewriteInstructions,
   type RewriteDepth,
@@ -196,6 +197,7 @@ export async function runRewritePipeline(options: {
       depth === "rephrase" && originalPart.length <= 1600
         ? { ...locked, text: originalPart, locks: [] }
         : locked;
+    const preserveQuantityClaims = quantityClaims(originalPart).length > 0;
     let accepted: string | null = null;
     let feedback = "";
     let usableLightEdit: string | null = null;
@@ -212,6 +214,9 @@ export async function runRewritePipeline(options: {
       const candidate = await generate({
         systemPrompt:
           rewriteInstructions(mode, depth) +
+          (preserveQuantityClaims
+            ? " Keep any sentence reporting two or more quantities unchanged, including the actions and subjects tied to those amounts."
+            : "") +
           (generationLocks.locks.length
             ? ` Preserve every ${locked.prefix}_number_END marker exactly once. Markers stand for protected source text; never modify them.`
             : ""),

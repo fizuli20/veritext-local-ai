@@ -1,9 +1,24 @@
 import { maskProtectedSpans, restoreProtectedSpans } from "./protected-spans";
-import { countWords } from "../nlp/tokenizer";
+import { countWords, tokenizeSentences } from "../nlp/tokenizer";
 
 const NEGATION =
   /\b(?:no|not|never|neither|cannot|without)\b|\b[\p{L}]+n['’]t\b/giu;
 const POSSIBILITY = /\b(?:can|could|may|might)\b/gi;
+const NUMBER =
+  /(?<![\p{L}\p{N}_])(?:[$€£])?[+-]?\d+(?:[,.]\d+)*(?:[eE][+-]?\d+)?(?:\s?%)?/gu;
+const numbers = (text: string) => text.match(NUMBER) ?? [];
+
+/** Keep separate quantities tied to their original actions, units and subjects. */
+export function quantityClaims(text: string): string[] {
+  if (numbers(text).length < 2) return [];
+  return tokenizeSentences(text)
+    .map((sentence) => sentence.text)
+    .filter(
+      (sentence) =>
+        numbers(sentence).filter((value) => !/^(?:19|20)\d{2}$/.test(value))
+          .length >= 2,
+    );
+}
 
 export function preservationInstructions(
   text: string,
@@ -59,10 +74,6 @@ export function reviewRewrite(
   lockedTerms: string[] = [],
 ): string[] {
   const issues: string[] = [];
-  const numbers = (text: string) =>
-    text.match(
-      /(?<![\p{L}\p{N}_])(?:[$€£])?[+-]?\d+(?:[,.]\d+)*(?:[eE][+-]?\d+)?(?:\s?%)?/gu,
-    ) ?? [];
   const frequency = (items: string[]) =>
     items.reduce<Record<string, number>>(
       (a, s) => ({ ...a, [s]: (a[s] ?? 0) + 1 }),
@@ -80,6 +91,12 @@ export function reviewRewrite(
     JSON.stringify(Object.entries(after).sort())
   )
     issues.push("Numbers or amounts changed.");
+  for (const claim of quantityClaims(original)) {
+    const normalizeWhitespace = (text: string) =>
+      text.trim().replace(/\s+/g, " ");
+    if (!normalizeWhitespace(candidate).includes(normalizeWhitespace(claim)))
+      issues.push(`Protected quantity claim changed: ${claim.slice(0, 140)}`);
+  }
   const protectedSpans = maskProtectedSpans(original).spans;
   for (const span of protectedSpans) {
     const originalSpan = restoreProtectedSpans(span.original, protectedSpans);

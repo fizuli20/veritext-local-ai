@@ -1,4 +1,4 @@
-# Veritext 4.5.0 quality follow-up
+# Veritext 4.5.1 quality follow-up
 
 The Detailed detector now reports up to six eligible English paragraph scores alongside the document score. On a browser test combining HC3 human-source passage `wiki_csai-120-0` with the built-in AI-written library example, the document signal was 70/100, with paragraph signals of 8/100 and 98/100. This deliberately contrasting example verifies the UI and score provenance. It cannot estimate accuracy on mixed documents in general. Paragraph scores are uncalibrated and their offsets are included in the exported analysis.
 
@@ -6,7 +6,9 @@ We also evaluated [GPTTrace Ettin-150M](https://huggingface.co/nakas/gpttrace-et
 
 Full rewrite now rewards a second, more substantial edit if it passes checks. It can recover work in smaller passages after whole-section failures and discloses when the completed draft changed little. Exact facts remain protected during recovery. A local Qwen 3B option is available alongside the existing lighter models. Different runs can produce different wording. The checks cover literal invariants and cannot establish complete fidelity.
 
-Validation for this release includes **106 unit tests and 14 browser tests**, plus production build, lint, and type checks. The earlier comparison and benchmark records follow.
+The factual rewrite probe retained all numbers while dropping the approval action. The updated check keeps sentences with multiple quantities verbatim, except that standalone year-shaped tokens do not count toward the threshold. This preserves the relationship between amounts and the claims they quantify.
+
+Validation for this release includes **107 unit tests and 14 browser tests**, plus production build, lint, and type checks. The earlier comparison and benchmark records follow.
 
 ---
 

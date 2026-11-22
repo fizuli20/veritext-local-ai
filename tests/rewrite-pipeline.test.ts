@@ -286,6 +286,36 @@ describe("Protected rewrite pipeline", () => {
     expect(generate).toHaveBeenCalledTimes(5);
   });
 
+  it("does not accept a dropped approval action even when every number is retained", async () => {
+    const fact =
+      "In 2024, Ana reviewed 40 applications for Project Atlas and approved 12 for further study.";
+    const text =
+      fact + " The team will discuss the results at the next meeting.";
+    const generate = vi.fn(async ({ attempt, systemPrompt }) => {
+      if (attempt < 2) {
+        expect(systemPrompt).toContain(
+          "actions and subjects tied to those amounts",
+        );
+        return "In 2024, Ana received 40 applications for Project Atlas and 12 for further study. The team will discuss the results at the next meeting.";
+      }
+      return "At the next meeting, the team will discuss the results.";
+    });
+    const result = await runRewritePipeline({
+      text,
+      mode: "standard",
+      depth: "rephrase",
+      onProgress: noop,
+      onText: noop,
+      generate,
+    });
+    expect(result.text).toBe(
+      fact + " At the next meeting, the team will discuss the results.",
+    );
+    expect(result.checks[0]?.reason).toContain(
+      "Protected quantity claim changed",
+    );
+  });
+
   it("stops before generation and never substitutes a rule-based rewrite", async () => {
     const controller = new AbortController();
     controller.abort();

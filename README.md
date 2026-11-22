@@ -1,4 +1,4 @@
-# Veritext 4.5.0
+# Veritext 4.5.1
 
 A focused AI-text signal viewer and local rewrite editor. No paid inference API key is required.
 
