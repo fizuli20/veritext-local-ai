@@ -4,7 +4,7 @@ export async function GET() {
     openapi: "3.1.0",
     info: {
       title: "Veritext legacy style-signal API",
-      version: "4.3.0",
+      version: "4.4.0",
       description:
         "These server endpoints compute uncalibrated style heuristics only. They do not run the browser neural detector. aiScore is a legacy 0–100 style index, not an authorship probability. Submitted text reaches the server. There is no hosted humanizer API.",
     },

@@ -26,7 +26,11 @@ import {
   type DiscoveredModel,
 } from "@/lib/humanizer/local-server-client";
 import { cleanLlmOutput } from "@/lib/humanizer/output-cleaner";
-import { reviewRewrite } from "@/lib/humanizer/rewrite-review";
+import {
+  reviewRewrite,
+  REWRITE_DEPTHS,
+  type RewriteDepth,
+} from "@/lib/humanizer/rewrite-review";
 import {
   runRewritePipeline,
   type RewriteOutcome,
@@ -40,6 +44,9 @@ interface Scan {
   engine: string;
   latencyMs: number;
   loadingMs?: number;
+  model?: string;
+  revision?: string;
+  tier?: DetectorTier;
   contextLimit?: number | null;
   sentences: {
     start: number;
@@ -57,7 +64,9 @@ export function Workspace() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [source, setSource] = useState("");
+  const [depth, setDepth] = useState<RewriteDepth>("rephrase");
   const [mode, setMode] = useState("standard");
+  const [outputDepth, setOutputDepth] = useState<RewriteDepth>("rephrase");
   const [outputMode, setOutputMode] = useState("standard");
   const [writingTier, setWritingTier] = useState<WritingModelTier>("balanced");
   const [lockedTerms, setLockedTerms] = useState("");
@@ -69,6 +78,7 @@ export function Workspace() {
     output: string;
     engine: string;
     mode: string;
+    depth: RewriteDepth;
   } | null>(null);
   const [scan, setScan] = useState<Scan | null>(null);
   const [busy, setBusy] = useState<"scan" | "rewrite" | "load" | null>(null);
@@ -77,6 +87,8 @@ export function Workspace() {
   const [notice, setNotice] = useState("");
   const [engineName, setEngineName] = useState("");
   const [settings, setSettings] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInput = useRef<HTMLInputElement | null>(null);
   const [pendingRewrite, setPendingRewrite] = useState(false);
   const [baseUrl, setBaseUrl] = useState("http://localhost:1234/v1");
   const [models, setModels] = useState<DiscoveredModel[]>([]);
@@ -166,6 +178,61 @@ export function Workspace() {
         "Clipboard access is unavailable. Paste directly into the editor.",
       );
     }
+  }
+  async function importFile(file: File) {
+    if (busy || importing) return;
+    setImporting(true);
+    setError("");
+    setNotice("");
+    const request = ++operation.current;
+    try {
+      const { importTextFile } = await import("@/lib/io/import-text");
+      const text = await importTextFile(
+        file,
+        tab === "humanizer" ? 12000 : 20000,
+      );
+      if (operation.current !== request) return;
+      editInput(text);
+      setNotice(
+        `Imported ${file.name} on this device. No document was uploaded.${output ? " The edited draft still belongs to your previous source; run Rewrite to update it." : ""}`,
+      );
+    } catch (error) {
+      if (operation.current === request)
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Could not read that document.",
+        );
+    } finally {
+      setImporting(false);
+    }
+  }
+  function saveScan() {
+    if (!scan) return;
+    const report = {
+      schema: "veritext.neural-scan.v1",
+      exportedAt: new Date().toISOString(),
+      text: scan.text,
+      evidence: scan.evidence,
+      engine: scan.engine,
+      model: scan.model ?? null,
+      revision: scan.revision ?? null,
+      profile: scan.tier ?? null,
+      loadingMs: scan.loadingMs ?? 0,
+      contextLimit: scan.contextLimit ?? null,
+      latencyMs: scan.latencyMs,
+      contexts: scan.sentences,
+      limitation:
+        "Model signals are not proof of authorship. Reference estimates describe historical data. Context scores are uncalibrated. This file contains the checked text.",
+    };
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(report, null, 2)], { type: "application/json" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "veritext-analysis.json";
+    link.click();
+    URL.revokeObjectURL(url);
   }
   async function connect() {
     setConnecting(true);
@@ -366,9 +433,11 @@ export function Workspace() {
         output,
         engine: engineName,
         mode: outputMode,
+        depth: outputDepth,
       });
     setSource(original);
     setOutputMode(mode);
+    setOutputDepth(depth);
     setRewriteReport(null);
     setOutput("");
     setDiff(false);
@@ -387,6 +456,7 @@ export function Workspace() {
       const result = await runRewritePipeline({
         text: original,
         mode,
+        depth,
         terms: lockedTerms
           .split(",")
           .map((t) => t.trim())
@@ -461,8 +531,10 @@ export function Workspace() {
     source,
     engineName,
     outputMode,
+    outputDepth,
     mode,
     lockedTerms,
+    depth,
     useLocal,
     modelId,
     connectedUrl,
@@ -508,7 +580,7 @@ export function Workspace() {
           <button
             aria-pressed={tab === "detector"}
             onClick={() => {
-              if (!busy) setTab("detector");
+              if (!busy && !importing) setTab("detector");
             }}
           >
             AI Detector
@@ -516,7 +588,7 @@ export function Workspace() {
           <button
             aria-pressed={tab === "humanizer"}
             onClick={() => {
-              if (!busy) setTab("humanizer");
+              if (!busy && !importing) setTab("humanizer");
             }}
           >
             AI Humanizer
@@ -589,6 +661,27 @@ export function Workspace() {
             </span>
           </div>
           {tab === "humanizer" && (
+            <div
+              className="vt-lock-toolbar"
+              role="group"
+              aria-label="Rewrite depth"
+            >
+              <span>Rewrite depth</span>
+              {Object.entries(REWRITE_DEPTHS).map(([id, choice]) => (
+                <button
+                  key={id}
+                  className="vt-secondary"
+                  disabled={!!busy}
+                  aria-pressed={depth === id}
+                  onClick={() => setDepth(id as RewriteDepth)}
+                >
+                  {choice.label}
+                </button>
+              ))}
+              <span>{REWRITE_DEPTHS[depth].description}</span>
+            </div>
+          )}
+          {tab === "humanizer" && (
             <div className="vt-lock-toolbar">
               <label htmlFor="locked-terms">
                 Keep these names or terms exactly
@@ -616,6 +709,25 @@ export function Workspace() {
                   {tab === "humanizer" ? "Original text" : "Text to check"}
                 </label>
                 <div>
+                  <input
+                    ref={fileInput}
+                    hidden
+                    type="file"
+                    aria-label="Import document"
+                    accept=".txt,.md,.docx,.pdf"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) void importFile(file);
+                    }}
+                  />
+                  <button
+                    className="vt-text-button"
+                    disabled={!!busy || importing}
+                    onClick={() => fileInput.current?.click()}
+                  >
+                    {importing ? "Reading…" : "Upload file"}
+                  </button>
                   <button
                     className="vt-text-button"
                     disabled={!!busy}
@@ -662,7 +774,7 @@ export function Workspace() {
                 id="source-text"
                 aria-label="Original text"
                 value={input}
-                disabled={!!busy}
+                disabled={!!busy || importing}
                 onChange={(e) => editInput(e.target.value)}
                 maxLength={20000}
                 placeholder={
@@ -685,7 +797,7 @@ export function Workspace() {
                 ) : (
                   <button
                     className="vt-primary"
-                    disabled={!input.trim()}
+                    disabled={!input.trim() || importing}
                     onClick={tab === "humanizer" ? rewrite : () => detect()}
                   >
                     {tab === "humanizer" ? (
@@ -749,7 +861,7 @@ export function Workspace() {
                       />
                     )}
                     <p className="vt-provenance">
-                      {engineName}
+                      {engineName} · {REWRITE_DEPTHS[outputDepth].label}
                       {rewriteReport
                         ? ` · ${(rewriteReport.elapsedMs / 1000).toFixed(1)} s · ${rewriteReport.retries} retr${rewriteReport.retries === 1 ? "y" : "ies"}`
                         : ""}
@@ -808,6 +920,7 @@ export function Workspace() {
                               setSource(previousDraft.source);
                               setEngineName(previousDraft.engine);
                               setOutputMode(previousDraft.mode);
+                              setOutputDepth(previousDraft.depth);
                               setPreviousDraft(null);
                               setRewriteReport(null);
                               setNotice("Previous draft restored.");
@@ -977,6 +1090,9 @@ export function Workspace() {
                       {scan.sentences.length ? " and contexts" : ""}
                     </p>
                   )}
+                  <button className="vt-secondary" onClick={saveScan}>
+                    Save analysis
+                  </button>
                   <button
                     className="vt-secondary"
                     onClick={() => setTab("humanizer")}

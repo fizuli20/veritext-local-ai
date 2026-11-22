@@ -1,5 +1,9 @@
 import { tokenizeSentences } from "../nlp/tokenizer";
-import { reviewRewrite, rewriteInstructions } from "./rewrite-review";
+import {
+  reviewRewrite,
+  rewriteInstructions,
+  type RewriteDepth,
+} from "./rewrite-review";
 
 export interface LockedRewrite {
   text: string;
@@ -142,6 +146,7 @@ export interface RewriteOutcome {
 export async function runRewritePipeline(options: {
   text: string;
   mode: string;
+  depth?: RewriteDepth;
   terms?: string[];
   signal?: AbortSignal;
   generate: GenerateRewrite;
@@ -151,6 +156,7 @@ export async function runRewritePipeline(options: {
   const {
     text,
     mode,
+    depth = "polish",
     terms = [],
     signal,
     generate,
@@ -180,6 +186,14 @@ export async function runRewritePipeline(options: {
       ),
     };
     const originalPart = restoreRewriteSpans(part.text, locked);
+    // Full rewriting needs readable factual context. Validate literal facts
+    // afterwards rather than forcing small models to reason about placeholders.
+    // Light editing retains exact marker restoration; both modes use the same
+    // invariant checks and bounded recovery before anything is accepted.
+    const generationLocks =
+      depth === "rephrase" && originalPart.length <= 1600
+        ? { ...locked, text: originalPart, locks: [] }
+        : locked;
     let accepted: string | null = null;
     let feedback = "";
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -190,22 +204,25 @@ export async function runRewritePipeline(options: {
       );
       const candidate = await generate({
         systemPrompt:
-          rewriteInstructions(mode) +
-          ` Preserve every ${locked.prefix}_number_END marker exactly once. Markers stand for protected source text; never modify them.`,
-        userPrompt: `${feedback ? feedback + "\n\n" : ""}Edit the following passage. Return only the edited passage.\n\n${locked.text}`,
+          rewriteInstructions(mode, depth) +
+          (generationLocks.locks.length
+            ? ` Preserve every ${locked.prefix}_number_END marker exactly once. Markers stand for protected source text; never modify them.`
+            : ""),
+        userPrompt: `${feedback ? feedback + "\n\n" : ""}Edit the following passage. Return only the edited passage.\n\n${generationLocks.text}`,
         attempt,
         onText: (value) => {
-          const preview = restoreRewriteSpans(value, locked, false).replace(
-            new RegExp(locked.prefix + String.raw`\S*$`),
-            "",
-          );
+          const preview = restoreRewriteSpans(
+            value,
+            generationLocks,
+            false,
+          ).replace(new RegExp(locked.prefix + String.raw`\S*$`), "");
           onText(completed + preview);
         },
       });
       if (signal?.aborted) throw new Error("Generation stopped.");
       try {
-        const restored = restoreRewriteSpans(candidate, locked);
-        const issues = reviewRewrite(originalPart, restored, mode);
+        const restored = restoreRewriteSpans(candidate, generationLocks);
+        const issues = reviewRewrite(originalPart, restored, mode, terms);
         if (issues.length) {
           checks.push({
             section: i + 1,
@@ -302,7 +319,7 @@ export async function runRewritePipeline(options: {
         const trailing = segment.text.match(/\s*$/)?.[0] ?? "";
         const prefix = completed + recovered + leading;
         const draft = await generate({
-          systemPrompt: rewriteInstructions(mode),
+          systemPrompt: rewriteInstructions(mode, depth),
           userPrompt: `Simplify the wording and remove repetition without adding any claims. Remove empty lead-ins rather than turning them into new statements. For example, "At the present moment in time, it is important to note that no decision has been made" means "No decision has been made yet"; it does not mean that time is important. Preserve every substantive claim, request, uncertainty and negation. Return only the edited passage.\n\n${segment.text.trim()}`,
           attempt: 2,
           onText: (value) => onText(prefix + value),

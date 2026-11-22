@@ -8,6 +8,7 @@ import {
 import {
   reviewRewrite,
   rewriteInstructions,
+  REWRITE_DEPTHS,
 } from "@/lib/humanizer/rewrite-review";
 const english =
   "The library offers a quiet place where students can read and learn together. ".repeat(
@@ -97,6 +98,29 @@ describe("Meaning review", () => {
         "Negation changed; check whether a claim was reversed.",
       ]),
     );
+  });
+  it("separates rewriting depth from tone without relaxing factual preservation", () => {
+    expect(Object.keys(REWRITE_DEPTHS)).toEqual(["polish", "rephrase"]);
+    const full = rewriteInstructions("professional", "rephrase");
+    expect(full).toContain("fresh version");
+    expect(full).toContain("courteous professional");
+    expect(full).toContain("all names, numbers");
+    expect(full).toContain("Keep all caveats");
+    expect(rewriteInstructions("standard", "polish")).toContain(
+      "restrained copy edit",
+    );
+  });
+  it("flags repeated protected text rather than checking presence alone", () => {
+    const text =
+      'She said "wait". Read https://example.com/report for context.';
+    expect(reviewRewrite(text, text + ' She said "wait".')).toContain(
+      'Quotation changed: "wait"',
+    );
+    expect(
+      reviewRewrite(text, text + " Read https://example.com/report.").some(
+        (issue) => issue.startsWith("Protected url-email changed"),
+      ),
+    ).toBe(true);
   });
   it("accepts tracked invariants while never claiming semantic proof", () => {
     expect(

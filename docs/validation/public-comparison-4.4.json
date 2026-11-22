@@ -1,0 +1,137 @@
+{
+  "date": "2026-11-22",
+  "method": "Native Chrome, normal public forms, no accounts created, payments, CAPTCHA solving, API inspection, rate-limit bypass or proprietary code. Source examples authored in this task or project; no private source text.",
+  "domains": {
+    "humanai.pro": "Native Chrome redirected to GoDaddy domain for sale, $299. Not the humanizer.",
+    "zerogbt.com": "HTTP 204 empty response, no redirect; no alias established.",
+    "humanizeai.pro": "Active public rewrite editor, accepted normal free form submissions.",
+    "zerogpt.com": "Active public detector."
+  },
+  "humanizer": [
+    {
+      "id": "factual-96",
+      "level": "Balanced",
+      "inputReference": "96-word factual fixture in outputs/veritext-4.2.1-production-rewrite.json",
+      "output": "For the year 2024, Ana considered 40 cases for Project Atlas and chose 12 of them to be considered further. The word \"wait\" was used by her before making any public statement regarding the project. The pilot did not lower expenses by 15% so the team must consider the case studies and then decide on further expansion of the project (Smith, 2024). The report can be found at https://example.com/report. At the current point in time, it is important to mention that a decision has not yet been made.",
+      "outputWordsDisplayed": 91,
+      "manualFindings": [
+        "All numeral values, quotation, citation and URL retained.",
+        "Applications became cases, and records became case studies.",
+        "Final next-meeting purpose sentence omitted.",
+        "No wholesale quality conclusion from one example."
+      ]
+    },
+    {
+      "id": "library-152",
+      "level": "Balanced",
+      "output": "The neighborhood library is capable of doing much more than just issuing books. This is a place for studying, meeting neighbors and acquiring various skills that would be impossible elsewhere. Classes in the evening allow adults to learn how to use online services and quiet rooms allow students to complete their assignments in case there is too much noise at home. This all depends on some reasonable decisions to be made. Firstly, opening hours should correspond to the lifestyle of the local residents and librarians should have time for consultations instead of sorting out returned books during all shifts. Larger library space won't help with this. Before making any alterations to the space, managers of the library should consult both regular visitors and those who never visit it, as well as checking the efficiency of current services. Some alteration to the schedule may prove to be much more useful than costly renovations. What really matters here is the impact on the daily routine of the community.",
+      "outputWordsDisplayed": 166,
+      "manualFindings": [
+        "Substantial changes to phrasing and sentence structure.",
+        "Skills might not otherwise have chance to practice became skills impossible elsewhere: stronger claim.",
+        "Library reach criterion became generic impact on routine.",
+        "Observed output, no general superiority or evasion conclusion."
+      ]
+    }
+  ],
+  "detector": [
+    {
+      "id": "library-152",
+      "provenance": "AI-authored built-in example",
+      "zerogpt": "100% AI GPT, normal public form; observed in previous follow-up and recorded in browser-4.3.json",
+      "veritextDetailed": "98/100, Elevated AI-like signal, actual native Chrome.",
+      "limitation": "Different scales; one shared positive example does not establish parity."
+    },
+    {
+      "id": "photosynthesis-128",
+      "provenance": "English Wikipedia, Photosynthesis revision 1062819171 (2021-12-30), via pinned TextSight control set. CC BY-SA 4.0. Unicode Greek transliteration was lost during initial typing; BOTH tools received the identical observed 857-character input containing phs () and sunthesis ().",
+      "zerogpt": "0% AI GPT; Your Text is Human written",
+      "veritextDetailed": "37/100, Inconclusive, 3.6 seconds warm native Chrome.",
+      "limitation": "Light editing/encoding changes and one example; raw model score is not human/AI authorship probability."
+    },
+    {
+      "id": "factual-96",
+      "zerogpt": "Submitted through normal form; remained disabled/pending for several minutes. No completed score recorded.",
+      "limitation": "No score inferred; no refresh loop, private API request or protection bypass."
+    }
+  ],
+  "largerModelBaseline": {
+    "model": "Llama-3.2-3B-Instruct-q4f16_1-MLC",
+    "input": "Built-in 152-word library example",
+    "downloadObserved": "About 1.7 GB parameter files, 58 shards, plus runtime; download completed before generation.",
+    "output": "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. Opening hours should match the lives of local residents. Staff need time to answer questions, rather than spending every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The library's impact on everyday life is a useful measure of its effectiveness.",
+    "wordsDisplayed": 141,
+    "secondsDisplayed": 21.2,
+    "retriesDisplayed": 3,
+    "mode": "4.3 Standard prompt, marker-based preservation and sentence recovery",
+    "finding": "Larger weights alone did not remove conservative whole-sentence retention; prompted the readable-context Full rewrite path. Not evidence of superior overall quality."
+  },
+  "implementation": {
+    "privateInternals": "Unknown; no proprietary code or weights copied.",
+    "changes": [
+      "Independent Light edit / Full rewrite depth, preserving tone selection.",
+      "Full rewrite sees readable facts in bounded sections, with post-generation checks and bounded recovery; Light retains marker restoration.",
+      "Client-only TXT, Markdown, DOCX and text-PDF import with size/page/text limits and visible failure; no truncation.",
+      "Export actual neural scan evidence, model/revision and context scores as JSON.",
+      "Protected span/quote counts checked for both omission and duplication."
+    ],
+    "qualityLimits": [
+      "Full rewrite may still use recovery and retain source sentences if generation fails checks.",
+      "Small models and exact invariant checks cannot prove semantic equivalence.",
+      "No tuning against proprietary detector scores."
+    ]
+  },
+  "newPathNativeBrowserTests": {
+    "environment": "Native Chrome, local production build of the 4.4 candidate, actual WebGPU Qwen2.5-1.5B-Instruct-q4f16_1-MLC. Model response fixtures were not used. Single observations; not quality/latency rates.",
+    "results": [
+      {
+        "id": "library-152",
+        "depth": "Full rewrite",
+        "tone": "Standard",
+        "outputWordsDisplayed": 144,
+        "secondsDisplayed": 14.0,
+        "retriesDisplayed": 3,
+        "usedSentenceRecovery": true,
+        "output": "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits rely on practical choices. Open hours should align with local residents' lives, and staff need time to answer questions rather than always sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The library should make everyday life easier for the community it serves.",
+        "manualReview": "Sensitive sentences retained exactly. Most source remained after recovery; final criterion changed emphasis to recommendation. Does not demonstrate broad recasting or semantic equivalence."
+      },
+      {
+        "id": "factual-96",
+        "depth": "Full rewrite",
+        "tone": "Standard",
+        "lockedTerms": [
+          "Ana",
+          "Project Atlas"
+        ],
+        "outputWordsDisplayed": 85,
+        "secondsDisplayed": 4.1,
+        "retriesDisplayed": 0,
+        "usedSentenceRecovery": false,
+        "output": "In 2024, Ana reviewed 40 applications for Project Atlas and approved 12 for further study. She said \"wait\" before the team made any public announcement. The pilot did not reduce costs by 15%, so the team needs to review records before deciding whether to expand the program (Smith, 2024). The report is available at https://example.com/report. At this time, no final decision has been made. The purpose of the next meeting is to discuss results and make a decision about the next steps.",
+        "manualReview": "All tracked facts and the final next-meeting purpose retained. Empty lead-in shortened. Changed wording remained conservative; not general quality proof."
+      },
+      {
+        "id": "onboarding-89",
+        "depth": "Full rewrite",
+        "tone": "Professional",
+        "input": "Following the completion of the internal review, our team has reached the conclusion that the onboarding guide needs to be revised. Several colleagues reported that the current instructions are difficult to follow, particularly when they describe how to request access and where to send questions. We intend to collect comments from the support team before we prepare a new draft. The goal is to make the guide easier to use without removing the explanations that new starters rely on. We will circulate the draft for feedback before publishing it.",
+        "outputWordsDisplayed": 76,
+        "secondsDisplayed": 6.1,
+        "retriesDisplayed": 1,
+        "usedSentenceRecovery": false,
+        "output": "After the internal review, our team has determined that the onboarding guide needs to be revised. Colleagues have noted that the current instructions are challenging to follow, especially when describing how to request access and where to send questions. We plan to gather feedback from the support team before preparing a new draft. The aim is to make the guide more user-friendly without compromising explanations essential for beginners. Feedback will be collected prior to publication.",
+        "manualReview": "Broader sentence recasting observed. Review, access/questions difficulties, support input before drafting, keeping explanations and feedback-before-publication retained. The explicit promise to circulate the draft was generalized to collecting feedback; invariant checks did not detect that change. Needs manual review; not certified meaning equivalence."
+      }
+    ]
+  },
+  "automatedVerification": {
+    "unitTests": 101,
+    "unitSuites": 21,
+    "productionBuildBrowserTests": 14,
+    "build": "passed",
+    "typecheck": "passed",
+    "lint": "passed; no ESLint warnings or errors",
+    "timingCaveat": "One earlier unrelated legacy stylometrics p95 assertion measured 41.4ms versus its 40ms threshold during active browser work. The isolated final full unit run passed unchanged. No claim of a universal 40ms latency guarantee.",
+    "integrationFixtures": "Model responses mocked only where tests name local-server fixtures. Actual model generations and public-tool observations are reported separately."
+  }
+}

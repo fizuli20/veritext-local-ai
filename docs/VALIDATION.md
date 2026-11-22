@@ -1,4 +1,14 @@
-# Veritext 4.3.0 — latest validation
+# Veritext 4.4.0 — workflow comparison and rewrite validation
+
+Date: 22 November 2026, Asia/Baku. [Public workflow comparison](PUBLIC_WORKFLOW_COMPARISON.md), [observed outputs and real-model tests](validation/public-comparison-4.4.json).
+
+This release adds independent rewrite depth, a readable-context Full rewrite path with the same preservation checks, private TXT/Markdown/DOCX/PDF import, and actual neural-analysis export. Duplicate protected text is now rejected. It does not replace or refit the 4.3 detector, nor claim private model reconstruction, accuracy parity or guaranteed detector evasion. The public comparison found omissions/strengthened claims in the external humanizer as well as limitations in our own drafts; all are recorded.
+
+The historical detector measurement ledger follows below. New native-model observations and automated release verification are reported separately in the linked comparison and delivery evidence. Browser integration fixtures are not counted as evidence of model quality.
+
+---
+
+# Veritext 4.3.0 — previous detector validation
 
 Date: 22 November 2026, Asia/Baku. Repository: https://github.com/fizuli20/veritext-local-ai. Production: https://veritext-local-ai.vercel.app.
 

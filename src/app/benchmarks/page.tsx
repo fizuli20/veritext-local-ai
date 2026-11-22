@@ -24,6 +24,26 @@ export default function BenchmarksPage() {
           </p>
         </div>
         <section className="vt-studio" style={{ padding: 28 }}>
+          <h2 className="text-xl mb-3">Public workflow comparison</h2>
+          <p className="text-sm leading-7">
+            We tested ordinary public HumanizeAI and ZeroGPT forms using shared
+            passages. HumanizeAI made broader wording changes, but two observed
+            outputs also lost or strengthened claims. ZeroGPT returned 100% AI
+            for the built-in library example and 0% for a modified historical
+            Wikipedia passage; our model returned 98/100 and an inconclusive
+            37/100 respectively. These different score scales and small examples
+            do not establish accuracy or parity. Their private models and
+            prompts remain unknown.
+          </p>
+          <p className="text-sm my-5">
+            <a
+              className="underline"
+              href="https://github.com/fizuli20/veritext-local-ai/blob/main/docs/PUBLIC_WORKFLOW_COMPARISON.md"
+            >
+              Read the inputs, observed outputs, workflow findings and test
+              limits
+            </a>
+          </p>
           <h2 className="text-xl mb-3">
             Detailed detector: measured comparison
           </h2>

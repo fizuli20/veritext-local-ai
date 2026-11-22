@@ -331,5 +331,133 @@ test("first rewrite resumes after explicit model setup instead of requiring anot
   await expect(
     page.getByRole("button", { name: "AI Detector", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("heading", { name: "Too little text" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Too little text" }),
+  ).toBeVisible();
+});
+
+test("imports real text, DOCX and PDF locally and leaves the source intact on invalid input", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  const documentUploads: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("request", (request) => {
+    if (request.method() === "POST" && !request.url().includes("_next"))
+      documentUploads.push(request.url());
+  });
+  await page.goto("/");
+  const input = page.getByLabel("Import document");
+  const source = page.getByRole("textbox", {
+    name: "Original text",
+    exact: true,
+  });
+  await input.setInputFiles({
+    name: "draft.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from("# Review\n\nDo not change 2024."),
+  });
+  await expect(source).toHaveValue("# Review\n\nDo not change 2024.");
+  await expect(page.getByRole("status")).toContainText(
+    "No document was uploaded",
+  );
+  for (const extension of ["docx", "pdf"]) {
+    await input.setInputFiles(`tests/fixtures/import-probe.${extension}`);
+    await expect(page.getByRole("status")).toContainText(
+      `Imported import-probe.${extension}`,
+    );
+    await expect(source).toHaveValue(
+      /The meeting did not approve the plan in 2024\./,
+    );
+    await expect(source).toHaveValue(
+      /Review the 12 applications before the next meeting\./,
+    );
+    await expect(page.getByRole("alert").filter({ hasText: /.+/ })).toHaveCount(
+      0,
+    );
+  }
+  const preserved = await source.inputValue();
+  await input.setInputFiles({
+    name: "too-long.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("x".repeat(12001)),
+  });
+  await expect(
+    page.getByRole("alert").filter({ hasText: "no text was truncated" }),
+  ).toBeVisible();
+  await expect(source).toHaveValue(preserved);
+  await input.setInputFiles({
+    name: "bad.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("not a PDF"),
+  });
+  await expect(
+    page.getByRole("alert").filter({ hasText: /Invalid PDF|PDF/ }),
+  ).toBeVisible();
+  await expect(source).toHaveValue(preserved);
+  expect(documentUploads).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("exports the actual scan with uncertainty and no invented authorship probability", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "AI Detector", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Original text", exact: true })
+    .fill("Short source text.");
+  await page.getByRole("button", { name: "Detect text", exact: true }).click();
+  const downloading = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Save analysis", exact: true })
+    .click();
+  const download = await downloading;
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+  const report = JSON.parse(Buffer.concat(chunks).toString());
+  expect(report.schema).toBe("veritext.neural-scan.v1");
+  expect(report.text).toBe("Short source text.");
+  expect(report.evidence.status).toBe("insufficient-text");
+  expect(report.evidence.modelScore).toBeNull();
+  expect(report.evidence.calibratedProbability).toBeNull();
+  expect(report.limitation).toContain("not proof of authorship");
+});
+
+test("rewrite depth reaches the engine and the completed draft keeps its depth label", async ({
+  page,
+}) => {
+  const prompts: string[] = [];
+  await page.route("http://localhost:1234/**", async (route) => {
+    if (route.request().url().endsWith("/models"))
+      return route.fulfill({ json: { data: [{ id: "depth-fixture" }] } });
+    const body = route.request().postDataJSON();
+    prompts.push(body.messages[0].content);
+    const passage = body.messages.at(-1).content.split("\n\n").at(-1);
+    const draft = passage.replace("We need to review", "We should review");
+    return route.fulfill({
+      contentType: "text/event-stream",
+      body: `data: ${JSON.stringify({ choices: [{ delta: { content: draft }, finish_reason: "stop" }] })}\n\ndata: [DONE]\n\n`,
+    });
+  });
+  await page.goto("/");
+  await page
+    .getByRole("textbox", { name: "Original text", exact: true })
+    .fill(source);
+  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await expect(
+    page.getByRole("textbox", { name: "Edited draft", exact: true }),
+  ).toHaveValue(edited);
+  expect(prompts[0]).toContain("fresh version");
+  await page.getByRole("button", { name: "Light edit", exact: true }).click();
+  await expect(
+    page.getByText(/^Local model · depth-fixture · Full rewrite/),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await expect(
+    page.getByText(/^Local model · depth-fixture · Light edit/),
+  ).toBeVisible();
+  expect(prompts.at(-1)).toContain("restrained copy edit");
 });

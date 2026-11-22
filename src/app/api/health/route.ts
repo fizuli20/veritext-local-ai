@@ -6,7 +6,7 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     product: "Veritext",
-    version: "4.3.0",
+    version: "4.4.0",
     zeroKeyMandate: true,
     externalApiKeysRequired: false,
     engines: {
@@ -28,6 +28,8 @@ export async function GET() {
         automaticRuleFallback: false,
         semanticGuarantee: false,
         protectedSpans: true,
+        rewriteDepths: ["polish", "rephrase"],
+        documentImport: "Browser-local TXT, Markdown, DOCX and text-based PDF",
         sectionRetryLimit: 1,
         protectedSentenceRecoveryLimit: 4,
         browserModels: [

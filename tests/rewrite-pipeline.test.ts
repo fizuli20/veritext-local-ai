@@ -147,6 +147,66 @@ describe("Protected rewrite pipeline", () => {
     const locked = lockRewriteSpans(source);
     expect(restoreRewriteSpans(source, locked, false)).toBe(source);
   });
+  it("passes full rewrite instructions to retries while rejecting reversed claims", async () => {
+    const text =
+      "The committee did not approve the proposal because the evidence was incomplete.";
+    const generate = vi.fn(async (request) => {
+      expect(request.systemPrompt).toContain("fresh version");
+      return "The committee approved the proposal because the evidence was incomplete.";
+    });
+    const result = await runRewritePipeline({
+      text,
+      mode: "professional",
+      depth: "rephrase",
+      onText: noop,
+      onProgress: noop,
+      generate,
+    });
+    expect(result.text).toBe(text);
+    expect(result.changed).toBe(false);
+    expect(generate).toHaveBeenCalledTimes(2);
+  });
+  it("gives full rewriting readable facts and rejects changed facts before accepting a retry", async () => {
+    const text =
+      'Ana reviewed 40 applications in 2024. She said "wait" and did not approve the proposal.';
+    const generate = vi.fn(async (request) => {
+      expect(request.userPrompt).toContain(text);
+      expect(request.userPrompt).not.toContain("VTLOCK");
+      return generate.mock.calls.length === 1
+        ? 'Ana reviewed 41 applications in 2024. She said "wait" and did not approve the proposal.'
+        : 'In 2024, Ana examined 40 applications. She said "wait" and did not approve the proposal.';
+    });
+    const result = await runRewritePipeline({
+      text,
+      mode: "standard",
+      depth: "rephrase",
+      terms: ["Ana"],
+      onText: noop,
+      onProgress: noop,
+      generate,
+    });
+    expect(result.text).toContain("examined 40 applications");
+    expect(result.changed).toBe(true);
+    expect(result.retries).toBe(1);
+    expect(result.checks[0]?.reason).toContain("Numbers or amounts changed");
+  });
+  it("keeps oversized protected blocks masked even in full rewrite mode", async () => {
+    const text = "```\n" + "const x = 12;\n".repeat(300) + "```";
+    const result = await runRewritePipeline({
+      text,
+      mode: "standard",
+      depth: "rephrase",
+      onText: noop,
+      onProgress: noop,
+      generate: async (request) => {
+        expect(request.userPrompt.length).toBeLessThan(1000);
+        expect(request.userPrompt).toContain("VTLOCK");
+        return request.userPrompt.split("\n\n").at(-1)!;
+      },
+    });
+    expect(result.text).toBe(text);
+    expect(result.changed).toBe(false);
+  });
   it("stops before generation and never substitutes a rule-based rewrite", async () => {
     const controller = new AbortController();
     controller.abort();
