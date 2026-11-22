@@ -40,6 +40,8 @@ describe("Detection evidence boundaries", () => {
       "Low signal · authorship unknown",
     );
     expect(describeEvidence(english, NaN).status).toBe("uncertain");
+    expect(describeEvidence(english, NaN).modelScore).toBeNull();
+    expect(describeEvidence(english, 1.2).modelScore).toBeNull();
     expect(
       reviewRewrite("The temperature was -12.5.", "The temperature was 12.5."),
     ).toContain("Numbers or amounts changed.");
@@ -49,6 +51,23 @@ describe("Detection evidence boundaries", () => {
     expect(wilsonInterval(0, 36).upper).toBeGreaterThan(0.09);
     expect(wilsonInterval(37, 37).lower).toBeLessThan(0.91);
     expect(describeEvidence(english, 0.88).status).toBe("uncertain");
+  });
+  it("uses the selected model's measured reference instead of sharing incompatible calibrations", () => {
+    const detailed = describeEvidence(english, 0.9756, "detailed");
+    expect(detailed.verdict).toBe("Elevated AI-like signal");
+    expect(detailed.modelScore).toBe(0.9756);
+    expect(detailed.referenceBin?.count).toBe(41);
+    expect(
+      describeEvidence(english, 0.9756, "light").referenceProbability,
+    ).not.toBe(detailed.referenceProbability);
+    expect(
+      reviewRewrite(
+        "The classes can help adults learn.",
+        "The classes help adults learn.",
+      ),
+    ).toContain(
+      "Possibility wording changed; check whether a qualified claim became certain.",
+    );
   });
   it("covers every token without overflowing or repeating the final overlap", () => {
     const ids = Array.from({ length: 1000 }, (_, i) => i);

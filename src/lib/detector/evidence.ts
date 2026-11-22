@@ -1,45 +1,28 @@
-import calibration from "../../data/detector-calibration.json";
+import detailedCalibration from "../../data/detector-detailed-calibration.json";
+import lightCalibration from "../../data/detector-calibration.json";
 import { countWords } from "../nlp/tokenizer";
 import { detectLanguage } from "../nlp/language";
-import { scanFingerprints } from "../nlp/fingerprints";
 
 export const DETECTOR_MODEL = "onnx-community/tmr-ai-text-detector-ONNX";
 export const DETECTOR_REVISION = "b9aa251e5bcda7e429fcc936767d921435945b60";
 
-/**
- * Calibrates raw detector output with multi-signal stylometrics and cliché analysis.
- * Solves raw TMR RoBERTa logit shift on clean human prose while preserving 100% sensitivity on AI text.
- */
-export function calibrateDetectorScore(
-  text: string,
-  rawModelScore: number,
-): number {
-  const fp = scanFingerprints(text);
-  const words = text.trim().split(/\s+/).length;
-  const tier1Density = (fp.tier1Count / words) * 100;
-
-  const eps = 1e-6;
-  const p = Math.max(eps, Math.min(1 - eps, rawModelScore));
-  const rawLogit = Math.log(p / (1 - p));
-
-  // TMR RoBERTa raw logit normalization:
-  // Pure human text has raw logit <= 4.05; AI text has raw logit >= 4.30
-  const neuralProb = 1 / (1 + Math.exp(-6.5 * (rawLogit - 4.18)));
-
-  // Stylometric fingerprint component:
-  let fpProb = 0.05;
-  if (fp.tier1Count >= 2 || tier1Density >= 1.0) fpProb = 0.95;
-  else if (fp.tier1Count === 1) fpProb = 0.80;
-  else if (fp.tier2Count >= 2) fpProb = 0.50;
-
-  // Expressive syntax credit for organic human prose:
-  const punctMatches = text.match(/[—–;:"\(\)\[\]\$\/%?]/g) || [];
-  const expressiveBonus = punctMatches.length >= 2 ? 0.12 : 0;
-
-  let ensemble = 0.6 * neuralProb + 0.4 * fpProb - expressiveBonus;
-  ensemble = Math.max(0.02, Math.min(0.99, ensemble));
-  return Math.round(ensemble * 100) / 100;
-}
+export const DETECTOR_PROFILES = {
+  light: {
+    model: DETECTOR_MODEL,
+    revision: DETECTOR_REVISION,
+    label: "Light · 125 MB",
+    engine: "TMR RoBERTa",
+    downloadMB: 125,
+  },
+  detailed: {
+    model: "YatoVoid/forsakeai-detector",
+    revision: "a155f82aeee54d33d8d6e50c963dda591cc548c8",
+    label: "Detailed · 438 MB",
+    engine: "Desklib DeBERTa",
+    downloadMB: 438,
+  },
+} as const;
+export type DetectorTier = keyof typeof DETECTOR_PROFILES;
 
 export interface DetectionEvidence {
   status: "insufficient-text" | "unsupported-language" | "uncertain" | "signal";
@@ -92,9 +75,16 @@ export function wilsonInterval(
 export function describeEvidence(
   text: string,
   score: number | null,
+  tier: DetectorTier = "light",
 ): DetectionEvidence {
+  const calibration =
+    tier === "detailed" ? detailedCalibration : lightCalibration;
+  const profile = DETECTOR_PROFILES[tier];
   const base = {
-    modelScore: score,
+    modelScore:
+      score !== null && Number.isFinite(score) && score >= 0 && score <= 1
+        ? score
+        : null,
     calibratedProbability: null,
     calibration: "unvalidated" as const,
   };
@@ -122,7 +112,8 @@ export function describeEvidence(
     score < 0 ||
     score > 1 ||
     !calibration.active ||
-    calibration.revision !== DETECTOR_REVISION
+    calibration.model !== profile.model ||
+    calibration.revision !== profile.revision
   )
     return {
       ...base,

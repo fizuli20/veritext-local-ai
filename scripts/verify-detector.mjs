@@ -135,7 +135,7 @@ const report = {
   created: new Date().toISOString(),
   model,
   revision,
-  backend: "Node ONNX CPU Q8 (not browser timings)",
+  backend: "Transformers.js 4.3.2 / Node ONNX CPU Q8 (not browser timings)",
   loadingMs,
   corpus: { ...corpus, items: undefined },
   split:
@@ -157,7 +157,7 @@ const report = {
   results,
 };
 await writeFile(
-  "docs/validation/neural-results.json",
+  "docs/validation/light-v4-results.json",
   JSON.stringify(report, null, 2) + "\n",
 );
 const active = report.evaluationFitted.brier < report.evaluationRaw.brier;

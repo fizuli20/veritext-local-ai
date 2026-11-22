@@ -1,4 +1,6 @@
 import Link from "next/link";
+import lightCurrent from "../../../docs/validation/light-v4-modern-results.json";
+import detailed from "../../../docs/validation/detailed-results.json";
 import modern from "../../../docs/validation/modern-results.json";
 import report from "../../../docs/validation/neural-results.json";
 export default function BenchmarksPage() {
@@ -22,7 +24,80 @@ export default function BenchmarksPage() {
           </p>
         </div>
         <section className="vt-studio" style={{ padding: 28 }}>
-          <h2 className="text-xl mb-3">Newer-model stress test</h2>
+          <h2 className="text-xl mb-3">
+            Detailed detector: measured comparison
+          </h2>
+          <p className="text-sm leading-7">
+            The default Detailed model uses the MIT-licensed Desklib DeBERTa
+            conversion, pinned to {detailed.revision.slice(0, 12)}. It downloads
+            about 438 MB. Light keeps the 125 MB TMR model available for limited
+            devices. Both run on your device without an API key. Separate HC3
+            calibrations are used for the two models.
+          </p>
+          <div className="overflow-x-auto my-6">
+            <table className="w-full text-sm text-left leading-8">
+              <thead>
+                <tr>
+                  <th>394-passage external comparison</th>
+                  <th>Light</th>
+                  <th>Detailed</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Raw score ROC AUC</td>
+                  <td>{lightCurrent.raw.auc.toFixed(3)}</td>
+                  <td>{detailed.modernRaw.auc.toFixed(3)}</td>
+                </tr>
+                <tr>
+                  <td>Raw false positives at 0.5</td>
+                  <td>42 / 338</td>
+                  <td>{detailed.modernRaw.falsePositives} / 338</td>
+                </tr>
+                <tr>
+                  <td>Raw AI texts detected at 0.5</td>
+                  <td>44 / 56</td>
+                  <td>{detailed.modernRaw.truePositives} / 56</td>
+                </tr>
+                <tr>
+                  <td>HC3 reference false positives at 0.5</td>
+                  <td>2 / 338</td>
+                  <td>{detailed.modernReference.falsePositives} / 338</td>
+                </tr>
+                <tr>
+                  <td>HC3 reference AI texts detected at 0.5</td>
+                  <td>26 / 56</td>
+                  <td>{detailed.modernReference.truePositives} / 56</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-sm leading-7">
+            Detailed improved ranking and recall on this set, with more false
+            positives after historical calibration. This is a model comparison
+            on previously examined data, not a blind accuracy test. The UI also
+            abstains on ambiguous scores; its verdict rule differs from the
+            table’s fixed 0.5 threshold. At its elevated-signal rule, Detailed
+            flagged 40/56 AI-labelled and 4/338 human-labelled passages. Those
+            false positives and misses remain real limitations.
+          </p>
+          <p className="text-sm leading-7">
+            For Detailed, calibration was fitted only on 82 historical HC3
+            examples. On 80 different-question examples, it flagged 40/40 AI and
+            1/40 human at the reference 0.5 threshold. Small historical samples
+            cannot establish reliability on arbitrary current writing. All
+            external labels and generator identities are publisher assertions.
+          </p>
+          <p className="text-sm my-5">
+            <a
+              className="underline"
+              href="https://github.com/fizuli20/veritext-local-ai/blob/main/docs/validation/detailed-results.json"
+            >
+              Inspect Detailed scores, text hashes, calibration and protocol
+            </a>
+          </p>
+          <h2 className="text-xl mb-3">Light detector: previous stress test</h2>
+
           <p className="text-sm leading-7">
             We ran the unchanged model and historical HC3 calibration on 394
             passages from{" "}

@@ -1,0 +1,58 @@
+{
+  "date": "2026-11-22",
+  "scope": "Native Chrome on this computer, local production build. Actual downloaded models; no response fixtures. Single examples, not general accuracy or latency guarantees.",
+  "baselineProduction": {
+    "detectorScore": 2,
+    "backendHeading": "TMR RoBERTa \u00b7 WebGPU FP32",
+    "contradictoryFooter": "WASM Q8",
+    "elapsedSeconds": 59.6,
+    "rewriteWords": 140,
+    "rewriteSeconds": 6.5,
+    "meaningIssue": "Dropped can from Evening classes can help adults."
+  },
+  "fixedDetector": {
+    "model": "YatoVoid/forsakeai-detector",
+    "revision": "a155f82aeee54d33d8d6e50c963dda591cc548c8",
+    "backend": "WASM; INT8 weights / FP32 math",
+    "sourceScore": 98,
+    "sourceVerdict": "Elevated AI-like signal",
+    "firstLoadAndScanSeconds": 58.4,
+    "contextInspectionSeconds": 22.6,
+    "contexts": 9,
+    "tabMemoryReportedMB": 949
+  },
+  "rewrite": {
+    "model": "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
+    "setupContinuedAutomatically": true,
+    "source": "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.",
+    "sourceWordsDisplayed": 152,
+    "output": "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits rely on practical choices. Opening hours should align with local residents' lives, allowing staff time to answer questions rather than constantly sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The library should make everyday life easier for the community it serves.",
+    "outputWordsDisplayed": 143,
+    "elapsedSecondsDisplayed": 14.1,
+    "retriesDisplayed": 3,
+    "notice": "Section 1: protected sentences kept intact; surrounding prose edited by the model.",
+    "manualReview": "Negative and possibility-bearing sentences retained exactly in this observed output. Surrounding prose changed. The final sentence changes emphasis from a service-quality criterion to a recommendation; review remains necessary. No general semantic-equivalence guarantee."
+  },
+  "editedDraftScan": {
+    "button": "Check edited draft",
+    "verifiedInput": "Actual 143-word output, not the original 152-word source",
+    "score": 99,
+    "verdict": "Elevated AI-like signal",
+    "secondsIncludingCachedModelSetup": 6.4,
+    "evasionDemonstrated": false
+  },
+  "limitations": [
+    "Device/browser support untested outside this Chrome observation.",
+    "Detailed needs substantially more memory than Light.",
+    "Humanizer requires working WebGPU or a user-run local server.",
+    "LM Studio/Ollama actual generation untested; no running daemon/model available."
+  ],
+  "publicComparison": {
+    "zeroGPTUrl": "https://www.zerogpt.com/",
+    "input": "Identical built-in 152-word library example",
+    "resultObserved": "Your Text is AI/GPT Generated; 100% AI GPT",
+    "method": "Normal public browser form. No private API, copied code, CAPTCHA solving, or protection bypass.",
+    "limitation": "One sample and different score scales; not general accuracy or parity.",
+    "typoDomain": "zerogbt.com returned an empty HTTP 204; no alias relationship established."
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { WebWorkerMLCEngine } from "@mlc-ai/web-llm";
 import {
   ArrowRight,
@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { countWords } from "@/lib/nlp/tokenizer";
 import {
+  DETECTOR_PROFILES,
+  type DetectorTier,
   describeEvidence,
   type DetectionEvidence,
 } from "@/lib/detector/evidence";
@@ -37,6 +39,7 @@ interface Scan {
   evidence: DetectionEvidence;
   engine: string;
   latencyMs: number;
+  loadingMs?: number;
   contextLimit?: number | null;
   sentences: {
     start: number;
@@ -49,6 +52,7 @@ const sample =
   "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.";
 
 export function Workspace() {
+  const [detectorTier, setDetectorTier] = useState<DetectorTier>("detailed");
   const [tab, setTab] = useState<"detector" | "humanizer">("humanizer");
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
@@ -73,6 +77,7 @@ export function Workspace() {
   const [notice, setNotice] = useState("");
   const [engineName, setEngineName] = useState("");
   const [settings, setSettings] = useState(false);
+  const [pendingRewrite, setPendingRewrite] = useState(false);
   const [baseUrl, setBaseUrl] = useState("http://localhost:1234/v1");
   const [models, setModels] = useState<DiscoveredModel[]>([]);
   const [modelId, setModelId] = useState("");
@@ -129,6 +134,7 @@ export function Workspace() {
   }, []);
 
   function stop() {
+    setPendingRewrite(false);
     operation.current++;
     abort.current?.abort();
     browserEngine.current?.interruptGenerate();
@@ -142,6 +148,7 @@ export function Workspace() {
     setNotice("Stopped. Any partial rewrite is an unfinished draft.");
   }
   function editInput(value: string) {
+    setPendingRewrite(false);
     setInput(value);
     setScan(null);
     setError("");
@@ -244,8 +251,8 @@ export function Workspace() {
       }
     }
   }
-  async function detect(includeContexts = false) {
-    const eligibility = describeEvidence(input, null);
+  async function detect(includeContexts = false, text = input) {
+    const eligibility = describeEvidence(text, null);
     setError("");
     setNotice("");
     if (
@@ -253,7 +260,7 @@ export function Workspace() {
       eligibility.status === "unsupported-language"
     ) {
       setScan({
-        text: input,
+        text,
         evidence: eligibility,
         engine: "Input check",
         latencyMs: 0,
@@ -261,13 +268,15 @@ export function Workspace() {
       });
       return;
     }
-    if (input.length > 20000) {
+    if (text.length > 20000) {
       setError("Use at most 20,000 characters per scan.");
       return;
     }
     const id = String(++operation.current);
     setBusy("scan");
-    setProgress("Loading neural detector (about 125 MB on first use)…");
+    setProgress(
+      `Loading neural detector (about ${DETECTOR_PROFILES[detectorTier].downloadMB} MB on first use)…`,
+    );
     setScan(null);
     try {
       if (!detector.current) {
@@ -320,18 +329,27 @@ export function Workspace() {
           setProgress("");
         }
       };
-      worker.postMessage({ type: "detect", text: input, id, includeContexts });
+      worker.postMessage({
+        type: "detect",
+        text,
+        id,
+        includeContexts,
+        tier: detectorTier,
+      });
     } catch (err) {
       setError(String(err));
       setBusy(null);
     }
   }
-  async function rewrite() {
+  const rewrite = useCallback(async () => {
     setError("");
     setNotice("");
     if (!activeName) {
+      setPendingRewrite(true);
       setSettings(true);
-      setNotice("Connect or load a writing model to create a rewrite.");
+      setNotice(
+        "Choose a writing model. Your rewrite will start when it is ready.",
+      );
       return;
     }
     if (input.length > 12000) {
@@ -436,7 +454,29 @@ export function Workspace() {
         setProgress("");
       }
     }
-  }
+  }, [
+    activeName,
+    input,
+    output,
+    source,
+    engineName,
+    outputMode,
+    mode,
+    lockedTerms,
+    useLocal,
+    modelId,
+    connectedUrl,
+  ]);
+  // Resume the user's requested rewrite after either engine finishes setup.
+  // No automatic downloads: loading still requires the explicit setup action.
+  useEffect(() => {
+    if (pendingRewrite && activeName && !busy && !connecting) {
+      setPendingRewrite(false);
+      setSettings(false);
+      void rewrite();
+    }
+  }, [pendingRewrite, activeName, busy, connecting, rewrite]);
+
   function exportText() {
     const url = URL.createObjectURL(
       new Blob([output], { type: "text/plain;charset=utf-8" }),
@@ -592,6 +632,32 @@ export function Workspace() {
                   </button>
                 </div>
               </div>
+              {tab === "detector" && (
+                <div style={{ padding: "0 20px 12px" }}>
+                  <label htmlFor="detector-model">Detection model</label>{" "}
+                  <select
+                    id="detector-model"
+                    disabled={!!busy}
+                    value={detectorTier}
+                    onChange={(event) => {
+                      setDetectorTier(event.target.value as DetectorTier);
+                      setScan(null);
+                    }}
+                  >
+                    {Object.entries(DETECTOR_PROFILES).map(
+                      ([tier, profile]) => (
+                        <option key={tier} value={tier}>
+                          {profile.label}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                  <p className="vt-small">
+                    Detailed uses more memory and time. Choose Light on a
+                    limited device. Neither model proves authorship.
+                  </p>
+                </div>
+              )}
               <textarea
                 id="source-text"
                 aria-label="Original text"
@@ -760,6 +826,17 @@ export function Workspace() {
                         <button
                           className={controlClass}
                           disabled={!!busy}
+                          onClick={() => {
+                            editInput(output);
+                            setTab("detector");
+                            void detect(false, output);
+                          }}
+                        >
+                          Check edited draft <ArrowRight size={15} />
+                        </button>
+                        <button
+                          className={controlClass}
+                          disabled={!!busy}
                           onClick={copy}
                         >
                           {copied ? <Check size={15} /> : <Copy size={15} />}{" "}
@@ -892,8 +969,12 @@ export function Workspace() {
                   )}
                   {scan.evidence.modelScore !== null && (
                     <p className="vt-small">
-                      {(scan.latencyMs / 1000).toFixed(1)} seconds · document
-                      {scan.sentences.length ? " and contexts" : ""} · WASM Q8
+                      {(scan.latencyMs / 1000).toFixed(1)} seconds
+                      {scan.loadingMs && scan.loadingMs > 1000
+                        ? " including model setup"
+                        : ""}{" "}
+                      · document
+                      {scan.sentences.length ? " and contexts" : ""}
                     </p>
                   )}
                   <button
@@ -910,8 +991,9 @@ export function Workspace() {
                   </div>
                   <h2>Evidence, with room for uncertainty.</h2>
                   <p>
-                    The first scan downloads an open neural model, about 125 MB.
-                    Later scans reuse your browser cache when available.
+                    The first scan downloads the selected open model, about{" "}
+                    {DETECTOR_PROFILES[detectorTier].downloadMB} MB. Later scans
+                    reuse your browser cache when available.
                   </p>
                   <small>
                     Short or unsupported text receives no authorship verdict.
@@ -925,7 +1007,12 @@ export function Workspace() {
           <button
             className="vt-text-button"
             disabled={!!busy}
-            onClick={() => editInput(sample)}
+            onClick={() => {
+              editInput(sample);
+              setNotice(
+                "AI-authored library example loaded. Rewriting changes the wording; it does not establish human authorship.",
+              );
+            }}
           >
             Try a sample <ArrowRight size={14} />
           </button>
@@ -974,13 +1061,17 @@ export function Workspace() {
         <div
           className="vt-modal-backdrop"
           onClick={() => {
-            if (!busy) setSettings(false);
+            if (!busy) {
+              setPendingRewrite(false);
+              setSettings(false);
+            }
           }}
         >
           <section
             role="dialog"
             onKeyDown={(event) => {
               if (event.key === "Escape") {
+                setPendingRewrite(false);
                 if (busy === "load") stop();
                 setSettings(false);
               }
@@ -1015,6 +1106,7 @@ export function Workspace() {
                 className="vt-text-button"
                 onClick={() => {
                   if (busy === "load") stop();
+                  setPendingRewrite(false);
                   setSettings(false);
                 }}
               >
@@ -1022,8 +1114,62 @@ export function Workspace() {
               </button>
             </div>
             <p>Free of API keys. Pick the engine that fits your device.</p>
+            {pendingRewrite && (
+              <p role="status">
+                Your rewrite will start automatically after setup.
+              </p>
+            )}
             <div className="vt-setup-section">
-              <span className="vt-eyebrow">OPTION 01 · LOCAL SERVER</span>
+              <span className="vt-eyebrow">OPTION 01 · IN YOUR BROWSER</span>
+              <h3>Download a small writing model</h3>
+              <p>
+                Choose a model for your device. Requires WebGPU. Larger models
+                need more memory; useful edits are not guaranteed.
+              </p>
+              <label htmlFor="browser-writing-model">
+                Browser writing model
+              </label>
+              <select
+                id="browser-writing-model"
+                value={writingTier}
+                disabled={!!busy}
+                onChange={(e) =>
+                  setWritingTier(e.target.value as WritingModelTier)
+                }
+              >
+                {Object.entries(WRITING_MODELS).map(([tier, model]) => (
+                  <option key={tier} value={tier}>
+                    {model.label}
+                  </option>
+                ))}
+              </select>
+              <p className="vt-small">
+                {WRITING_MODELS[writingTier].description}
+              </p>
+              <button
+                className="vt-secondary"
+                disabled={!!busy}
+                onClick={loadBrowser}
+              >
+                {browserName === WRITING_MODELS[writingTier].id
+                  ? "Use browser model"
+                  : busy === "load"
+                    ? "Loading model…"
+                    : "Load browser AI"}
+              </button>
+              {busy === "load" && (
+                <>
+                  <p role="status" className="vt-small">
+                    {progress}
+                  </p>
+                  <button className="vt-text-button" onClick={stop}>
+                    Stop download
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="vt-setup-section">
+              <span className="vt-eyebrow">OPTION 02 · LOCAL SERVER</span>
               <h3>Use LM Studio or Ollama</h3>
               <p>
                 Start a chat model on this computer. In LM Studio, enable CORS
@@ -1090,55 +1236,6 @@ export function Workspace() {
                     }}
                   >
                     Use local model
-                  </button>
-                </>
-              )}
-            </div>
-            <div className="vt-setup-section">
-              <span className="vt-eyebrow">OPTION 02 · IN YOUR BROWSER</span>
-              <h3>Download a small writing model</h3>
-              <p>
-                Choose a model for your device. Requires WebGPU. Larger models
-                need more memory; useful edits are not guaranteed.
-              </p>
-              <label htmlFor="browser-writing-model">
-                Browser writing model
-              </label>
-              <select
-                id="browser-writing-model"
-                value={writingTier}
-                disabled={!!busy}
-                onChange={(e) =>
-                  setWritingTier(e.target.value as WritingModelTier)
-                }
-              >
-                {Object.entries(WRITING_MODELS).map(([tier, model]) => (
-                  <option key={tier} value={tier}>
-                    {model.label}
-                  </option>
-                ))}
-              </select>
-              <p className="vt-small">
-                {WRITING_MODELS[writingTier].description}
-              </p>
-              <button
-                className="vt-secondary"
-                disabled={!!busy}
-                onClick={loadBrowser}
-              >
-                {browserName === WRITING_MODELS[writingTier].id
-                  ? "Use browser model"
-                  : busy === "load"
-                    ? "Loading model…"
-                    : "Load browser AI"}
-              </button>
-              {busy === "load" && (
-                <>
-                  <p role="status" className="vt-small">
-                    {progress}
-                  </p>
-                  <button className="vt-text-button" onClick={stop}>
-                    Stop download
                   </button>
                 </>
               )}

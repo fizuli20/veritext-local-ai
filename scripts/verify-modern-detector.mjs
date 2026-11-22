@@ -10,8 +10,8 @@ const dataset = "textsightai/ai-text-detection-benchmark-2026",
 const calibration = JSON.parse(
   await readFile("src/data/detector-calibration.json", "utf8"),
 );
-if (calibration.slope !== 3 || calibration.intercept !== -11)
-  throw new Error("This stress test requires the frozen 4.1 HC3 calibration.");
+if (calibration.revision !== revision || !calibration.active)
+  throw new Error("Run verify:detector first; the active Light calibration must match the pinned model.");
 const files = [
   "human_wikipedia_pre2022.jsonl",
   "human_pmc_ccby_nonanglophone.jsonl",
@@ -129,7 +129,7 @@ const report = {
   selection:
     "All 155 pre-2022 Wikipedia passages, 183 pre-2022 PMC passages, 56 dataset-labelled 2026 AI passages; literature negative control excluded; no score-based selection.",
   protocol:
-    "Frozen TMR Q8 model and frozen HC3 calibration (slope 3, intercept -11). No fitting, threshold selection or weight updates on this stress test.",
+    `Transformers.js 4.3.2, frozen TMR Q8 model; HC3 calibration slope ${calibration.slope}, intercept ${calibration.intercept}, fitted before this comparison. No fitting, threshold selection or weight updates on this external set.`,
   limitations: [
     "Vendor-authored small evaluation set; source labels and generator identities are publisher assertions, not independently authenticated.",
     "Two genres; no representative current user base rates. Unknown model-training overlap.",
@@ -143,7 +143,7 @@ const report = {
 };
 await mkdir("docs/validation", { recursive: true });
 await writeFile(
-  "docs/validation/modern-results.json",
+  "docs/validation/light-v4-modern-results.json",
   JSON.stringify(report, null, 2) + "\n",
 );
 console.log(JSON.stringify({ ...report, results: undefined }, null, 2));

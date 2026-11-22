@@ -1,4 +1,50 @@
-# Veritext 4.2.1 — latest validation
+# Veritext 4.3.0 — latest validation
+
+Date: 22 November 2026, Asia/Baku. Repository: https://github.com/fizuli20/veritext-local-ai. Production: https://veritext-local-ai.vercel.app.
+
+## Reproduced regression and fixes
+
+The production built-in 152-word AI-authored library example returned **2/100**, "Low signal", with a WebGPU FP32 engine heading and a contradictory WASM Q8 footer. Source tracing found an unvalidated phrase/punctuation ensemble suppressing neural output, score/verdict inputs that differed (including injected .99 scores), and automatic FP32 GPU downloads around 475 MB despite a 125 MB notice. These have been removed. The displayed score and evidence now use the same real inference. Backend and download notices match the selected model.
+
+Detailed now defaults to the pinned MIT-licensed `YatoVoid/forsakeai-detector` conversion of Desklib DeBERTa (438 MB, weight-only INT8 / FP32 math). Light retains the original TMR model (125 MB, Q8). Both run single-thread WASM; WebGPU is not required for detection. Transformers.js is pinned to 4.3.2 because the DeBERTa conversion specifies 4.x tokenization. The one-logit model uses sigmoid rather than an invalid single-class softmax. Profile switching disposes the previous model and clears the score cache. No score is inferred from clichés or punctuation.
+
+In native Chrome on this computer, the production-build Detailed worker scored the identical library example **98/100**, with a matching elevated-signal verdict. First download/setup/document scan took **58.4 seconds**. Optional inspection of nine neighboring sentence contexts then took **22.6 seconds**, using the loaded model and cached document score. These are single-device observations, not latency guarantees. Chrome reported about 949 MB for the tab at that point. Limited-memory devices can select Light; phones and other browsers were not empirically tested in this release.
+
+## Actual detector inference comparison
+
+[Detailed score report, IDs and text hashes](validation/detailed-results.json). Reproduce with `npm run verify:detailed`. Calibration uses the same predeclared regularized Platt search, fitted exclusively on 82 HC3 calibration examples; evaluation uses 80 different-question HC3 examples. Detailed held-out historical reference at 0.5: **1/40 human false positives, 40/40 AI detected**. This is a small historical experiment.
+
+The external comparison uses the same previously examined 394 TextSight passages and frozen dataset revision as below. No calibration fitting uses external examples. Model selection used this comparison, so this is **not blind validation**. Source labels and model identities remain publisher assertions. All passages were scored with actual ONNX Runtime CPU inference, Transformers.js 4.3.2, 480-token windows and 64-token overlap, applying sigmoid before token-weighted averaging. Full source text is not redistributed.
+
+| External metric | Light | Detailed |
+| --- | ---: | ---: |
+| Raw ROC AUC | 0.882 | 0.962 |
+| Raw false positives at 0.5 | 42/338 | 51/338 |
+| Raw AI detected at 0.5 | 44/56 | 52/56 |
+| HC3 reference false positives at 0.5 | 2/338 | 10/338 |
+| HC3 reference AI detected at 0.5 | 26/56 | 43/56 |
+
+At the UI's elevated-signal rule (raw >= .8, HC3 reference >= .8, sufficient held-out bin support), Detailed flagged **40/56 AI-labelled passages and 4/338 human-labelled passages**. The 0.5 table is not the UI's abstaining verdict rule. Improved recall trades off against historical-reference false positives. Low scores do not establish human authorship; high scores are not proof of AI use. No parity with ZeroGPT or any other proprietary detector is established.
+
+The Light model was also fully rerun after the software upgrade: [HC3 run](validation/light-v4-results.json), [external run](validation/light-v4-modern-results.json). Its independently refitted historical calibration is slope 2.8/intercept -10. The earlier 4.2 reports below remain unchanged as historical evidence. These current-runtime comparisons show that Detailed improves ranking/recall but has more false positives than Light.
+
+## Rewrite corrections and automated checks
+
+The first requested rewrite resumes automatically after explicit browser/local-engine setup. Browser setup appears first, without automatic downloads. "Check edited draft" scans the actual output rather than leaving the original source in the detector. Closing setup cancels the pending request. Retry acceptance no longer allows reversed negations when a passage has no masked facts. Checks also flag lost possibility words such as "can" becoming a definite assertion; recovery keeps negative/qualified sentences and protected facts intact while using real model inference on surrounding prose. The preview no longer strips user-authored `__KEEP_n__` literals.
+
+[Full native-browser source/output observations](validation/browser-4.3.json). Post-fix native Chrome generation on the production build: the first Rewrite resumed after explicit Qwen 1.5B loading and produced a 143-word draft from the 152-word example in 14.1 seconds, with three retry/recovery calls. Negative and possibility-bearing sentences remained intact; surrounding sentences changed. The UI disclosed retained sensitive sentences. Manual review found a change of emphasis in the final service-quality sentence, so this is not certified semantic equivalence or proof of detector evasion.
+
+The Check edited draft action transferred the actual 143-word output into the detector and completed in 6.4 seconds including cached model setup, scoring it 99/100. That confirms the integration, not detector evasion; the rewrite remained AI-like.
+
+The native production baseline rewrote the 152-word library sample to 140 words in 6.5 seconds, but dropped "can" from a claim. That observed loss motivated the qualification check; it is not counted as a successful meaning-preservation result. Post-fix real-generation observations are recorded separately in the delivery evidence. Invariant checks still cannot verify every meaning change; manual review remains necessary.
+
+Production build, type checking and lint passed with no ESLint warnings. **94 unit tests in 20 suites and 11 production-build browser tests passed.** Browser response fixtures verify setup continuation, scanning edited output, streaming, factual rejection, retry/copy recovery, long sections, undo, errors, short/non-English abstention and responsive layout. Those fixtures are not evidence of model quality. The 556 actual model evaluations and native browser observations above are reported separately. LM Studio/Ollama generation is unverified because no local daemon/model is running; the integration has response-fixture coverage.
+
+Public comparison boundaries: `zerogbt.com` returned an empty HTTP 204 response in this run and was not established as an alias. ZeroGPT's visible product is at `zerogpt.com`. A normal public-form submission there eventually returned **100% AI/GPT** for the identical 152-word library example. Detailed returned 98/100 model signal for that example. These are different scales and one example does not establish accuracy or parity; no protection was bypassed. Earlier single-sample observations below are historical, not accuracy evidence. HumanizeAI's public workflow was read, without inspecting or copying proprietary internals.
+
+---
+
+# Veritext 4.2.1 — historical validation
 
 Date: 22 November 2026, Asia/Baku. Source: https://github.com/fizuli20/veritext-local-ai. Production: https://veritext-local-ai.vercel.app.
 

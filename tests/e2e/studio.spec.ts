@@ -291,3 +291,45 @@ test("long drafts above the old 4000-character limit are rewritten section by se
   expect(calls).toBe(7);
   await expect(page.getByRole("status")).toContainText("7 sections checked");
 });
+
+test("first rewrite resumes after explicit model setup instead of requiring another click", async ({
+  page,
+}) => {
+  await page.route("http://localhost:1234/**", async (route) => {
+    if (route.request().url().endsWith("/models"))
+      return route.fulfill({
+        json: { data: [{ id: "setup-resume-fixture" }] },
+      });
+    const body = route.request().postDataJSON();
+    const passage = body.messages.at(-1).content.split("\n\n").at(-1);
+    const draft = passage.replace("We need to review", "We should review");
+    return route.fulfill({
+      contentType: "text/event-stream",
+      body: `data: ${JSON.stringify({ choices: [{ delta: { content: draft }, finish_reason: "stop" }] })}\n\ndata: [DONE]\n\n`,
+    });
+  });
+  await page.goto("/");
+  await page
+    .getByRole("textbox", { name: "Original text", exact: true })
+    .fill(source);
+  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await expect(
+    page.getByText("Your rewrite will start automatically after setup."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.getByRole("textbox", { name: "Edited draft", exact: true }),
+  ).toHaveValue(edited);
+  await page.route("https://huggingface.co/**", (route) => route.abort());
+  await page
+    .getByRole("button", { name: "Check edited draft", exact: true })
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "Original text", exact: true }),
+  ).toHaveValue(edited);
+  await expect(
+    page.getByRole("button", { name: "AI Detector", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: "Too little text" })).toBeVisible();
+});

@@ -125,6 +125,28 @@ describe("Protected rewrite pipeline", () => {
     expect(result.changed).toBe(false);
     expect(result.warnings).toHaveLength(1);
   });
+  it("never accepts a reversed claim on the second attempt when no facts are masked", async () => {
+    const text =
+      "The committee did not approve the proposal because the evidence was incomplete.";
+    const result = await runRewritePipeline({
+      text,
+      mode: "standard",
+      onText: noop,
+      onProgress: noop,
+      generate: async () =>
+        "The committee approved the proposal because the evidence was incomplete.",
+    });
+    expect(result.text).toBe(text);
+    expect(result.changed).toBe(false);
+    expect(
+      result.checks.every((check) => check.reason.includes("Negation changed")),
+    ).toBe(true);
+  });
+  it("does not erase a user's literal marker-like text during preview", () => {
+    const source = "Keep __KEEP_4__ in the command documentation.";
+    const locked = lockRewriteSpans(source);
+    expect(restoreRewriteSpans(source, locked, false)).toBe(source);
+  });
   it("stops before generation and never substitutes a rule-based rewrite", async () => {
     const controller = new AbortController();
     controller.abort();

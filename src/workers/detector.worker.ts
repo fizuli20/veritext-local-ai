@@ -1,12 +1,16 @@
 /// <reference lib="webworker" />
-import { pipeline, env } from "@huggingface/transformers";
 import {
-  DETECTOR_MODEL,
-  DETECTOR_REVISION,
+  pipeline,
+  AutoTokenizer,
+  AutoModelForSequenceClassification,
+  env,
+} from "@huggingface/transformers";
+import {
+  DETECTOR_PROFILES,
+  type DetectorTier,
   parseAiScore,
   tokenWindows,
   describeEvidence,
-  calibrateDetectorScore,
 } from "../lib/detector/evidence";
 import { tokenizeSentences } from "../lib/nlp/tokenizer";
 
@@ -15,7 +19,7 @@ env.useBrowserCache = true;
 // A single WASM thread also works without cross-origin isolation.
 env.backends.onnx.wasm!.numThreads = 1;
 let classifier: any = null;
-let activeDevice: "wasm" | "webgpu" = "wasm";
+let activeTier: DetectorTier = "light";
 const scoreCache = new Map<string, number>();
 let initialization: Promise<void> | null = null;
 
@@ -29,12 +33,14 @@ function createThrottledProgress(postFn: (msg: any) => void, throttleMs = 150) {
     const now = performance.now();
     if (progress.status === "done" || progress.status === "initiate") {
       if (trailingTimer) clearTimeout(trailingTimer);
+      trailingTimer = null;
       lastTime = now;
       postFn({ type: "progress", progress });
       return;
     }
     if (now - lastTime >= throttleMs) {
       if (trailingTimer) clearTimeout(trailingTimer);
+      trailingTimer = null;
       lastTime = now;
       postFn({ type: "progress", progress });
     } else if (!trailingTimer) {
@@ -49,44 +55,69 @@ function createThrottledProgress(postFn: (msg: any) => void, throttleMs = 150) {
   };
 }
 
-async function initialize() {
-  if (classifier) return;
+async function initialize(tier: DetectorTier) {
+  if (classifier && activeTier === tier) return;
+  if (classifier) {
+    await classifier.dispose();
+    classifier = null;
+    initialization = null;
+    scoreCache.clear();
+  }
   if (!initialization)
     initialization = (async () => {
       const throttledProgress = createThrottledProgress(
         (msg) => self.postMessage(msg),
         150,
       );
-      let device: "wasm" | "webgpu" = "wasm";
-      if (typeof navigator !== "undefined" && (navigator as any).gpu) {
-        try {
-          const adapter = await (navigator as any).gpu.requestAdapter();
-          if (adapter) device = "webgpu";
-        } catch {
-          device = "wasm";
-        }
-      }
-      try {
-        classifier = await pipeline("text-classification", DETECTOR_MODEL, {
-          revision: DETECTOR_REVISION,
-          device,
-          dtype: device === "webgpu" ? "fp32" : "q8",
-          progress_callback: throttledProgress,
+      const profile = DETECTOR_PROFILES[tier];
+      const options = {
+        revision: profile.revision,
+        device: "wasm" as const,
+        progress_callback: throttledProgress,
+      };
+      if (tier === "detailed") {
+        const tokenizer = await AutoTokenizer.from_pretrained(
+          profile.model,
+          options,
+        );
+        const model = await AutoModelForSequenceClassification.from_pretrained(
+          profile.model,
+          { ...options, dtype: "fp32" },
+        );
+        classifier = {
+          tokenizer,
+          // This model exports ONE logit. Softmax would incorrectly return 1
+          // for every input; its documented AI polarity requires a sigmoid.
+          run: async (piece: string) => {
+            const { logits } = await model(
+              tokenizer(piece, { truncation: true, max_length: 512 }),
+            );
+            const logit = Number(logits.data[0]);
+            if (!Number.isFinite(logit))
+              throw new Error("Invalid detector logit.");
+            return 1 / (1 + Math.exp(-logit));
+          },
+          dispose: () => model.dispose(),
+        };
+      } else {
+        const pipe = await pipeline("text-classification", profile.model, {
+          ...options,
+          dtype: "q8",
         });
-        activeDevice = device;
-      } catch (err) {
-        if (device !== "wasm") {
-          activeDevice = "wasm";
-          classifier = await pipeline("text-classification", DETECTOR_MODEL, {
-            revision: DETECTOR_REVISION,
-            device: "wasm",
-            dtype: "q8",
-            progress_callback: throttledProgress,
-          });
-        } else {
-          throw err;
-        }
+        classifier = {
+          tokenizer: pipe.tokenizer,
+          run: async (piece: string) =>
+            parseAiScore(
+              await pipe(piece, {
+                top_k: null,
+                truncation: true,
+                max_length: 512,
+              }),
+            ),
+          dispose: () => pipe.dispose(),
+        };
       }
+      activeTier = tier;
     })().catch((err) => {
       initialization = null;
       throw err;
@@ -105,13 +136,7 @@ async function scoreText(text: string) {
     const piece = classifier.tokenizer.decode(window, {
       skip_special_tokens: true,
     });
-    const score = parseAiScore(
-      await classifier(piece, {
-        top_k: null,
-        truncation: true,
-        max_length: 512,
-      }),
-    );
+    const score = await classifier.run(piece);
     const weight = window.length - (i ? 64 : 0);
     weighted += score * weight;
     total += weight;
@@ -127,17 +152,19 @@ self.onmessage = async ({ data }: MessageEvent) => {
     self.postMessage({
       type: "PONG",
       ready: !!classifier,
-      loadedModelId: classifier ? DETECTOR_MODEL : null,
+      loadedModelId: classifier ? DETECTOR_PROFILES[activeTier].model : null,
       backend: "wasm",
     });
     return;
   }
   try {
+    const tier: DetectorTier = data.tier === "detailed" ? "detailed" : "light";
+    const profile = DETECTOR_PROFILES[tier];
     if (data.type === "init") {
-      await initialize();
+      await initialize(tier);
       self.postMessage({
         type: "ready",
-        model: DETECTOR_MODEL,
+        model: profile.model,
         device: "wasm",
       });
     }
@@ -162,18 +189,15 @@ self.onmessage = async ({ data }: MessageEvent) => {
         });
         return;
       }
-      await initialize();
+      await initialize(tier);
+      const loadedAt = performance.now();
       self.postMessage({
         type: "phase",
         id: data.id,
         message: "Model ready. Scoring the document…",
       });
-      const rawDocScore = await scoreText(text);
-      const docScore = calibrateDetectorScore(text, rawDocScore);
-      const scoreForEvidence =
-        docScore >= 0.75 ? 0.99 : docScore <= 0.2 ? docScore : rawDocScore;
-      const evidence = describeEvidence(text, scoreForEvidence);
-      evidence.modelScore = docScore;
+      const docScore = await scoreText(text);
+      const evidence = describeEvidence(text, docScore, tier);
 
       const sentences = data.includeContexts ? tokenizeSentences(text) : [];
       const results = [];
@@ -185,9 +209,7 @@ self.onmessage = async ({ data }: MessageEvent) => {
           sentences[Math.min(sentences.length - 1, i + 1)]!.end,
         );
         if (i < 60) {
-          const rawContext = await scoreText(context);
-          const calibratedContext = calibrateDetectorScore(context, rawContext);
-          results.push({ ...current, score: calibratedContext });
+          results.push({ ...current, score: await scoreText(context) });
         } else {
           results.push({ ...current, score: null });
         }
@@ -205,14 +227,13 @@ self.onmessage = async ({ data }: MessageEvent) => {
         text,
         evidence,
         sentences: results,
-        engine:
-          activeDevice === "webgpu"
-            ? "TMR RoBERTa · WebGPU FP32"
-            : "TMR RoBERTa · WASM Q8",
+        engine: `${profile.engine} · ${tier === "light" ? "WASM Q8" : "WASM · INT8 weights / FP32 math"}`,
+        tier,
         contextLimit: data.includeContexts && sentences.length > 60 ? 60 : null,
-        model: DETECTOR_MODEL,
-        revision: DETECTOR_REVISION,
+        model: profile.model,
+        revision: profile.revision,
         latencyMs: Math.round(performance.now() - started),
+        loadingMs: Math.round(loadedAt - started),
       });
     }
   } catch (error) {

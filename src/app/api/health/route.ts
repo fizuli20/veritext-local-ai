@@ -1,19 +1,21 @@
 import { NextResponse } from "next/server";
-import { DETECTOR_MODEL, DETECTOR_REVISION } from "@/lib/detector/evidence";
+import { DETECTOR_PROFILES } from "@/lib/detector/evidence";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET() {
   return NextResponse.json({
     status: "ok",
     product: "Veritext",
-    version: "4.2.1",
+    version: "4.3.0",
     zeroKeyMandate: true,
     externalApiKeysRequired: false,
     engines: {
       detector: {
-        model: DETECTOR_MODEL,
-        revision: DETECTOR_REVISION,
-        backend: "browser WASM Q8",
+        defaultProfile: "detailed",
+        profiles: DETECTOR_PROFILES,
+        model: DETECTOR_PROFILES.detailed.model,
+        revision: DETECTOR_PROFILES.detailed.revision,
+        backend: "browser WASM; detailed INT8 weights / FP32 math, light Q8",
         readiness:
           "Client must load model; server health does not prove client inference works.",
         calibration: "Provisional HC3 reference; see /benchmarks",

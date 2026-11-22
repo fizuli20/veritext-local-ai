@@ -1,3 +1,5 @@
+> Historical investigation notes. Some hypotheses and the synthetic 5+5 accuracy gate below were not validated. For current behavior, measured model comparisons, and resolved regressions, use [VALIDATION.md](VALIDATION.md). The service worker is not required for cross-origin model downloads.
+
 # Codex Handoff & Forensic Audit Report
 
 **Date:** November 22, 2026  

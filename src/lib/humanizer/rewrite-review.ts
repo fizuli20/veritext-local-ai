@@ -48,6 +48,12 @@ export function reviewRewrite(
     ).length;
   if (negations(original) !== negations(candidate))
     issues.push("Negation changed; check whether a claim was reversed.");
+  const possibilities = (text: string) =>
+    (text.match(/\b(?:can|could|may|might)\b/gi) ?? []).length;
+  if (possibilities(original) !== possibilities(candidate))
+    issues.push(
+      "Possibility wording changed; check whether a qualified claim became certain.",
+    );
   const ratio = countWords(candidate) / Math.max(1, countWords(original));
   if (!candidate.trim()) issues.push("The model returned no rewrite.");
   if (

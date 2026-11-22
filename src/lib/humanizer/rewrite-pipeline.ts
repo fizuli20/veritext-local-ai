@@ -87,7 +87,6 @@ export function restoreRewriteSpans(
       new RegExp(locked.prefix + String.raw`_\d+_END`, "gi"),
       "",
     );
-    restored = restored.replace(/__KEEP_\d+__/gi, "");
   }
   return restored;
 }
@@ -219,7 +218,9 @@ export async function runRewritePipeline(options: {
               iss.includes("The model returned no rewrite") ||
               iss.includes("Protected") ||
               iss.includes("Locked term changed") ||
-              iss.includes("Quotation changed"),
+              iss.includes("Quotation changed") ||
+              iss.includes("Negation changed") ||
+              iss.includes("Possibility wording changed"),
           );
           if (attempt === 0) {
             feedback =
@@ -260,10 +261,7 @@ export async function runRewritePipeline(options: {
           "Your previous draft changed protected markers. Keep every marker exactly once and rewrite only the surrounding prose.";
       }
     }
-    if (
-      (accepted === null || accepted.trim() === originalPart.trim()) &&
-      locked.locks.length
-    ) {
+    if (accepted === null || accepted.trim() === originalPart.trim()) {
       // Small models can lose markers. Recover using real inference only on
       // sentences outside protected ranges; never repair a fact by guessing.
       const ranges = lockRewriteSpans(originalPart, terms).ranges!;
@@ -271,9 +269,13 @@ export async function runRewritePipeline(options: {
       const segments: { text: string; protected: boolean }[] = [];
       let cursor = 0;
       for (const sentence of sentences) {
-        const protectedSentence = ranges.some(
-          (range) => range.start < sentence.end && range.end > sentence.start,
-        );
+        const protectedSentence =
+          ranges.some(
+            (range) => range.start < sentence.end && range.end > sentence.start,
+          ) ||
+          /\b(?:no|not|never|neither|cannot|without|can|could|may|might)\b|n't\b/i.test(
+            sentence.text,
+          );
         const value = originalPart.slice(cursor, sentence.end);
         const previous = segments.at(-1);
         if (previous && previous.protected === protectedSentence)

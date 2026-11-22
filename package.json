@@ -1,6 +1,6 @@
 {
   "name": "veritext-local-ai",
-  "version": "4.2.1",
+  "version": "4.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,10 +14,11 @@
     "build:extension": "node scripts/build-extension.mjs",
     "typecheck": "tsc --noEmit",
     "verify:detector": "node scripts/verify-detector.mjs",
-    "verify:modern": "node scripts/verify-modern-detector.mjs"
+    "verify:modern": "node scripts/verify-modern-detector.mjs",
+    "verify:detailed": "node scripts/verify-detailed-detector.mjs"
   },
   "dependencies": {
-    "@huggingface/transformers": "^3.3.3",
+    "@huggingface/transformers": "4.3.2",
     "@mlc-ai/web-llm": "^0.2.78",
     "docx": "^9.16.0",
     "lucide-react": "^0.475.0",
