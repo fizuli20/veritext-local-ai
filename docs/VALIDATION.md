@@ -1,3 +1,13 @@
+# Veritext 4.6.6 rewrite review and detector comparison
+
+The Humanizer and Detector have separate text fields. Checking the original or the edited draft preserves both editor texts. The Humanizer shows the two document signals together once both exact versions have been scanned with the same model. Editing either text hides its stale comparison. This is a comparison of writing signals, with no inference about who wrote the text.
+
+The editor catches a likely missing closing detail even when a replacement sentence keeps the sentence count unchanged, provided enough of the earlier passage still matches. It also skips the optional stronger rewrite when exact quantity claims and recommendations leave too little prose to justify another pass. If an optional pass is interrupted, the draft that already passed checks is still available.
+
+Regression tests cover matched source and draft scans, return navigation, stale comparisons, omitted endings, and valid draft recovery.
+
+---
+
 # Veritext 4.6.5 rewrite and score display fixes
 
 Model retries previously replaced the visible output with each provisional candidate. The editor now publishes a draft once its checks finish. A failed or stopped run preserves the last completed draft. Output-limit failures retry shorter source groups. If nothing passes, the editor labels the original as retained or keeps the previous completed draft. The browser fixture pauses a retry to verify that provisional text stays hidden, then injects a server failure to verify that the completed draft remains.

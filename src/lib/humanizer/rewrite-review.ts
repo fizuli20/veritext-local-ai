@@ -49,10 +49,9 @@ function closingSentenceLooksOmitted(
   const sentences = tokenizeSentences(original);
   const closing = sentences.at(-1);
   if (sentences.length < 4 || !closing || closing.wordCount < 6) return false;
-  if (tokenizeSentences(candidate).length >= sentences.length) return false;
 
-  // Require a shorter sentence count and total loss of several distinctive
-  // words. Prefix matching allows common inflections without exact phrasing.
+  // Require loss of several distinctive words. If the sentence count stays
+  // the same, also require the rest of the draft to still resemble the source.
   const anchors = (text: string) =>
     (text.toLowerCase().match(/[\p{L}]{5,}/gu) ?? []).map((word) =>
       word.slice(0, 5),
@@ -62,10 +61,16 @@ function closingSentenceLooksOmitted(
     anchors(closing.text).filter((word) => !preceding.has(word)),
   );
   const rewritten = new Set(anchors(candidate));
-  return (
-    distinctive.size >= 3 &&
-    [...distinctive].every((word) => !rewritten.has(word))
-  );
+  if (
+    distinctive.size < 3 ||
+    [...distinctive].some((word) => rewritten.has(word))
+  )
+    return false;
+  if (tokenizeSentences(candidate).length < sentences.length) return true;
+  const retainedBody = [...preceding].filter((word) =>
+    rewritten.has(word),
+  ).length;
+  return preceding.size >= 6 && retainedBody / preceding.size >= 0.6;
 }
 
 export function preservationInstructions(
@@ -182,7 +187,7 @@ export function reviewRewrite(
       "Possibility wording changed; check whether a qualified claim became certain.",
     );
   if (closingSentenceLooksOmitted(original, candidate))
-    issues.push(CLOSING_OMISSION + "; retain the final substantive point.");
+    issues.push(CLOSING_OMISSION + ". Keep the final substantive point.");
   const ratio = countWords(candidate) / Math.max(1, countWords(original));
   if (!candidate.trim()) issues.push("The model returned no rewrite.");
   if (

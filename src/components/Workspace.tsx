@@ -63,14 +63,23 @@ interface Scan {
     score: number | null;
   }[];
 }
+type Tool = "detector" | "humanizer";
+type RewriteScanSource = "original" | "draft";
+type RewriteScanSignal = { text: string; tier: DetectorTier; score: number };
+
 const sample =
   "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.";
 
 export function Workspace() {
   const [interactive, setInteractive] = useState(false);
   const [detectorTier, setDetectorTier] = useState<DetectorTier>("detailed");
-  const [tab, setTab] = useState<"detector" | "humanizer">("humanizer");
-  const [input, setInput] = useState("");
+  const [tab, setTab] = useState<Tool>("humanizer");
+  const [rewriteInput, setRewriteInput] = useState("");
+  const [detectorInput, setDetectorInput] = useState("");
+  const [rewriteSignals, setRewriteSignals] = useState<
+    Partial<Record<RewriteScanSource, RewriteScanSignal>>
+  >({});
+  const input = tab === "humanizer" ? rewriteInput : detectorInput;
   const [output, setOutput] = useState("");
   const [source, setSource] = useState("");
   const [depth, setDepth] = useState<RewriteDepth>("rephrase");
@@ -178,17 +187,35 @@ export function Workspace() {
             : "Rewrite stopped.";
     setNotice(message);
   }
-  function editInput(value: string) {
-    setPendingRewrite(false);
-    setInput(value);
-    setScan(null);
+  function switchTool(tool: Tool) {
+    setTab(tool);
     setError("");
+    setNotice("");
+  }
+
+  function editInput(value: string, tool = tab) {
+    setPendingRewrite(false);
+    setError("");
+    if (tool === "detector") {
+      setDetectorInput(value);
+      setScan(null);
+      setNotice("");
+      return;
+    }
+    setRewriteInput(value);
     setNotice(
       output && value !== source
         ? "Source text changed. The edited draft belongs to your previous source. Run Rewrite to create a new draft."
         : "",
     );
   }
+
+  function checkRewriteText(text: string, from: RewriteScanSource) {
+    editInput(text, "detector");
+    switchTool("detector");
+    void detect(false, text, from);
+  }
+
   async function paste() {
     try {
       editInput(await navigator.clipboard.readText());
@@ -213,7 +240,7 @@ export function Workspace() {
       if (operation.current !== request) return;
       editInput(text);
       setNotice(
-        `Imported ${file.name} on this device. No document was uploaded.${output ? " The edited draft still belongs to your previous source; run Rewrite to update it." : ""}`,
+        `Imported ${file.name} on this device. No document was uploaded.${tab === "humanizer" && output ? " The edited draft belongs to your previous source. Run Rewrite to update it." : ""}`,
       );
     } catch (error) {
       if (operation.current === request)
@@ -355,7 +382,11 @@ export function Workspace() {
       }
     }
   }
-  async function detect(includeContexts = false, text = input) {
+  async function detect(
+    includeContexts = false,
+    text = detectorInput,
+    from?: RewriteScanSource,
+  ) {
     const eligibility = describeEvidence(text, null);
     setError("");
     setNotice("");
@@ -458,6 +489,12 @@ export function Workspace() {
         if (data.type === "result" && data.id === id) {
           if (timer.current) clearTimeout(timer.current);
           setScan(data);
+          const score = (data as Scan).evidence.modelScore;
+          if (from && score !== null)
+            setRewriteSignals((previous) => ({
+              ...previous,
+              [from]: { text, tier: detectorTier, score },
+            }));
           setBusy(null);
           setProgress("");
         }
@@ -485,14 +522,14 @@ export function Workspace() {
       );
       return;
     }
-    if (input.length > 12000) {
+    if (rewriteInput.length > 12000) {
       setError(
         "Rewrite up to 12,000 characters at a time. Longer text is split into sections to fit the writing model.",
       );
       return;
     }
     const id = ++operation.current;
-    const original = input;
+    const original = rewriteInput;
     setBusy("rewrite");
     setProgress("Writing a draft…");
     const controller = new AbortController();
@@ -599,7 +636,7 @@ export function Workspace() {
     }
   }, [
     activeName,
-    input,
+    rewriteInput,
     output,
     source,
     engineName,
@@ -642,6 +679,16 @@ export function Workspace() {
       setError("Select and copy the output directly.");
     }
   }
+  const originalSignal = rewriteSignals.original;
+  const draftSignal = rewriteSignals.draft;
+  const comparableSignals =
+    originalSignal &&
+    draftSignal &&
+    originalSignal.text === rewriteInput &&
+    source === rewriteInput &&
+    draftSignal.text === output &&
+    originalSignal.tier === draftSignal.tier;
+
   const controlClass = "vt-secondary";
   return (
     <div className="vt-app">
@@ -654,7 +701,7 @@ export function Workspace() {
           <button
             aria-pressed={tab === "detector"}
             onClick={() => {
-              if (!busy && !importing) setTab("detector");
+              if (!busy && !importing) switchTool("detector");
             }}
           >
             AI Detector
@@ -662,7 +709,7 @@ export function Workspace() {
           <button
             aria-pressed={tab === "humanizer"}
             onClick={() => {
-              if (!busy && !importing) setTab("humanizer");
+              if (!busy && !importing) switchTool("humanizer");
             }}
           >
             AI Humanizer
@@ -885,21 +932,34 @@ export function Workspace() {
                     Stop
                   </button>
                 ) : (
-                  <button
-                    className="vt-primary"
-                    disabled={!input.trim() || importing}
-                    onClick={tab === "humanizer" ? rewrite : () => detect()}
-                  >
-                    {tab === "humanizer" ? (
-                      <>
-                        <Sparkles size={16} /> Rewrite
-                      </>
-                    ) : (
-                      <>
-                        Detect text <ArrowRight size={16} />
-                      </>
+                  <div className="vt-actions">
+                    {tab === "humanizer" && input.trim() && (
+                      <button
+                        className="vt-secondary"
+                        disabled={importing}
+                        onClick={() =>
+                          checkRewriteText(rewriteInput, "original")
+                        }
+                      >
+                        Check original
+                      </button>
                     )}
-                  </button>
+                    <button
+                      className="vt-primary"
+                      disabled={!input.trim() || importing}
+                      onClick={tab === "humanizer" ? rewrite : () => detect()}
+                    >
+                      {tab === "humanizer" ? (
+                        <>
+                          <Sparkles size={16} /> Rewrite
+                        </>
+                      ) : (
+                        <>
+                          Detect text <ArrowRight size={16} />
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -957,6 +1017,16 @@ export function Workspace() {
                         ? ` · ${(rewriteReport.elapsedMs / 1000).toFixed(1)} s · ${rewriteReport.retries} retr${rewriteReport.retries === 1 ? "y" : "ies"}`
                         : ""}
                     </p>
+                    {comparableSignals && !busy && (
+                      <p className="vt-provenance">
+                        {originalSignal.tier === "detailed"
+                          ? "Detailed"
+                          : "Light"}{" "}
+                        model signals · Original{" "}
+                        {formatModelSignal(originalSignal.score)}/100 · Edited
+                        draft {formatModelSignal(draftSignal.score)}/100
+                      </p>
+                    )}
                     {!busy && !!rewriteReport?.checks.length && (
                       <details className="vt-reference">
                         <summary>
@@ -1030,11 +1100,7 @@ export function Workspace() {
                         <button
                           className={controlClass}
                           disabled={!!busy}
-                          onClick={() => {
-                            editInput(output);
-                            setTab("detector");
-                            void detect(false, output);
-                          }}
+                          onClick={() => checkRewriteText(output, "draft")}
                         >
                           {rewriteReport?.changed === false
                             ? "Check retained text"
@@ -1234,9 +1300,16 @@ export function Workspace() {
                   <button
                     className="vt-secondary"
                     disabled={!!busy}
-                    onClick={() => setTab("humanizer")}
+                    onClick={() => {
+                      switchTool("humanizer");
+                      if (scan.text !== output)
+                        editInput(scan.text, "humanizer");
+                    }}
                   >
-                    Edit this text <ArrowRight size={15} />
+                    {output && scan.text === output
+                      ? "Back to rewrite"
+                      : "Use as rewrite source"}{" "}
+                    <ArrowRight size={15} />
                   </button>
                 </div>
               ) : (

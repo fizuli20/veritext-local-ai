@@ -397,6 +397,62 @@ describe("Protected rewrite pipeline", () => {
     expect(result.retries).toBe(1);
   });
 
+  it("flags a closing detail replaced with filler at the same sentence count", () => {
+    const original =
+      "The west entrance will be closed for repairs. Visitors need to use the east entrance during the work. Staff will post directions around the building. The library will keep its usual hours throughout the repair.";
+    const candidate =
+      "The west entrance will be closed for repairs. Visitors need to use the east entrance during the work. Staff will post directions around the building. Please take care during your visit.";
+    expect(reviewRewrite(original, candidate).join(" ")).toContain(
+      "Possible omission in the closing sentence",
+    );
+  });
+
+  it("keeps a checked light edit if the optional larger edit cannot finish", async () => {
+    const original =
+      "The library gives visitors a place to read, work, and meet people from nearby streets. "
+        .repeat(5)
+        .trim();
+    const candidate = original.replace(
+      "gives visitors a place",
+      "offers visitors a place",
+    );
+    const generate = vi.fn(async ({ attempt }) => {
+      if (attempt) throw new Error("Connection ended.");
+      return candidate;
+    });
+    const result = await runRewritePipeline({
+      text: original,
+      mode: "standard",
+      depth: "rephrase",
+      generate,
+      onProgress: noop,
+    });
+    expect(result.text).toBe(candidate);
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(result.checks.map((check) => check.reason).join(" ")).toContain(
+      "The draft that passed checks was kept",
+    );
+  });
+
+  it("does not ask for a larger edit when exact protected sentences leave little prose to rewrite", async () => {
+    const original =
+      "The study counted 42 participants during the morning sessions at the community center and included people who used the service every week. The afternoon group included 31 participants who had signed up through the same program and whose appointments took place after the main office had closed for the day. The public report is now available through the front desk for anyone who wants a copy.";
+    const candidate = original.replace(
+      "is now available through",
+      "is now available from",
+    );
+    const generate = vi.fn(async () => candidate);
+    const result = await runRewritePipeline({
+      text: original,
+      mode: "standard",
+      depth: "rephrase",
+      generate,
+      onProgress: noop,
+    });
+    expect(result.text).toBe(candidate);
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
+
   it("recovers a length-limited rewrite using shorter source groups", async () => {
     const first =
       "The team needs to review the workshop feedback before deciding which changes to make and how to schedule the next series. ".repeat(

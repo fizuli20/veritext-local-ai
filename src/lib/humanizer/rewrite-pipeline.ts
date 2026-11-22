@@ -199,17 +199,25 @@ export async function runRewritePipeline(options: {
       depth === "rephrase" && originalPart.length <= 1600
         ? { ...locked, text: originalPart, locks: [] }
         : locked;
-    const preserveQuantityClaims = quantityClaims(originalPart).length > 0;
+    const protectedAmounts = quantityClaims(originalPart);
     let accepted: string | null = null;
     let feedback = "";
     let usableLightEdit: string | null = null;
-    const protectRecommendation = Boolean(closingRecommendation(originalPart));
-    let keepClosingSentence = protectRecommendation;
+    const recommendation = closingRecommendation(originalPart);
+    let keepClosingSentence = Boolean(recommendation);
     let outputLimited = false;
     const checkExtent =
       depth === "rephrase" &&
       countWords(originalPart) >= 60 &&
       generationLocks.locks.length === 0;
+    const fixedSentences = new Set(protectedAmounts);
+    if (recommendation) fixedSentences.add(recommendation);
+    const fixedWordCount = [...fixedSentences].reduce(
+      (count, sentence) => count + countWords(sentence),
+      0,
+    );
+    const tryLargerEdit =
+      checkExtent && countWords(originalPart) - fixedWordCount >= 60;
     for (let attempt = 0; attempt < 2; attempt++) {
       if (signal?.aborted) throw new Error("Generation stopped.");
       if (attempt) retries++;
@@ -221,10 +229,10 @@ export async function runRewritePipeline(options: {
         candidate = await generate({
           systemPrompt:
             rewriteInstructions(mode, depth, styleNote) +
-            (preserveQuantityClaims
+            (protectedAmounts.length
               ? " Keep sentences reporting distinct amounts unchanged, including the actions and subjects tied to those amounts."
               : "") +
-            (protectRecommendation
+            (recommendation
               ? " Keep the original closing recommendation and its conditions word for word."
               : "") +
             (generationLocks.locks.length
@@ -234,12 +242,15 @@ export async function runRewritePipeline(options: {
           attempt,
         });
       } catch (error) {
-        if (!(error instanceof RewriteOutputLimitError)) throw error;
-        outputLimited = true;
+        if (signal?.aborted) throw new Error("Generation stopped.");
+        outputLimited = error instanceof RewriteOutputLimitError;
+        if (!outputLimited && !usableLightEdit) throw error;
         checks.push({
           section: i + 1,
           attempt: attempt + 1,
-          reason: error.message,
+          reason: usableLightEdit
+            ? "A larger edit could not finish. The draft that passed checks was kept."
+            : (error as RewriteOutputLimitError).message,
         });
         break;
       }
@@ -295,7 +306,7 @@ export async function runRewritePipeline(options: {
           continue;
         }
         if (
-          checkExtent &&
+          tryLargerEdit &&
           rewriteExtent(originalPart, restored) < 0.2 &&
           attempt === 0
         ) {

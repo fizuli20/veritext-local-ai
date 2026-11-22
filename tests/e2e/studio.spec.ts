@@ -390,6 +390,88 @@ test("first rewrite resumes after explicit model setup instead of requiring anot
   ).toBeVisible();
 });
 
+test("compares two exact scans and returns to the original rewrite source", async ({
+  page,
+}) => {
+  const original =
+    "The library gives visitors a place to work quietly, ask questions, and borrow materials for projects. "
+      .repeat(6)
+      .trim();
+  const draft = original.replaceAll(
+    "gives visitors a place",
+    "offers visitors a space",
+  );
+  await page.addInitScript(() => {
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor() {
+        const code = `
+          self.onmessage = ({data}) => self.postMessage({
+            type: "result", id: data.id, text: data.text, tier: data.tier,
+            engine: "Fixture detector", latencyMs: 10, sentences: [],
+            evidence: {status:"uncertain", verdict:"Inconclusive",
+              modelScore: data.text.includes("offers visitors") ? 0.63 : 0.82,
+              calibratedProbability:null, explanation:"Fixture signal."}
+          });
+        `;
+        super(
+          URL.createObjectURL(new Blob([code], { type: "text/javascript" })),
+        );
+      }
+    };
+  });
+  await page.route("http://localhost:1234/**", async (route) => {
+    if (route.request().url().endsWith("/models"))
+      return route.fulfill({ json: { data: [{ id: "comparison-fixture" }] } });
+    return route.fulfill({
+      contentType: "text/event-stream",
+      body:
+        "data: " +
+        JSON.stringify({ choices: [{ delta: { content: draft } }] }) +
+        "\n\ndata: [DONE]\n\n",
+    });
+  });
+  await page.goto("/");
+  const editor = page.getByRole("textbox", {
+    name: "Original text",
+    exact: true,
+  });
+  await editor.fill(original);
+  await page
+    .getByRole("button", { name: "Check original", exact: true })
+    .click();
+  await expect(page.getByTestId("detector-result")).toContainText(
+    "82/100 model signal",
+  );
+  await page.getByRole("button", { name: "AI Humanizer", exact: true }).click();
+  await expect(editor).toHaveValue(original);
+  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  const edited = page.getByRole("textbox", {
+    name: "Edited draft",
+    exact: true,
+  });
+  await expect(edited).toHaveValue(draft);
+  await page
+    .getByRole("button", { name: "Check edited draft", exact: true })
+    .click();
+  await expect(editor).toHaveValue(draft);
+  await expect(page.getByTestId("detector-result")).toContainText(
+    "63/100 model signal",
+  );
+  await page
+    .getByRole("button", { name: "Back to rewrite", exact: true })
+    .click();
+  await expect(editor).toHaveValue(original);
+  await expect(edited).toHaveValue(draft);
+  const comparison = page.getByText(
+    /Detailed model signals.*Original 82\/100.*Edited draft 63\/100/,
+  );
+  await expect(comparison).toBeVisible();
+  await edited.fill(draft + " Users can also ask about upcoming sessions.");
+  await expect(comparison).toHaveCount(0);
+});
+
 test("imports real text, DOCX and PDF locally and leaves the source intact on invalid input", async ({
   page,
 }) => {
