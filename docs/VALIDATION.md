@@ -1,3 +1,13 @@
+# Veritext 5.0.3 local models and detector saturation
+
+A real Ollama chat completion with Qwen3 4B and a deliberately short output budget stopped after reasoning and returned no draft. In the same setup, disabling reasoning through the compatibility field caused some reasoning text to appear in the answer field. Veritext keeps reasoning separate, retries a reasoning-only output limit once with a larger budget, and uses the documented low effort option for GPT-OSS on the default Ollama endpoint.
+
+Fixtures also cover a server rejecting optional fields, a chat template rejecting a system role, and a server returning structured context, memory, or model availability errors. The editor shows the model's progress and preserves completed drafts. An installed model may still need to load when the first rewrite starts, and available memory and context settings determine what the local server can run.
+
+The detector shows values above 99.9 as `>99.9/100 model signal`. If both versions of a draft are in this range, the comparison explains that the scores do not distinguish them there. Exact raw values remain available in the exported JSON. The release does not change the detector weights or use its score to steer rewrites.
+
+---
+
 # Veritext 5.0.2 library-sample follow-up
 
 A repeat test caught two more issues. The model combined the separate benefits for adults and students, and one recovery pass included a generated preamble. Regression tests cover both cases. The editor retains the conditional sentence linking each group to its own benefit and strips the preamble before reviewing a candidate.

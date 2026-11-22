@@ -43,11 +43,15 @@ export interface DetectionEvidence {
   explanation: string;
 }
 
-/** Displays a signal from 0 to 1 on a 100-point scale without rounding to an endpoint. */
+export function isNearModelCeiling(signal: number): boolean {
+  return signal > 0.999;
+}
+
+/** Groups saturated values at the top of the scale. Reports retain the raw value. */
 export function formatModelSignal(signal: number): string {
   const points = signal * 100;
   if (points > 0 && points < 0.1) return "<0.1";
-  if (points > 99.9 && points < 100) return ">99.9";
+  if (isNearModelCeiling(signal)) return ">99.9";
   return String(Number(points.toFixed(1)));
 }
 

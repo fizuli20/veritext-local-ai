@@ -204,6 +204,56 @@ test("connection errors offer actionable setup without fake output", async ({
   ).toBeEnabled();
 });
 
+test("shows a local reasoning retry and publishes only the finished draft", async ({
+  page,
+}) => {
+  let requests = 0;
+  let unblock = () => {};
+  const release = new Promise<void>((resolve) => {
+    unblock = resolve;
+  });
+  await page.route("http://localhost:11434/**", async (route) => {
+    if (route.request().url().endsWith("/models"))
+      return route.fulfill({ json: { data: [{ id: "qwen3:4b" }] } });
+    const body = route.request().postDataJSON();
+    requests++;
+    expect(body.reasoning_effort).toBeUndefined();
+    const passage = body.messages.at(-1).content.split("\n\n").at(-1);
+    const accepted = passage.replace("We need to review", "We should review");
+    if (requests === 2) await release;
+    return route.fulfill({
+      contentType: "text/event-stream",
+      body:
+        requests === 1
+          ? 'data: {"choices":[{"delta":{"reasoning_content":"Private"}}]}\n\ndata: {"choices":[{"finish_reason":"length"}]}\n\n'
+          : `data: ${JSON.stringify({ choices: [{ delta: { content: accepted }, finish_reason: "stop" }] })}\n\n`,
+    });
+  });
+  await page.goto("/");
+  await page
+    .getByRole("textbox", { name: "Original text", exact: true })
+    .fill(source);
+  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await page.getByRole("button", { name: "Ollama", exact: true }).click();
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  const draft = page.getByRole("textbox", {
+    name: "Edited draft",
+    exact: true,
+  });
+  try {
+    await expect(
+      page
+        .getByRole("status")
+        .filter({ hasText: "Retrying with more room for the draft" }),
+    ).toBeVisible();
+    await expect(draft).toHaveCount(0);
+  } finally {
+    unblock();
+  }
+  await expect(draft).toHaveValue(edited);
+  expect(requests).toBe(2);
+});
+
 test("rewrite retries copied text, preserves quotes and locked terms, and restores the previous draft", async ({
   page,
 }) => {
@@ -636,6 +686,45 @@ test("shows a nonzero detector signal below one point and preserves the exact ex
   for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
   expect(JSON.parse(Buffer.concat(chunks).toString()).evidence.modelScore).toBe(
     0.0002,
+  );
+});
+
+test("presents a saturated detector value as a model signal and exports its exact value", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor() {
+        const code = `
+          self.onmessage = ({data}) => self.postMessage({
+            type: "result", id: data.id, text: data.text, engine: "Fixture detector",
+            latencyMs: 10, sentences: [],
+            evidence: {status:"signal", verdict:"Elevated AI-like signal", modelScore:1, calibratedProbability:null, explanation:"Fixture high signal."}
+          });
+        `;
+        super(
+          URL.createObjectURL(new Blob([code], { type: "text/javascript" })),
+        );
+      }
+    };
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "AI Detector", exact: true }).click();
+  await page.getByRole("button", { name: "Try a sample" }).click();
+  await page.getByRole("button", { name: "Detect text" }).click();
+  const report = page.getByTestId("detector-result");
+  await expect(report).toContainText(">99.9/100 model signal");
+  await expect(report).toContainText("at the top of the model’s scale");
+  const downloading = page.waitForEvent("download");
+  await report
+    .getByRole("button", { name: "Save analysis", exact: true })
+    .click();
+  const stream = await (await downloading).createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+  expect(JSON.parse(Buffer.concat(chunks).toString()).evidence.modelScore).toBe(
+    1,
   );
 });
 

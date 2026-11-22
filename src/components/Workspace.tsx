@@ -19,10 +19,12 @@ import {
   type DetectorTier,
   describeEvidence,
   formatModelSignal,
+  isNearModelCeiling,
   type DetectionEvidence,
 } from "@/lib/detector/evidence";
 import {
   discoverLocalModels,
+  localApiBase,
   streamChatCompletion,
   type DiscoveredModel,
 } from "@/lib/humanizer/local-server-client";
@@ -432,6 +434,21 @@ export function Workspace() {
     link.click();
     URL.revokeObjectURL(url);
   }
+  function changeLocalAddress(value: string) {
+    setBaseUrl(value);
+    setModels([]);
+    setModelId("");
+    setConnectedUrl("");
+  }
+  function activateLocalModel(id: string) {
+    // Release browser inference memory before the local server loads its model.
+    browserWorker.current?.terminate();
+    browserWorker.current = null;
+    browserEngine.current = null;
+    setBrowserName("");
+    setModelId(id);
+    setUseLocal(true);
+  }
   async function connect() {
     setConnecting(true);
     setError("");
@@ -447,16 +464,16 @@ export function Workspace() {
         url.password
       )
         throw new Error("Use a local server on localhost or 127.0.0.1.");
-      const result = await discoverLocalModels(baseUrl);
+      const address = localApiBase(baseUrl);
+      const result = await discoverLocalModels(address);
       if (result.error) throw new Error(result.error);
       if (!result.models.length)
         throw new Error(
           "No writing model is loaded. Load a chat model in LM Studio or Ollama first.",
         );
       setModels(result.models);
-      setModelId(result.models[0]!.id);
-      setConnectedUrl(baseUrl);
-      setUseLocal(true);
+      setConnectedUrl(address);
+      activateLocalModel(result.models[0]!.id);
       setNotice(
         "Local model connected. Your text is sent only to this selected local server when you rewrite.",
       );
@@ -691,6 +708,7 @@ export function Workspace() {
           browserEngine.current?.interruptGenerate();
         }
       }, 600000);
+      let rewriteStep = "";
       try {
         const result = await runRewritePipeline({
           text: original,
@@ -703,6 +721,7 @@ export function Workspace() {
             .filter(Boolean),
           signal: controller.signal,
           onProgress: (message) => {
+            rewriteStep = message;
             if (operation.current === id) setProgress(message);
           },
           generate: async ({
@@ -711,15 +730,39 @@ export function Workspace() {
             attempt,
             restructure,
           }) => {
-            if (useLocal && modelId && connectedUrl)
-              return streamChatCompletion({
-                baseUrl: connectedUrl,
-                modelId,
-                systemPrompt,
-                userPrompt,
-                signal: controller.signal,
-                style: mode === "academic" ? "academic" : "default",
-              });
+            if (useLocal && modelId && connectedUrl) {
+              const waiting = setTimeout(() => {
+                if (operation.current === id)
+                  setProgress(
+                    `${rewriteStep} Waiting for the local model to start responding.`,
+                  );
+              }, 5_000);
+              try {
+                return await streamChatCompletion({
+                  baseUrl: connectedUrl,
+                  modelId,
+                  systemPrompt,
+                  userPrompt,
+                  signal: controller.signal,
+                  style: mode === "academic" ? "academic" : "default",
+                  onModelPhase: (phase) => {
+                    clearTimeout(waiting);
+                    if (operation.current !== id) return;
+                    const detail =
+                      phase === "thinking"
+                        ? "The local model is reasoning before writing."
+                        : phase === "retrying"
+                          ? "Retrying with more room for the draft."
+                          : "";
+                    setProgress(
+                      detail ? `${rewriteStep} ${detail}` : rewriteStep,
+                    );
+                  },
+                });
+              } finally {
+                clearTimeout(waiting);
+              }
+            }
             if (!browserEngine.current)
               throw new Error("Load a writing model before rewriting.");
             const stream = await browserEngine.current.chat.completions.create({
@@ -819,7 +862,9 @@ export function Workspace() {
       } catch (err) {
         if (operation.current === id) {
           const message = controller.signal.aborted
-            ? "The rewrite timed out."
+            ? useLocal
+              ? "The local rewrite timed out after 10 minutes. Check the model status in your local server or try a shorter passage."
+              : "The rewrite timed out."
             : err instanceof Error
               ? err.message
               : String(err);
@@ -1265,6 +1310,9 @@ export function Workspace() {
                         model signals · Original{" "}
                         {formatModelSignal(originalSignal.score)}/100 · Edited
                         draft {formatModelSignal(draftSignal.score)}/100
+                        {isNearModelCeiling(originalSignal.score) &&
+                          isNearModelCeiling(draftSignal.score) &&
+                          " · Both are at the top of the model’s scale. The detector cannot distinguish them in this range."}
                       </p>
                     )}
                     {!busy && !!rewriteReport?.checks.length && (
@@ -1420,6 +1468,14 @@ export function Workspace() {
                     </div>
                   )}
                   <p>{scan.evidence.explanation}</p>
+                  {scan.evidence.modelScore !== null &&
+                    isNearModelCeiling(scan.evidence.modelScore) && (
+                      <p className="vt-caution">
+                        This result is at the top of the model’s scale. It does
+                        not measure what percentage of the text was written by
+                        AI.
+                      </p>
+                    )}
                   <p className="vt-caution">
                     The raw model signal is not a probability of authorship.
                     This detector missed newer AI writing in our stress test.
@@ -1780,16 +1836,18 @@ export function Workspace() {
               </p>
               <div className="vt-preset">
                 <button
-                  disabled={connecting}
+                  disabled={connecting || !!busy}
                   className="vt-text-button"
-                  onClick={() => setBaseUrl("http://localhost:1234/v1")}
+                  onClick={() => changeLocalAddress("http://localhost:1234/v1")}
                 >
                   LM Studio
                 </button>
                 <button
-                  disabled={connecting}
+                  disabled={connecting || !!busy}
                   className="vt-text-button"
-                  onClick={() => setBaseUrl("http://localhost:11434/v1")}
+                  onClick={() =>
+                    changeLocalAddress("http://localhost:11434/v1")
+                  }
                 >
                   Ollama
                 </button>
@@ -1800,11 +1858,7 @@ export function Workspace() {
                   id="server-url"
                   value={baseUrl}
                   disabled={connecting || !!busy}
-                  onChange={(e) => {
-                    setBaseUrl(e.target.value);
-                    setModelId("");
-                    setConnectedUrl("");
-                  }}
+                  onChange={(e) => changeLocalAddress(e.target.value)}
                 />
                 <button
                   className="vt-primary"
@@ -1820,13 +1874,13 @@ export function Workspace() {
                   <select
                     id="writing-model"
                     value={modelId}
-                    onChange={(e) => {
-                      setModelId(e.target.value);
-                      setUseLocal(true);
-                    }}
+                    disabled={!!busy}
+                    onChange={(e) => activateLocalModel(e.target.value)}
                   >
                     {models.map((m) => (
-                      <option key={m.id}>{m.id}</option>
+                      <option key={m.id} value={m.id}>
+                        {m.id}
+                      </option>
                     ))}
                   </select>
                   <p className="vt-connected">Connected · {modelId}</p>
@@ -1834,7 +1888,7 @@ export function Workspace() {
                     className="vt-secondary"
                     disabled={!!busy}
                     onClick={() => {
-                      setUseLocal(true);
+                      activateLocalModel(modelId);
                       setSettings(false);
                     }}
                   >

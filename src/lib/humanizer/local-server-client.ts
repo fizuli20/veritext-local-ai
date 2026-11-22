@@ -12,7 +12,13 @@ import {
 } from "./output-cleaner";
 
 export type ModelFamily =
-  "gemma" | "qwen" | "mistral" | "muse" | "llama" | "hemmingway" | "other";
+  | "gemma"
+  | "qwen"
+  | "mistral"
+  | "muse"
+  | "llama"
+  | "hemmingway"
+  | "other";
 
 export interface DiscoveredModel {
   id: string;
@@ -59,6 +65,13 @@ export const LOCAL_SERVER_PRESETS: Record<
 };
 
 const STORAGE_KEY = "veritext_local_server_config";
+const DISCOVERY_TIMEOUT_MS = 12_000;
+
+export function localApiBase(baseUrl: string): string {
+  const url = new URL(baseUrl.trim());
+  const path = url.pathname.replace(/\/+$/, "");
+  return url.origin + (path || "/v1");
+}
 
 export function loadStoredServerConfig(): LocalServerConfig {
   if (typeof window === "undefined") return LOCAL_SERVER_PRESETS.lmStudio;
@@ -158,7 +171,6 @@ export async function discoverLocalModels(
   baseUrl: string,
   apiKey?: string,
 ): Promise<{ models: DiscoveredModel[]; rawCount: number; error?: string }> {
-  const cleanBase = baseUrl.replace(/\/+$/, "");
   const headers: Record<string, string> = {
     Accept: "application/json",
   };
@@ -166,11 +178,11 @@ export async function discoverLocalModels(
     headers["Authorization"] = `Bearer ${apiKey}`;
   }
 
-  // Timeout safety
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3500);
+  const timeoutId = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
 
   try {
+    const cleanBase = localApiBase(baseUrl);
     // 1. Try /v1/models (standard OpenAI endpoint)
     let res = await fetch(`${cleanBase}/models`, {
       method: "GET",
@@ -179,7 +191,7 @@ export async function discoverLocalModels(
     });
 
     // If 404 and base URL has /v1, try root /api/v1/models (LM Studio native)
-    if (!res.ok && cleanBase.endsWith("/v1")) {
+    if ([404, 405].includes(res.status) && cleanBase.endsWith("/v1")) {
       const rootBase = cleanBase.slice(0, -3);
       try {
         const altRes = await fetch(`${rootBase}/api/v1/models`, {
@@ -204,38 +216,36 @@ export async function discoverLocalModels(
         ? data.models
         : [];
 
-    const nonEmbedding = rawList.filter((m) => {
-      const id = String(m.id || m.name || "").toLowerCase();
-      return (
-        !id.includes("embed") &&
-        !id.includes("minilm") &&
-        !id.includes("bge-") &&
-        !id.includes("nomic") &&
-        !id.includes("gte-")
-      );
-    });
-
-    const models: DiscoveredModel[] = nonEmbedding.map((m) => {
-      const id = String(m.id || m.name);
+    const models: DiscoveredModel[] = rawList.flatMap((m) => {
+      const id = m?.id || m?.key || m?.name;
+      if (typeof id !== "string" || !id.trim()) return [];
+      if (m.type === "embedding" || /embed|minilm|bge-|nomic|gte-/i.test(id))
+        return [];
       const family = classifyModelFamily(id);
-      return {
-        id,
-        name: m.name || id,
-        family,
-        isGemma: family === "gemma",
-        contextLength: m.context_length || m.max_context_length,
-      };
+      return [
+        {
+          id,
+          name: m.name || m.display_name || id,
+          family,
+          isGemma: family === "gemma",
+          contextLength: m.context_length || m.max_context_length,
+        },
+      ];
     });
 
-    clearTimeout(timeoutId);
     return { models, rawCount: rawList.length };
-  } catch (err: any) {
-    clearTimeout(timeoutId);
+  } catch (err) {
     return {
       models: [],
       rawCount: 0,
-      error: err.message || "Connection failed",
+      error: controller.signal.aborted
+        ? "The local server did not respond to model discovery within 12 seconds."
+        : err instanceof Error
+          ? err.message
+          : "Connection failed",
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -352,7 +362,7 @@ export function classifyLocalServerError(
     return {
       category: "timeout",
       title: "Connection Timed Out",
-      description: `Server at ${baseUrl} took longer than 3.5 seconds to respond.`,
+      description: `Server at ${baseUrl} took longer than 12 seconds to respond.`,
       instructions: [
         "Check if the server is under heavy GPU load or generating another request.",
         "Restart the local inference process if it is unresponsive.",
@@ -380,40 +390,93 @@ export interface StreamChatCompletionOptions {
   userPrompt: string;
   style?: "default" | "academic" | "creative";
   signal?: AbortSignal;
+  onModelPhase?: (phase: "thinking" | "writing" | "retrying") => void;
   onChunk?: (chunk: string, fullCleanedText: string) => void;
   onTelemetry?: (telemetry: StreamTelemetry) => void;
 }
 
-/**
- * Streams chat completions from LM Studio / Ollama via SSE.
- * Automatically retries with system instructions folded into user message if 400 is returned
- * (resolving Gemma 2/3 GGUF template system-role incompatibilities).
- */
-export async function streamChatCompletion({
-  baseUrl,
-  apiKey,
-  modelId,
-  systemPrompt,
-  userPrompt,
-  style = "default",
-  signal,
-  onChunk,
-  onTelemetry,
-}: StreamChatCompletionOptions): Promise<string> {
-  const cleanBase = baseUrl.replace(/\/+$/, "");
-  const url = `${cleanBase}/chat/completions`;
-  const sampling = getSamplingParameters(modelId, style);
+const SYSTEM_ROLE_ERROR =
+  /(?:system (?:messages?|roles?)|role .{0,8}system).{0,40}(?:unsupported|not supported|not allowed|not permitted)|(?:unsupported|does not support|doesn't support).{0,35}(?:system (?:messages?|roles?)|role .{0,8}system)|(?:roles|messages) must alternate|only user and assistant|unsupported role/i;
+const OPTIONAL_PARAMETER_ERROR =
+  /reasoning_effort|frequency_penalty|presence_penalty|(?:reasoning|thinking).{0,18}(?:unsupported|not supported)|(?:unsupported|invalid|unrecognized) (?:sampling|penalt)|(?:unknown|extra|unsupported) (?:parameters?|fields?)/i;
 
+function localInferenceError(
+  status: number,
+  message: string,
+  modelId: string,
+): Error {
+  if (
+    /out of memory|not enough (?:system |gpu )?memory|insufficient (?:memory|vram)|requires more (?:system |gpu )?memory|failed to allocate|allocation failed|resource exhausted|(?:failed to load (?:the )?model|model (?:failed to load|loading (?:was )?aborted))/i.test(
+      message,
+    )
+  )
+    return new Error(
+      modelId +
+        " could not load. Close other loaded models, then try a shorter context or a smaller quantization in your local server. Server detail: " +
+        message,
+    );
+  if (
+    /context (?:length|window|size)|exceeds.{0,30}(?:context|n_ctx)|too many (?:input|prompt) tokens|keep.{0,25}(?:context|n_ctx)/i.test(
+      message,
+    )
+  )
+    return new RewriteOutputLimitError(
+      "The loaded context window for " +
+        modelId +
+        " is too small for this request. Increase its context length in your local server or rewrite a shorter passage. Server detail: " +
+        message,
+    );
+  if (
+    status === 404 ||
+    /model.{0,80}(?:not found|not loaded|does not exist|unavailable)|no models? loaded/i.test(
+      message,
+    )
+  )
+    return new Error(
+      modelId +
+        " is unavailable for rewriting. Check that the model is installed and ready on your local server. Server detail: " +
+        message,
+    );
+  return new Error(
+    "Inference failed for " + modelId + " (HTTP " + status + "): " + message,
+  );
+}
+
+function localServerMessage(raw: string): string {
+  try {
+    const body = JSON.parse(raw);
+    raw = body.error?.message ?? body.error ?? body.message ?? raw;
+  } catch {
+    // Some compatible servers send plain text on error.
+  }
+  return String(raw).trim().slice(0, 550) || "No detail was returned.";
+}
+
+/** Streams only the answer text from a local OpenAI-compatible server. */
+export async function streamChatCompletion(
+  options: StreamChatCompletionOptions,
+): Promise<string> {
+  const {
+    baseUrl,
+    apiKey,
+    modelId,
+    systemPrompt,
+    userPrompt,
+    style,
+    signal,
+    onModelPhase,
+  } = options;
+  const cleanBase = localApiBase(baseUrl);
+  const url = cleanBase + "/chat/completions";
+  const sampling = getSamplingParameters(modelId, style);
+  const ollama = new URL(cleanBase).port === "11434";
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    Accept: "text/event-stream",
+    Accept: "text/event-stream, application/json",
   };
-  if (apiKey) {
-    headers["Authorization"] = `Bearer ${apiKey}`;
-  }
+  if (apiKey) headers.Authorization = "Bearer " + apiKey;
 
-  // Attempt with standard system + user message
-  let bodyPayload: any = {
+  const body = {
     model: modelId,
     messages: [
       { role: "system", content: systemPrompt },
@@ -421,56 +484,114 @@ export async function streamChatCompletion({
     ],
     temperature: sampling.temperature,
     top_p: sampling.top_p,
-    frequency_penalty: sampling.frequency_penalty,
-    presence_penalty: sampling.presence_penalty,
     max_tokens: sampling.max_tokens,
     stream: true,
   };
-
-  let res = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(bodyPayload),
-    signal,
-  });
-
-  // Gemma Auto-Fallback: If 400 (e.g. template rejecting system role), retry folding into user prompt
-  if (res.status === 400) {
-    const errText = await res.text();
-    const foldedPayload = {
-      model: modelId,
-      messages: [
-        {
-          role: "user",
-          content: `[System Instructions:\n${systemPrompt}]\n\n[Task:\n${userPrompt}]`,
-        },
-      ],
-      temperature: sampling.temperature,
-      top_p: sampling.top_p,
-      frequency_penalty: sampling.frequency_penalty,
-      presence_penalty: sampling.presence_penalty,
-      max_tokens: sampling.max_tokens,
-      stream: true,
-    };
-
-    const retryRes = await fetch(url, {
+  let optional: Record<string, string | number> = {
+    frequency_penalty: sampling.frequency_penalty,
+    presence_penalty: sampling.presence_penalty,
+    // Some Ollama templates emit a thinking prefix even with thinking disabled.
+    // Leave the server's reasoning parser enabled so that trace stays separate.
+    ...(ollama && /(?:^|\/)gpt-oss(?:[:/-]|$)/i.test(modelId)
+      ? { reasoning_effort: "low" }
+      : {}),
+  };
+  let folded = false;
+  async function requestCompletion(): Promise<Response> {
+    const res = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify(foldedPayload),
+      body: JSON.stringify({ ...body, ...optional }),
       signal,
     });
-    if (retryRes.ok) {
-      res = retryRes;
-    } else {
-      throw new Error(`Local server returned HTTP 400: ${errText}`);
+    if (res.ok) return res;
+    const message = localServerMessage(await res.text());
+    if (res.status === 400 || res.status === 422) {
+      if (!folded && SYSTEM_ROLE_ERROR.test(message)) {
+        folded = true;
+        body.messages = [
+          {
+            role: "user",
+            content:
+              "[System Instructions:\n" +
+              systemPrompt +
+              "]\n\n[Task:\n" +
+              userPrompt +
+              "]",
+          },
+        ];
+        return requestCompletion();
+      }
+      if (
+        Object.keys(optional).length &&
+        OPTIONAL_PARAMETER_ERROR.test(message)
+      ) {
+        optional = {};
+        return requestCompletion();
+      }
     }
+    throw localInferenceError(res.status, message, modelId);
   }
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Inference failed (HTTP ${res.status}): ${errText}`);
+  const startedAt = performance.now();
+  let result = await readLocalCompletion(
+    await requestCompletion(),
+    options,
+    startedAt,
+  );
+  if (!result.text && result.reasoned && result.truncated) {
+    onModelPhase?.("retrying");
+    body.max_tokens = sampling.max_tokens * 2;
+    result = await readLocalCompletion(
+      await requestCompletion(),
+      options,
+      startedAt,
+    );
   }
+  if (!result.text && result.reasoned)
+    throw new Error(
+      modelId +
+        " finished without returning a draft after reasoning. Turn off thinking in your local server if the model supports it, or select an instruction model.",
+    );
+  if (result.truncated) throw new RewriteOutputLimitError();
+  return result.text;
+}
 
+function isReasoning(message?: {
+  reasoning_content?: unknown;
+  reasoning?: unknown;
+  thinking?: unknown;
+}): boolean {
+  return Boolean(
+    message?.reasoning_content || message?.reasoning || message?.thinking,
+  );
+}
+const INLINE_REASONING = /^\s*<(?:think|thought|reasoning|\|thought\|)>/i;
+
+async function readLocalCompletion(
+  res: Response,
+  { modelId, onChunk, onTelemetry, onModelPhase }: StreamChatCompletionOptions,
+  startTime: number,
+): Promise<{ text: string; reasoned: boolean; truncated: boolean }> {
+  if (res.headers?.get("content-type")?.includes("application/json")) {
+    const payload = await res.json();
+    if (payload.error)
+      throw localInferenceError(
+        res.status,
+        localServerMessage(JSON.stringify(payload)),
+        modelId,
+      );
+    const choice = payload.choices?.[0];
+    if (!choice?.message)
+      throw new Error(modelId + " returned an unexpected completion response.");
+    checkFinishReason(choice.finish_reason);
+    const answer = extractDeltaContent(choice.message);
+    return {
+      text: cleanLlmOutput(answer),
+      reasoned: isReasoning(choice.message) || INLINE_REASONING.test(answer),
+      truncated: choice.finish_reason === "length",
+    };
+  }
   if (!res.body) {
     throw new Error("Response body is null, cannot stream SSE.");
   }
@@ -480,12 +601,12 @@ export async function streamChatCompletion({
 
   let accumulatedRaw = "";
   let tokenCount = 0;
-  const startTime = performance.now();
   let firstTokenTime: number | null = null;
   let buffer = "";
 
   let completed = false;
   let truncated = false;
+  let reasoned = false;
   const processLine = (line: string) => {
     const trimmed = line.trim();
     if (!trimmed.startsWith("data:")) return;
@@ -496,18 +617,35 @@ export async function streamChatCompletion({
     }
     const parsed = JSON.parse(payload);
     if (parsed.error)
-      throw new Error(
-        parsed.error.message || "Inference server reported a stream error.",
+      throw localInferenceError(
+        res.status,
+        localServerMessage(payload),
+        modelId,
       );
     const choice = parsed.choices?.[0];
-    if (choice?.finish_reason === "length") truncated = true;
-    if (choice?.finish_reason === "stop") completed = true;
-    const content = extractDeltaContent(choice?.delta);
-    if (!content) return;
-    tokenCount++;
-    if (firstTokenTime === null) firstTokenTime = performance.now();
+    const finishReason = choice?.finish_reason;
+    checkFinishReason(finishReason);
+    truncated ||= finishReason === "length";
+    completed ||= finishReason === "length" || finishReason === "stop";
+    const delta = choice?.delta;
+    const content = extractDeltaContent(delta);
     accumulatedRaw += content;
-    onChunk?.(content, cleanLlmOutput(accumulatedRaw));
+    if (
+      !reasoned &&
+      (isReasoning(delta) || INLINE_REASONING.test(accumulatedRaw))
+    ) {
+      reasoned = true;
+      if (firstTokenTime === null) onModelPhase?.("thinking");
+    }
+    if (!content) return;
+    const cleaned = cleanLlmOutput(accumulatedRaw);
+    if (!cleaned) return;
+    tokenCount++;
+    if (firstTokenTime === null) {
+      firstTokenTime = performance.now();
+      onModelPhase?.("writing");
+    }
+    onChunk?.(content, cleaned);
     const now = performance.now(),
       elapsedMs = Math.round(now - startTime),
       activeGenSec = (now - firstTokenTime) / 1000;
@@ -528,12 +666,14 @@ export async function streamChatCompletion({
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";
-      for (const line of lines) processLine(line);
+      for (const line of lines) {
+        processLine(line);
+        if (completed) break;
+      }
       if (completed) break;
     }
     buffer += decoder.decode();
-    if (buffer.trim()) processLine(buffer);
-    if (truncated) throw new RewriteOutputLimitError();
+    if (!completed && buffer.trim()) processLine(buffer);
     if (!completed)
       throw new Error(
         "The connection ended before the model completed. The draft is incomplete.",
@@ -543,5 +683,12 @@ export async function streamChatCompletion({
     reader.releaseLock();
   }
 
-  return cleanLlmOutput(accumulatedRaw);
+  return { text: cleanLlmOutput(accumulatedRaw), reasoned, truncated };
+}
+
+function checkFinishReason(reason?: string): void {
+  if (reason && reason !== "length" && reason !== "stop")
+    throw new Error(
+      `The model stopped without completing the draft (${reason}).`,
+    );
 }

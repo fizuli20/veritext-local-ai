@@ -9,6 +9,7 @@ import {
 import {
   cleanLlmOutput,
   extractDeltaContent,
+  RewriteOutputLimitError,
 } from "../src/lib/humanizer/output-cleaner";
 
 describe("Output Cleaner & Thinking Stripper", () => {
@@ -46,13 +47,150 @@ Hope this helps! Let me know if you need any adjustments.`;
   });
 
   it("extractDeltaContent skips reasoning deltas and extracts content", () => {
-    expect(extractDeltaContent({ reasoning_content: "Let me think..." })).toBe(
-      "",
-    );
-    expect(extractDeltaContent({ reasoning: "Thinking..." })).toBe("");
+    const thinking = { content: null, reasoning_content: "Let me think..." };
+    expect(extractDeltaContent(thinking)).toBe("");
     expect(extractDeltaContent({ content: "Hello world" })).toBe("Hello world");
     expect(extractDeltaContent(null)).toBe("");
   });
+});
+
+describe("local model compatibility", () => {
+  const options = {
+    baseUrl: "http://localhost:11434/",
+    modelId: "qwen3:4b",
+    systemPrompt: "Copy edit",
+    userPrompt: "Text",
+  };
+
+  it("uses model keys from the native discovery response and accepts a root address", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(
+        Response.json({
+          models: [
+            { key: "qwen3:4b", display_name: "Qwen 3 4B", type: "llm" },
+            { key: "search-model", type: "embedding" },
+            {},
+          ],
+        }),
+      );
+    vi.stubGlobal("fetch", fetcher);
+    try {
+      const result = await discoverLocalModels("http://localhost:1234/");
+      expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+        "http://localhost:1234/v1/models",
+        "http://localhost:1234/api/v1/models",
+      ]);
+      expect(result.models).toMatchObject([
+        { id: "qwen3:4b", name: "Qwen 3 4B" },
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("retries a reasoning-only output limit once with more room, without exposing reasoning", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          'data: {"choices":[{"delta":{"reasoning":"Private reasoning"}}]}\n\ndata: {"choices":[{"finish_reason":"length","delta":{}}]}',
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          'data: {"choices":[{"delta":{"content":[{"type":"text","text":"Edited draft."}],"reasoning":"Private"}}]}\n\ndata: [DONE]',
+        ),
+      );
+    const onChunk = vi.fn();
+    const onModelPhase = vi.fn();
+    vi.stubGlobal("fetch", fetcher);
+    try {
+      await expect(
+        streamChatCompletion({ ...options, onChunk, onModelPhase }),
+      ).resolves.toBe("Edited draft.");
+      expect(
+        fetcher.mock.calls.map(([, request]) => JSON.parse(request.body)),
+      ).toMatchObject([{ max_tokens: 2048 }, { max_tokens: 4096 }]);
+      expect(onChunk.mock.calls).toEqual([["Edited draft.", "Edited draft."]]);
+      expect(onModelPhase.mock.calls.map(([phase]) => phase)).toEqual([
+        "thinking",
+        "retrying",
+        "thinking",
+        "writing",
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("recovers from rejected optional parameters and reads a completed JSON answer", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json(
+          { error: { message: "unknown field reasoning_effort" } },
+          { status: 422 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          choices: [
+            {
+              message: {
+                content: "Edited draft.",
+                reasoning_content: "Private",
+              },
+              finish_reason: "stop",
+            },
+          ],
+        }),
+      );
+    vi.stubGlobal("fetch", fetcher);
+    try {
+      await expect(
+        streamChatCompletion({ ...options, modelId: "gpt-oss:20b" }),
+      ).resolves.toBe("Edited draft.");
+      expect(JSON.parse(fetcher.mock.calls[0]![1].body).reasoning_effort).toBe(
+        "low",
+      );
+      const compatible = JSON.parse(fetcher.mock.calls[1]![1].body);
+      expect(compatible).not.toHaveProperty("reasoning_effort");
+      expect(compatible).not.toHaveProperty("frequency_penalty");
+      expect(compatible.messages[0].role).toBe("system");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([
+    ["model requires more system memory", "could not load", Error],
+    [
+      "system message exceeds context window",
+      "context window",
+      RewriteOutputLimitError,
+    ],
+    ["model not found", "unavailable for rewriting", Error],
+  ])(
+    "keeps the actual server error without treating %s as a template rejection",
+    async (message, expected, errorType) => {
+      const fetcher = vi
+        .fn()
+        .mockResolvedValue(Response.json({ error: message }, { status: 400 }));
+      vi.stubGlobal("fetch", fetcher);
+      try {
+        const request = streamChatCompletion(options);
+        await expect(request).rejects.toBeInstanceOf(errorType);
+        await expect(request).rejects.toMatchObject({
+          message: expect.stringContaining(expected),
+        });
+        expect(fetcher).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
 });
 
 describe("Local Server Client", () => {
@@ -254,8 +392,6 @@ describe("stream completion integrity", () => {
     expect(cleanLlmOutput("<thought>private</thought>Public draft.")).toBe(
       "Public draft.",
     );
-    expect(
-      extractDeltaContent({ reasoning: "private", content: "public" }),
-    ).toBe("public");
+    expect(extractDeltaContent({ content: "public" })).toBe("public");
   });
 });

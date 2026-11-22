@@ -1,4 +1,4 @@
-# Veritext 5.0.2
+# Veritext 5.0.3
 
 **5.0 workspace.** Revise a selected range in the edited draft with the same preservation checks, then undo if needed. The detector reports when checked paragraphs have widely different raw scores and includes their summary in the JSON export. Remember this workspace is off by default. Enable it to save source text, the edited draft, detector text and editing preferences in the current browser. Turning it off removes the saved copy. Restored text can be scanned again to generate fresh evidence.
 
@@ -32,6 +32,8 @@ npm run dev
 Open http://localhost:3000. Detection downloads about 438 MB (Detailed) or 125 MB (Light) on first use. Browser rewriting downloads roughly 700 MB–2.4 GB depending on the selected model, plus runtime resources and uses substantial working memory. Cached model files can be evicted by the browser. Browser rewriting requires a working WebGPU adapter; detector WASM does not require WebGPU or cross-origin isolation. CPU speed, browser support, storage and memory vary by device.
 
 For a larger local model, start LM Studio with a loaded chat model and enable CORS in Developer → Server Settings. Connect `http://localhost:1234/v1` in the editor. Ollama uses `http://localhost:11434/v1`; allow the exact app origin in its CORS configuration. Browser local-network permission may be required. If a hosted page cannot reach loopback, run Veritext locally. Do not disable browser security settings.
+
+The first rewrite can wait while the local server loads the selected model. Look for the model's memory or context error in the editor if loading fails. A larger checkpoint and a longer context both increase memory use. An installed model can exceed the memory available to the local server.
 
 ## Privacy and cost
 

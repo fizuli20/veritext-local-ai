@@ -4,8 +4,10 @@
  */
 
 export class RewriteOutputLimitError extends Error {
-  constructor() {
-    super("The model reached its output limit before finishing the draft.");
+  constructor(
+    message = "The model reached its output limit before finishing the draft.",
+  ) {
+    super(message);
   }
 }
 
@@ -89,8 +91,13 @@ export function cleanLlmOutput(rawText: string): string {
  * Helper to process streaming SSE deltas:
  * Skips reasoning_content or reasoning deltas, and accumulates content deltas.
  */
-export function extractDeltaContent(choiceDelta: any): string {
-  if (!choiceDelta) return "";
-  // Ignore reasoning deltas from thinking models (DeepSeek-R1, Qwen-Thinking, etc.)
-  return typeof choiceDelta.content === "string" ? choiceDelta.content : "";
+export function extractDeltaContent(
+  delta: { content?: unknown } | null | undefined,
+): string {
+  if (typeof delta?.content === "string") return delta.content;
+  if (!Array.isArray(delta?.content)) return "";
+  return delta.content
+    .filter((part) => part?.type === "text" && typeof part.text === "string")
+    .map((part) => part.text)
+    .join("");
 }

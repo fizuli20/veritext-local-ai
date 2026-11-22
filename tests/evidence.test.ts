@@ -23,7 +23,7 @@ describe("Detection evidence boundaries", () => {
     expect(formatModelSignal(0.004)).toBe("0.4");
     expect(formatModelSignal(0.975652)).toBe("97.6");
     expect(formatModelSignal(0.99998)).toBe(">99.9");
-    expect(formatModelSignal(1)).toBe("100");
+    expect(formatModelSignal(1)).toBe(">99.9");
   });
   it("refuses unknown class polarity and selects the actual AI class", () => {
     expect(
