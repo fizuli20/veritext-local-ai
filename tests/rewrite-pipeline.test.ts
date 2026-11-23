@@ -509,7 +509,7 @@ describe("Protected rewrite pipeline", () => {
     const wrong =
       "Opening hours should match the lives of local residents, allowing them time to answer questions rather than spending every shift processing returns.";
     const faithful =
-      "Opening hours should fit local residents' schedules. Staff need time to answer questions instead of sorting returns all shift.";
+      "Opening hours should fit local residents' schedules. Staff need time to answer questions instead of spending every shift sorting returns.";
     expect(reviewRewrite(original, wrong)).toContain(
       "Protected actor changed. Keep staff responsible for the original action.",
     );
@@ -595,7 +595,7 @@ describe("Protected rewrite pipeline", () => {
     const rewrittenOpening =
       "Lending books is just one thing a neighborhood library can do.";
     const rewrittenOperations =
-      "Practical choices determine how much good these services do. Set opening hours to fit local residents' schedules. Give staff time to answer questions instead of spending whole shifts sorting returns. A bigger library building will not solve these problems on its own.";
+      "Practical choices determine how much good these services do. Set opening hours to fit local residents' schedules. Give staff time to answer questions instead of spending every shift sorting returns. A bigger library building will not solve these problems on its own.";
     const rewrittenComparison =
       "More readers may benefit from adjusting the timetable slightly than from paying for a costly renovation.";
     const rewrittenMeasure =
