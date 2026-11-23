@@ -602,15 +602,20 @@ describe("Protected rewrite pipeline", () => {
       mode: "standard",
       depth: "rephrase",
       onProgress: noop,
-      generate: async ({ userPrompt, attempt }) => {
+      generate: async ({ userPrompt, systemPrompt, attempt }) => {
         const excerpt = userPrompt.split("\n\n").at(-1)!;
         requests.push(excerpt);
         if (excerpt === opening)
           return attempt
             ? rewrittenOpening
-            : "A neighborhood library does more than lend books.";
+            : "Can a neighborhood library do more than lend books?";
         if (excerpt === operations) return rewrittenOperations;
-        if (excerpt === comparison) return rewrittenComparison;
+        expect(systemPrompt).not.toContain("A larger building will not");
+        expect(userPrompt).toContain("Return one sentence of roughly");
+        if (excerpt === comparison)
+          return attempt
+            ? rewrittenComparison
+            : "More readers benefit from a small change to the timetable than from an expensive renovation.";
         if (excerpt === measure) return rewrittenMeasure;
         throw new Error("Unexpected editable excerpt");
       },
@@ -619,6 +624,7 @@ describe("Protected rewrite pipeline", () => {
       opening,
       opening,
       operations,
+      comparison,
       comparison,
       measure,
     ]);
@@ -636,10 +642,13 @@ describe("Protected rewrite pipeline", () => {
     expect(result).toMatchObject({
       parts: 3,
       retained: 0,
-      retries: 1,
+      retries: 2,
       lightFallback: false,
     });
-    expect(result.checks[0]?.reason).toContain("Possibility wording changed");
+    expect(result.checks[0]?.reason).toContain(
+      "Keep the statement as a statement",
+    );
+    expect(result.checks[1]?.reason).toContain("Possibility wording changed");
   });
 
   it("rejects invented commercial owners, services and new outcomes from the Llama retest", () => {

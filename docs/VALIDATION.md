@@ -1,3 +1,9 @@
+# Veritext 5.0.5 excerpt context
+
+A production Qwen run on 5.0.4 edited two sections in 12.9 seconds. The conclusion stayed unchanged after the model introduced negation into isolated sentences, and it turned the opening statement into a question. Scoped prompts now omit earlier sentences for self-contained excerpts and give single-sentence excerpts a length target. The rewrite check keeps declarative excerpts in statement form. Regression tests exercise each case.
+
+---
+
 # Veritext 5.0.4 scoped full rewrites
 
 On the prior production build, real browser runs on the built-in library sample reproduced the reported problem. Qwen 2.5 3B edited one of three sections in 28.0 seconds with five retries. Llama 3.2 3B returned light edits in 52.5 seconds with eight retries. The Llama draft also invented overcrowding and long wait times when paraphrasing a reference to the original problems.

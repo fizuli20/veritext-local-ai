@@ -227,6 +227,10 @@ async function rewriteEditableExcerpt({
   let bestExtent = 0;
   let retries = 0;
   let previousIssue = "";
+  const sizeHint =
+    tokenizeSentences(excerpt).length === 1
+      ? `Return one sentence of roughly ${countWords(excerpt)} words.`
+      : "";
   const checks: { attempt: number; reason: string }[] = [];
   for (let attempt = 0; attempt < 2; attempt++) {
     if (signal?.aborted) throw new Error("Generation stopped.");
@@ -239,6 +243,7 @@ async function rewriteEditableExcerpt({
           userPrompt:
             [
               "Rewrite only this excerpt. Move a clause or start with another idea already in the source.",
+              sizeHint,
               previousIssue,
               rewriteQualifierInstructions(excerpt),
             ]
@@ -265,6 +270,8 @@ async function rewriteEditableExcerpt({
     }
     if (signal?.aborted) throw new Error("Generation stopped.");
     const issues = reviewRewrite(excerpt, candidate, mode, terms, context);
+    if (!/[?？]/.test(excerpt) && /[?？]/.test(candidate))
+      issues.push("Keep the statement as a statement.");
     const extent = rewriteExtent(excerpt, candidate);
     if (!issues.length && extent > bestExtent) {
       best = candidate;
@@ -578,11 +585,14 @@ export async function runRewritePipeline(options: {
         const leading = segment.text.match(/^\s*/)?.[0] ?? "";
         const trailing = segment.text.match(/\s*$/)?.[0] ?? "";
         if (editAroundProtected) {
+          const excerpt = segment.text.trim();
           const edit = await rewriteEditableExcerpt({
-            excerpt: segment.text.trim(),
+            excerpt,
             systemPrompt:
               rewriteInstructions(mode, depth, styleNote, true) +
-              subjectContext,
+              (/^(?:it|they|he|she|this|that|these|those|such)\b/i.test(excerpt)
+                ? subjectContext
+                : ""),
             context: text,
             mode,
             terms,
