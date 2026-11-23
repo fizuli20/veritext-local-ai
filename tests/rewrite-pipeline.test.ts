@@ -565,6 +565,83 @@ describe("Protected rewrite pipeline", () => {
     expect(reviewRewrite(original, original)).toEqual([]);
   });
 
+  it("edits the library sample around exact claims from the first pass and retries only the affected excerpt", async () => {
+    const opening = "A neighborhood library can do more than lend books.";
+    const benefits =
+      "It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice.";
+    const contrast =
+      "Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded.";
+    const operations =
+      "These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own.";
+    const checklist =
+      "Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for.";
+    const comparison =
+      "A small change to the timetable may help more readers than an expensive renovation.";
+    const measure =
+      "The useful measure is whether the library makes everyday life easier for the community it serves.";
+    const text = [
+      opening,
+      benefits,
+      contrast,
+      operations,
+      checklist,
+      comparison,
+      measure,
+    ].join("  ");
+    const rewrittenOpening =
+      "Lending books is just one thing a neighborhood library can do.";
+    const rewrittenOperations =
+      "Practical choices determine how much good these services do. Set opening hours to fit local residents' schedules. Give staff time to answer questions instead of spending whole shifts sorting returns. A bigger library building will not solve these problems on its own.";
+    const rewrittenComparison =
+      "More readers may benefit from adjusting the timetable slightly than from paying for a costly renovation.";
+    const rewrittenMeasure =
+      "Judge the library by how much easier it makes everyday life for the community it serves.";
+    const requests: string[] = [];
+    const result = await runRewritePipeline({
+      text,
+      mode: "standard",
+      depth: "rephrase",
+      onProgress: noop,
+      generate: async ({ userPrompt, attempt }) => {
+        const excerpt = userPrompt.split("\n\n").at(-1)!;
+        requests.push(excerpt);
+        if (excerpt === opening)
+          return attempt
+            ? rewrittenOpening
+            : "A neighborhood library does more than lend books.";
+        if (excerpt === operations) return rewrittenOperations;
+        if (excerpt === comparison) return rewrittenComparison;
+        if (excerpt === measure) return rewrittenMeasure;
+        throw new Error("Unexpected editable excerpt");
+      },
+    });
+    expect(requests).toEqual([
+      opening,
+      opening,
+      operations,
+      comparison,
+      measure,
+    ]);
+    expect(result.text).toBe(
+      [
+        rewrittenOpening,
+        benefits,
+        contrast,
+        rewrittenOperations,
+        checklist,
+        rewrittenComparison,
+        rewrittenMeasure,
+      ].join("  "),
+    );
+    expect(result).toMatchObject({
+      parts: 3,
+      retained: 0,
+      retries: 1,
+      lightFallback: false,
+    });
+    expect(result.checks[0]?.reason).toContain("Possibility wording changed");
+  });
+
   it("rejects invented commercial owners, services and new outcomes from the Llama retest", () => {
     const source =
       "Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own.";
@@ -613,6 +690,24 @@ describe("Protected rewrite pipeline", () => {
         ),
       ),
     ).toContain(restriction);
+    expect(
+      reviewRewrite(
+        source,
+        source.replace(
+          "those problems",
+          "the problems of overcrowding and long wait times",
+        ),
+      ),
+    ).toContain(restriction);
+    expect(
+      reviewRewrite(
+        source,
+        source.replace(
+          "those problems",
+          "issues with opening hours and staffing",
+        ),
+      ),
+    ).not.toContain(restriction);
     expect(
       reviewRewrite(
         source,

@@ -350,6 +350,8 @@ test("repeated invalid model output is retained and explicitly labelled, never p
   await expect(
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(source);
+  await expect(page.getByText(/^Local model.*Original retained/)).toBeVisible();
+  await page.getByText("Rewrite checks", { exact: true }).click();
   await expect(
     page.getByText("Section 1 retained:", { exact: false }),
   ).toBeVisible();
@@ -393,7 +395,9 @@ test("long drafts above the old 4000-character limit are rewritten section by se
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(text.replaceAll("needs to review", "should review"));
   expect(calls).toBe(7);
-  await expect(page.getByRole("status")).toContainText("7 sections checked");
+  await expect(page.getByRole("status")).toContainText(
+    "7 of 7 sections edited",
+  );
 });
 
 test("first rewrite resumes after explicit model setup instead of requiring another click", async ({

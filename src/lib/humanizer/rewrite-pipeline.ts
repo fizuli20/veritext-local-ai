@@ -206,6 +206,86 @@ export interface RewriteOutcome {
   lightFallback: boolean;
   checks: { section: number; attempt: number; reason: string }[];
 }
+async function rewriteEditableExcerpt({
+  excerpt,
+  systemPrompt,
+  context,
+  mode,
+  terms,
+  signal,
+  generate,
+}: {
+  excerpt: string;
+  systemPrompt: string;
+  context: string;
+  mode: string;
+  terms: string[];
+  signal?: AbortSignal;
+  generate: GenerateRewrite;
+}) {
+  let best = excerpt;
+  let bestExtent = 0;
+  let retries = 0;
+  let previousIssue = "";
+  const checks: { attempt: number; reason: string }[] = [];
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (signal?.aborted) throw new Error("Generation stopped.");
+    if (attempt) retries++;
+    let candidate: string;
+    try {
+      candidate = (
+        await generate({
+          systemPrompt,
+          userPrompt:
+            [
+              "Rewrite only this excerpt. Move a clause or start with another idea already in the source.",
+              previousIssue,
+              rewriteQualifierInstructions(excerpt),
+            ]
+              .filter(Boolean)
+              .join(" ") +
+            "\n\n" +
+            excerpt,
+          attempt,
+          restructure: true,
+        })
+      ).trim();
+    } catch (error) {
+      if (signal?.aborted) throw new Error("Generation stopped.");
+      if (!(error instanceof RewriteOutputLimitError) && !bestExtent)
+        throw error;
+      checks.push({
+        attempt: attempt + 1,
+        reason:
+          error instanceof RewriteOutputLimitError
+            ? error.message
+            : "A stronger edit could not finish. The checked excerpt was kept.",
+      });
+      break;
+    }
+    if (signal?.aborted) throw new Error("Generation stopped.");
+    const issues = reviewRewrite(excerpt, candidate, mode, terms, context);
+    const extent = rewriteExtent(excerpt, candidate);
+    if (!issues.length && extent > bestExtent) {
+      best = candidate;
+      bestExtent = extent;
+    }
+    if (bestExtent >= 0.3) break;
+    checks.push({
+      attempt: attempt + 1,
+      reason:
+        issues.join(" ") ||
+        (extent
+          ? "The model made only small wording changes in this excerpt."
+          : "The model copied this excerpt unchanged."),
+    });
+    previousIssue = issues.length
+      ? preservationInstructions(excerpt, issues)
+      : "Use a genuinely different sentence opening while keeping the same claims.";
+  }
+  return { text: best, retries, checks };
+}
+
 export async function runRewritePipeline(options: {
   text: string;
   mode: string;
@@ -235,18 +315,20 @@ export async function runRewritePipeline(options: {
           splitQualifiedProse(section, documentLocks.prefix),
         )
       : sections;
+  const totalSections = parts.filter((part) => part.text.trim()).length;
+  let section = 0;
   let completed = "",
     retries = 0,
     retained = 0;
   const warnings: string[] = [];
   const checks: RewriteOutcome["checks"] = [];
-  for (let i = 0; i < parts.length; i++) {
+  for (const part of parts) {
     if (signal?.aborted) throw new Error("Generation stopped.");
-    const part = parts[i]!;
     if (!part.text.trim()) {
       completed += part.text + part.separator;
       continue;
     }
+    section++;
     const locked = {
       text: part.text,
       prefix: documentLocks.prefix,
@@ -282,6 +364,9 @@ export async function runRewritePipeline(options: {
       ...qualifiedStatements,
     ]);
     if (recommendation) fixedSentences.add(recommendation);
+    const editAroundProtected = Boolean(
+      part.restructure && fixedSentences.size,
+    );
     const fixedWordCount = [...fixedSentences].reduce(
       (count, sentence) => count + countWords(sentence),
       0,
@@ -293,11 +378,11 @@ export async function runRewritePipeline(options: {
       ? " Earlier source text identifies the subject and setting. Use it to resolve references, then edit only the requested excerpt: " +
         JSON.stringify(part.context)
       : "";
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; !editAroundProtected && attempt < 2; attempt++) {
       if (signal?.aborted) throw new Error("Generation stopped.");
       if (attempt) retries++;
       onProgress(
-        `${attempt ? "Refining" : "Editing"} section ${i + 1} of ${parts.length}…`,
+        `${attempt ? "Refining" : "Editing"} section ${section} of ${totalSections}…`,
       );
       let candidate: string;
       try {
@@ -332,7 +417,7 @@ export async function runRewritePipeline(options: {
         outputLimited = error instanceof RewriteOutputLimitError;
         if (!outputLimited && !usableLightEdit) throw error;
         checks.push({
-          section: i + 1,
+          section,
           attempt: attempt + 1,
           reason: usableLightEdit
             ? "A larger edit could not finish. The draft that passed checks was kept."
@@ -349,7 +434,7 @@ export async function runRewritePipeline(options: {
             issue.startsWith(CLOSING_OMISSION),
           );
           checks.push({
-            section: i + 1,
+            section,
             attempt: attempt + 1,
             reason: issues.join(" "),
           });
@@ -374,7 +459,7 @@ export async function runRewritePipeline(options: {
             restored.trim() !== originalPart.trim()
           ) {
             accepted = restored;
-            warnings.push(`Section ${i + 1}: ${issues.join("; ")}`);
+            warnings.push(`Section ${section}: ${issues.join("; ")}`);
             break;
           } else {
             continue;
@@ -382,7 +467,7 @@ export async function runRewritePipeline(options: {
         }
         if (restored.trim() === originalPart.trim()) {
           checks.push({
-            section: i + 1,
+            section,
             attempt: attempt + 1,
             reason: "The model copied this section unchanged.",
           });
@@ -398,7 +483,7 @@ export async function runRewritePipeline(options: {
         ) {
           usableLightEdit = restored;
           checks.push({
-            section: i + 1,
+            section,
             attempt: attempt + 1,
             reason: "The first draft made only small wording changes.",
           });
@@ -410,7 +495,7 @@ export async function runRewritePipeline(options: {
         break;
       } catch (error) {
         checks.push({
-          section: i + 1,
+          section,
           attempt: attempt + 1,
           reason: error instanceof Error ? error.message : String(error),
         });
@@ -484,12 +569,31 @@ export async function runRewritePipeline(options: {
           continue;
         }
         recoveryCalls++;
-        retries++;
+        if (!editAroundProtected) retries++;
         onProgress(
-          `Editing surrounding prose in section ${i + 1} of ${parts.length}…`,
+          editAroundProtected
+            ? `Rewriting editable passages in section ${section} of ${totalSections}…`
+            : `Editing surrounding prose in section ${section} of ${totalSections}…`,
         );
         const leading = segment.text.match(/^\s*/)?.[0] ?? "";
         const trailing = segment.text.match(/\s*$/)?.[0] ?? "";
+        if (editAroundProtected) {
+          const edit = await rewriteEditableExcerpt({
+            excerpt: segment.text.trim(),
+            systemPrompt:
+              rewriteInstructions(mode, depth, styleNote, true) +
+              subjectContext,
+            context: text,
+            mode,
+            terms,
+            signal,
+            generate,
+          });
+          retries += edit.retries;
+          checks.push(...edit.checks.map((check) => ({ ...check, section })));
+          recovered += leading + edit.text + trailing;
+          continue;
+        }
         let draft: string;
         try {
           draft = await generate({
@@ -505,7 +609,7 @@ export async function runRewritePipeline(options: {
         } catch (error) {
           if (!(error instanceof RewriteOutputLimitError)) throw error;
           checks.push({
-            section: i + 1,
+            section,
             attempt: 2 + recoveryCalls,
             reason: error.message,
           });
@@ -524,7 +628,7 @@ export async function runRewritePipeline(options: {
         );
         if (issues.length || !draft.trim()) {
           checks.push({
-            section: i + 1,
+            section,
             attempt: 2 + recoveryCalls,
             reason: issues.join(" ") || "No usable surrounding-prose edit.",
           });
@@ -546,8 +650,8 @@ export async function runRewritePipeline(options: {
         accepted = recovered;
         warnings.push(
           retainedProtected
-            ? `Section ${i + 1}: protected sentences kept intact. The model revised smaller passages.`
-            : `Section ${i + 1}: the model revised smaller passages after the whole-section draft failed its checks.`,
+            ? `Section ${section}: protected sentences kept intact. The model revised smaller passages.`
+            : `Section ${section}: the model revised smaller passages after the whole-section draft failed its checks.`,
         );
       }
     }
@@ -555,7 +659,7 @@ export async function runRewritePipeline(options: {
       retained++;
       accepted = originalPart;
       warnings.push(
-        `Section ${i + 1} retained: the model did not produce a changed draft that passed the checks.`,
+        `Section ${section} retained: the model did not produce a changed draft that passed the checks.`,
       );
     }
     if (
@@ -564,7 +668,7 @@ export async function runRewritePipeline(options: {
       rewriteExtent(originalPart, accepted) < 0.2
     )
       warnings.push(
-        `Section ${i + 1}: the available draft contains light wording changes.`,
+        `Section ${section}: the available draft contains light wording changes.`,
       );
     completed += accepted + part.separator;
   }
@@ -578,7 +682,7 @@ export async function runRewritePipeline(options: {
     warnings.push("The completed draft contains light wording changes.");
   return {
     text: completed,
-    parts: parts.length,
+    parts: totalSections,
     retries,
     retained,
     warnings,

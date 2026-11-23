@@ -107,6 +107,11 @@ const ORGANIZATION_KINDS = [
   /\b(?:hospitals?|clinics?)\b/i,
 ];
 
+const REFERENCED_PROBLEM =
+  /\b(?:these|those|the same) (?:problems?|issues?|difficulties|challenges)\b/i;
+const SPECIFIED_PROBLEM =
+  /\b(?:problems?|issues?|difficulties|challenges)\s+(?:of|with|such as|including)\s+([^.!?;]+)/gi;
+
 function introducedClaim(
   original: string,
   candidate: string,
@@ -130,6 +135,20 @@ function introducedClaim(
     )
   )
     return true;
+
+  // A reference to previously described problems cannot introduce new problems by name.
+  if (REFERENCED_PROBLEM.test(original)) {
+    const contextAnchors = new Set(contentAnchors(context));
+    const inventedProblem = [...candidate.matchAll(SPECIFIED_PROBLEM)].some(
+      (match) => {
+        const details = [...new Set(contentAnchors(match[1]!))];
+        return (
+          details.filter((detail) => !contextAnchors.has(detail)).length >= 2
+        );
+      },
+    );
+    if (inventedProblem) return true;
+  }
 
   const originalWords = new Set(contentAnchors(original));
   const clausePattern =

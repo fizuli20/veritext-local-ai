@@ -853,11 +853,9 @@ export function Workspace() {
         setNotice(
           selected
             ? "Selected text revised. Review the updated draft."
-            : result.lightFallback
-              ? "Light edit ready. Review the available wording changes."
-              : result.changed
-                ? `Draft ready. ${result.parts} section${result.parts === 1 ? "" : "s"} checked${result.retained ? `; ${result.retained} retained unchanged` : ""}. Review the changes before using the text.`
-                : "The model did not produce a changed draft that passed preservation checks after a retry. The original was retained. Try a larger model or another tone.",
+            : result.changed
+              ? `${result.lightFallback ? "Light edit ready." : "Draft ready."} ${result.parts - result.retained} of ${result.parts} sections edited. Review the changes before using the text.`
+              : "The model did not produce a changed draft that passed preservation checks. Your original was retained.",
         );
       } catch (err) {
         if (operation.current === id) {
@@ -1295,9 +1293,11 @@ export function Workspace() {
                     )}
                     <p className="vt-provenance">
                       {engineName} ·{" "}
-                      {rewriteReport?.lightFallback
-                        ? "Light edit result"
-                        : REWRITE_DEPTHS[outputDepth].label}
+                      {rewriteReport && !rewriteReport.changed
+                        ? "Original retained"
+                        : rewriteReport?.lightFallback
+                          ? "Light edit result"
+                          : REWRITE_DEPTHS[outputDepth].label}
                       {rewriteReport
                         ? ` · ${(rewriteReport.elapsedMs / 1000).toFixed(1)} s · ${rewriteReport.retries} retr${rewriteReport.retries === 1 ? "y" : "ies"}`
                         : ""}
@@ -1315,29 +1315,23 @@ export function Workspace() {
                           " · Both are at the top of the model’s scale. The detector cannot distinguish them in this range."}
                       </p>
                     )}
-                    {!busy && !!rewriteReport?.checks.length && (
-                      <details className="vt-reference">
-                        <summary>
-                          Rewrite checks · {rewriteReport.checks.length} retry
-                          reason{rewriteReport.checks.length === 1 ? "" : "s"}
-                        </summary>
-                        {rewriteReport.checks.map((check, i) => (
-                          <p key={i}>
-                            Section {check.section}, attempt {check.attempt}:{" "}
-                            {check.reason}
-                          </p>
-                        ))}
-                      </details>
-                    )}
                     {!busy &&
-                      rewriteReport?.warnings.map((warning) => (
-                        <p
-                          key={warning}
-                          className="vt-review vt-review-warning"
-                        >
-                          {warning}
-                        </p>
-                      ))}
+                      rewriteReport &&
+                      (rewriteReport.checks.length > 0 ||
+                        rewriteReport.warnings.length > 0) && (
+                        <details className="vt-reference">
+                          <summary>Rewrite checks</summary>
+                          {rewriteReport.warnings.map((warning) => (
+                            <p key={warning}>{warning}</p>
+                          ))}
+                          {rewriteReport.checks.map((check, i) => (
+                            <p key={i}>
+                              Section {check.section}, attempt {check.attempt}:{" "}
+                              {check.reason}
+                            </p>
+                          ))}
+                        </details>
+                      )}
                     {!busy && (
                       <div
                         className={`vt-review ${issues.length ? "vt-review-warning" : ""}`}

@@ -1,3 +1,13 @@
+# Veritext 5.0.4 scoped full rewrites
+
+On the prior production build, real browser runs on the built-in library sample reproduced the reported problem. Qwen 2.5 3B edited one of three sections in 28.0 seconds with five retries. Llama 3.2 3B returned light edits in 52.5 seconds with eight retries. The Llama draft also invented overcrowding and long wait times when paraphrasing a reference to the original problems.
+
+For groups with exact protected claims, Full rewrite copies those claims from the source and asks the model to edit the surrounding excerpts directly. A retry targets the affected excerpt. The editor checks each excerpt and then the assembled section. The regression uses the built-in sample, requires exact preservation of the benefits and expansion checklist, and checks that a dropped qualifier retries only its excerpt. A separate check catches the invented problems from the Llama baseline.
+
+The editor reports how many sections changed, labels light edits, and groups detailed checks together. A retained original has its own label.
+
+---
+
 # Veritext 5.0.3 local models and detector saturation
 
 A real Ollama chat completion with Qwen3 4B and a deliberately short output budget stopped after reasoning and returned no draft. In the same setup, disabling reasoning through the compatibility field caused some reasoning text to appear in the answer field. Veritext keeps reasoning separate, retries a reasoning-only output limit once with a larger budget, and uses the documented low effort option for GPT-OSS on the default Ollama endpoint.
