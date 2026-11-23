@@ -1,5 +1,6 @@
 import { maskProtectedSpans, restoreProtectedSpans } from "./protected-spans";
 import { countWords, tokenizeSentences } from "../nlp/tokenizer";
+import { QUALIFIED_COMPARISON } from "./source-edits";
 
 const NEGATION =
   /\b(?:no|not|never|neither|cannot|without)\b|\b[\p{L}]+n['’]t\b/giu;
@@ -86,6 +87,53 @@ const EVALUATION =
   /\b(?:measur\w*|judg\w*|criteri\w*|indicator\w*|assess\w*|evaluat\w*|test)\b/i;
 const EVALUATION_TARGET =
   /\b(?:measure|test|criterion|indicator)\b[^.!?;]{0,45}\b(?:whether|how)\b([^.!?;]+)/i;
+
+const SERVICE_HOURS =
+  /\b(?:opening hours|opening times|hours of operation)\b/gi;
+const BARE_OPENINGS = /\bopenings\b/i;
+
+function comparisonReversed(
+  original: ReturnType<typeof tokenizeSentences>,
+  candidate: ReturnType<typeof tokenizeSentences>,
+): boolean {
+  const subjectKey = (phrase: string) =>
+    phrase
+      .toLowerCase()
+      .match(/[\p{L}]+/gu)
+      ?.at(-1);
+  const comparisons = (sentences: typeof original) =>
+    sentences.flatMap(({ text }) => {
+      const match = text.match(QUALIFIED_COMPARISON);
+      if (!match) return [];
+      const [, first, , action, direction, group, second] = match;
+      const firstKey = subjectKey(first!);
+      const secondKey = subjectKey(second!);
+      if (!firstKey || !secondKey || firstKey === secondKey) return [];
+      return [
+        {
+          first: firstKey,
+          second: secondKey,
+          direction,
+          effect: action + " " + group,
+        },
+      ];
+    });
+  const before = comparisons(original);
+  if (!before.length) return false;
+  const after = comparisons(candidate);
+  return before.some((source) =>
+    after.some(
+      (draft) =>
+        source.effect === draft.effect &&
+        ((source.first === draft.first &&
+          source.second === draft.second &&
+          source.direction !== draft.direction) ||
+          (source.first === draft.second &&
+            source.second === draft.first &&
+            source.direction === draft.direction)),
+    ),
+  );
+}
 
 /** Retain the other side of a comparison when restructuring a short excerpt. */
 export function focusedComparisonIssue(
@@ -365,6 +413,24 @@ export function reviewRewrite(
   context = original,
 ): string[] {
   const issues: string[] = [];
+  if (
+    BARE_OPENINGS.test(candidate) &&
+    (original.match(SERVICE_HOURS) ?? []).length >
+      (candidate.match(SERVICE_HOURS) ?? []).length
+  )
+    issues.push(
+      "Protected operating schedule changed. Use a clear term such as opening hours or hours of operation.",
+    );
+  if (
+    COMPARISON.test(original) &&
+    comparisonReversed(
+      tokenizeSentences(original),
+      tokenizeSentences(candidate),
+    )
+  )
+    issues.push(
+      "Protected comparison reversed. Preserve which option helps more or fewer people.",
+    );
   const frequency = (items: string[]) =>
     items.reduce<Record<string, number>>(
       (a, s) => ({ ...a, [s]: (a[s] ?? 0) + 1 }),

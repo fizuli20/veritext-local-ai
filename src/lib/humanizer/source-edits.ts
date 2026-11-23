@@ -2,7 +2,7 @@ const BOUNDED_CLAUSE =
   /^(\S[^,;.!?]{4,125}) (because|when|if|unless) (\S[^,;.!?]{4,125})\.$/i;
 const OPEN_ENDED_ABILITY =
   /^((?:A|An|The) [\p{L}][\p{L} '-]{1,70}) can do more than ([\p{L}][\p{L} '-]{2,70})\.$/u;
-const QUALIFIED_COMPARISON =
+export const QUALIFIED_COMPARISON =
   /^((?:A|An|The) [\p{L}][\p{L} '-]{2,80}) (may|might|can|could) (help|benefit|reach|serve) (more|fewer) ([\p{L}][\p{L} '-]{2,45}) than ((?:a|an|the) [\p{L}][\p{L} '-]{2,80})\.$/u;
 const USEFUL_MEASURE = /^The useful measure is whether (\S[^.!?]+)\.$/i;
 const ON_ITS_OWN =

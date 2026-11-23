@@ -125,7 +125,7 @@ export async function rewriteParagraph({
     const groups: (typeof parts)[] = [];
     let current: typeof parts = [];
     for (const part of parts) {
-      if (part.fixed || edits.has(part.id)) {
+      if (part.fixed) {
         if (current.length) groups.push(current);
         current = [];
       } else {
@@ -133,11 +133,24 @@ export async function rewriteParagraph({
       }
     }
     if (current.length) groups.push(current);
-    const group = groups.sort((a, b) => b.length - a.length)[0];
-    if (group && group.length >= 2 && group.length <= 7) {
+    const group = groups
+      .map((parts) => ({
+        parts,
+        unresolved: parts.filter(({ id }) => !edits.has(id)).length,
+      }))
+      .filter(
+        ({ parts, unresolved }) =>
+          unresolved > 0 && parts.length >= 2 && parts.length <= 7,
+      )
+      .sort((a, b) => b.unresolved - a.unresolved)[0]?.parts;
+    if (group) {
       const start = group[0]!.start;
       const end = group.at(-1)!.end;
       const target = text.slice(start, end);
+      const fallbackExtent = rewriteExtent(
+        target,
+        group.map(({ id, text }) => edits.get(id)?.text ?? text).join(" "),
+      );
       const context = start > 0 ? parts[0]!.text : "";
       const qualifier = target.match(/\b(?:every|each) shift\b/i)?.[0];
       let feedback = "";
@@ -198,8 +211,13 @@ export async function rewriteParagraph({
           terms,
           text,
         );
-        if (edited && !issues.length) {
+        if (
+          edited &&
+          !issues.length &&
+          rewriteExtent(target, candidate) > fallbackExtent
+        ) {
           block = { start, end, text: candidate, edited };
+          for (const { id } of group) edits.delete(id);
           requested = requested.filter(
             (part) => part.start < start || part.end > end,
           );

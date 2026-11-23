@@ -8,7 +8,10 @@ import {
   runRewritePipeline,
 } from "@/lib/humanizer/rewrite-pipeline";
 import { restructureFromSource } from "@/lib/humanizer/source-edits";
-import { reviewFocusedRewrite } from "@/lib/humanizer/rewrite-review";
+import {
+  reviewFocusedRewrite,
+  reviewRewrite,
+} from "@/lib/humanizer/rewrite-review";
 
 const original = [
   "A neighborhood library can do more than lend books.",
@@ -34,17 +37,19 @@ describe("paragraph-context editing", () => {
         s4: "Decisions about opening hours and staffing shape how these services work.",
       });
     });
-    const legacy = vi.fn();
+    const prose = vi.fn(async () => {
+      throw new Error("The fixture has only individual sentence edits.");
+    });
     const result = await runRewritePipeline({
       text: original,
       mode: "standard",
       depth: "rephrase",
       voiceGuidance: "Favor short, direct sentences.",
       onProgress: () => {},
-      generate: legacy,
+      generate: prose,
       generateParagraph: generate,
     });
-    expect(legacy).not.toHaveBeenCalled();
+    expect(prose).toHaveBeenCalledTimes(1);
     expect(generate.mock.calls[0]?.[0].systemPrompt).toContain(
       "Writing sample guidance for sentence rhythm and vocabulary: Favor short, direct sentences.",
     );
@@ -167,6 +172,86 @@ describe("paragraph-context editing", () => {
     expect(
       reviewFocusedRewrite(original, faithful, "standard", [], original),
     ).toEqual([]);
+  });
+
+  it("keeps public hours explicit and catches a direct reversal of a comparison", () => {
+    const scheduling = "Opening hours should match local residents' schedules.";
+    expect(
+      reviewRewrite(
+        scheduling,
+        scheduling.replace("Opening hours", "Openings"),
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Protected operating schedule changed"),
+      ]),
+    );
+    expect(
+      reviewRewrite(
+        scheduling,
+        scheduling.replace("Opening hours", "Hours of operation"),
+      ),
+    ).toEqual([]);
+
+    const choice =
+      "A schedule change may serve more residents than a capital project.";
+    expect(
+      reviewRewrite(
+        choice,
+        "A capital project may serve more residents than a schedule change.",
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Protected comparison reversed"),
+      ]),
+    );
+    expect(
+      reviewRewrite(
+        choice,
+        "A capital project may serve fewer residents than a schedule change.",
+      ),
+    ).toEqual([]);
+  });
+
+  it("tries a connected edit before using a safe source-based replacement", async () => {
+    const start = "A larger building will not solve those problems on its own.";
+    const detail =
+      "Practical choices about available services determine whether attendance improves.";
+    const text = [
+      "Neighbors across the district often use this community center for activities and services they cannot find close to home, including meetings on weekday evenings and informal drop-in events for residents throughout the year.",
+      "The center will offer 12 sessions for 18 participants.",
+      start,
+      detail,
+    ].join(" ");
+    const connected = [
+      "On its own, a larger building will not solve those problems.",
+      "Better attendance depends on decisions about which services to offer.",
+    ].join(" ");
+
+    const generate = vi.fn(async ({ attempt }: { attempt: number }) =>
+      attempt === 0
+        ? connected.replace("will not solve", "will solve")
+        : connected,
+    );
+    const result = await rewriteParagraph({
+      text,
+      mode: "standard",
+      terms: [],
+      protectedRanges: lockRewriteSpans(text).ranges ?? [],
+      generate: async () => "{}",
+      generateBlock: generate,
+      onRetry: () => {},
+    });
+    expect(generate.mock.calls[0]![0]).toHaveProperty(
+      "userPrompt",
+      expect.stringContaining(start + " " + detail),
+    );
+    expect(generate.mock.calls[1]![0]).toHaveProperty(
+      "userPrompt",
+      expect.stringContaining("Negation changed"),
+    );
+    expect(result?.text).toContain(connected);
+    expect(result?.fromSource).toBe(0);
   });
 
   it("uses a prose retry with the exact qualifier before falling back", async () => {

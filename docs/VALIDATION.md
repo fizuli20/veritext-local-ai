@@ -1,3 +1,11 @@
+# Veritext 5.3.1 connected edits and source fidelity
+
+Five supplied drafts of the same library passage made extensive wording changes. In manual review, one draft muddled which choice benefits more readers, another omitted the final measure of success, and another replaced a crowded home with a noisy one. The reported ZeroGPT percentages are observations about those drafts on that run. The examples share the same source passage and do not establish a success rate across other writing or other detectors.
+
+Full rewrite now gives the model a chance to edit a connected passage even if some of its sentences already have a safe source-based edit. It keeps the source-based edits if the model's passage fails review or changes less wording. Checks flag direct reversals of supported comparative constructions and the replacement of an explicit operating schedule with the ambiguous word “openings”. These checks use the text and its source. Detector results do not enter rewrite selection.
+
+---
+
 # Veritext 5.3 paste, humanize, copy
 
 [HumanizeAI.pro](https://www.humanizeai.pro/) describes pasting text, clicking **Humanize AI**, completing a CAPTCHA when prompted, and copying the result. It offers optional tone and rewrite strength controls. Its [about page](https://www.humanizeai.pro/about) describes changing word choice and sentence structure. The exact production model and scoring logic are undisclosed. This comparison covers the public workflow.
