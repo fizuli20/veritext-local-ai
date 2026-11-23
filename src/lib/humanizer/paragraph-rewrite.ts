@@ -139,39 +139,69 @@ export async function rewriteParagraph({
       const end = group.at(-1)!.end;
       const target = text.slice(start, end);
       const context = start > 0 ? parts[0]!.text : "";
-      try {
+      const qualifier = target.match(/\b(?:every|each) shift\b/i)?.[0];
+      let feedback = "";
+      for (let attempt = 0; attempt < 2; attempt++) {
         if (signal?.aborted) throw new Error("Generation stopped.");
-        onGenerate?.();
-        const candidate = cleanLlmOutput(
-          await generateBlock({
-            systemPrompt:
-              rewriteInstructions(mode, "rephrase", styleNote, true) +
-              (context
-                ? " One earlier sentence for context only: " +
-                  JSON.stringify(context)
-                : ""),
-            userPrompt:
-              "Recast the target passage into clear prose. Use separate sentences for different actors where that helps. Return the target passage only.\n\n" +
-              target,
-            attempt: 0,
-            maxTokens: Math.min(900, Math.ceil(target.length / 3) + 95),
-          }),
-        );
+        if (attempt) {
+          retries++;
+          onRetry();
+        } else {
+          onGenerate?.();
+        }
+        let candidate: string;
+        try {
+          candidate = cleanLlmOutput(
+            await generateBlock({
+              systemPrompt:
+                rewriteInstructions(mode, "rephrase", styleNote, true) +
+                (context
+                  ? " One earlier sentence for context only: " +
+                    JSON.stringify(context)
+                  : ""),
+              userPrompt:
+                [
+                  "Recast the target passage into clear prose. Use separate sentences for different actors where that helps. Return the target passage only.",
+                  qualifier
+                    ? "Keep this exact qualifier attached to its original action: " +
+                      JSON.stringify(qualifier) +
+                      "."
+                    : "",
+                  feedback,
+                ]
+                  .filter(Boolean)
+                  .join(" ") +
+                "\n\n" +
+                target,
+              attempt,
+              maxTokens: Math.min(900, Math.ceil(target.length / 3) + 95),
+            }),
+          );
+        } catch (error) {
+          if (signal?.aborted) throw error;
+          break;
+        }
         if (signal?.aborted) throw new Error("Generation stopped.");
         const edited = group.filter(
           (part) => !candidate.includes(part.text),
         ).length;
-        if (
-          edited &&
-          !reviewFocusedRewrite(target, candidate, mode, terms, text).length
-        ) {
+        const issues = reviewFocusedRewrite(
+          target,
+          candidate,
+          mode,
+          terms,
+          text,
+        );
+        if (edited && !issues.length) {
           block = { start, end, text: candidate, edited };
           requested = requested.filter(
             (part) => part.start < start || part.end > end,
           );
+          break;
         }
-      } catch (error) {
-        if (signal?.aborted) throw error;
+        feedback = issues.length
+          ? issues.join(" ")
+          : "Use a new opening or clause order.";
       }
     }
   }

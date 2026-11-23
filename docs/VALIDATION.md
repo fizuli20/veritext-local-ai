@@ -1,3 +1,9 @@
+# Veritext 5.1.2 connected-passage retry
+
+Connected passages now tell the model when a frequency qualifier must stay attached to its original action. If the passage fails review, the editor retries once with the specific preservation feedback before relying on sentence replacements or verified source changes.
+
+---
+
 # Veritext 5.1.1 rewrite fidelity
 
 The first live Qwen 3B retest with the paragraph pipeline edited five of six editable sentences in 2.6 seconds, including four source-based edits. The model weakened “every shift” to “shifts” in that run. The focused check now keeps that frequency qualifier. Source-based rules also skip ambiguous negations, comparisons with possessive or combined subjects, and cases where “on its own” may modify the object.

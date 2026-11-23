@@ -145,4 +145,36 @@ describe("paragraph-context editing", () => {
       ),
     ).toEqual([]);
   });
+
+  it("uses a prose retry with the exact qualifier before falling back", async () => {
+    const duty =
+      "Staff need time to answer questions rather than spend every shift sorting returns.";
+    const revised =
+      "Practical decisions about opening hours and staffing shape these services. Rather than spending every shift sorting returns, staff need time to answer questions.";
+    const source = original.replace(
+      "opening hours and staffing.",
+      `opening hours and staffing. ${duty}`,
+    );
+    const generate = vi.fn(async ({ attempt }: { attempt: number }) =>
+      attempt ? revised : revised.replace("every shift", "shifts"),
+    );
+    const result = await runRewritePipeline({
+      text: source,
+      mode: "standard",
+      depth: "rephrase",
+      onProgress: () => {},
+      generate,
+      generateParagraph: async () => "{}",
+    });
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(generate.mock.calls[0]?.[0]).toHaveProperty(
+      "userPrompt",
+      expect.stringContaining("Keep this exact qualifier"),
+    );
+    expect(generate.mock.calls[1]?.[0]).toHaveProperty(
+      "userPrompt",
+      expect.stringContaining("Keep the original frequency"),
+    );
+    expect(result.text).toContain(revised);
+  });
 });
