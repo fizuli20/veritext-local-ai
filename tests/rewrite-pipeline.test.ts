@@ -833,6 +833,39 @@ describe("Protected rewrite pipeline", () => {
     ).toBeUndefined();
   });
 
+  it("keeps a possible explanation neutral and preserves the scope of distinct choices", () => {
+    const cause =
+      "The test cannot tell whether the design or prior use explains the difference.";
+    expect(
+      reviewRewrite(cause, cause.replace("the design", "design flaws")),
+    ).toContain(
+      "Protected explanation changed. Keep design as a neutral possibility without introducing flaws.",
+    );
+    expect(
+      reviewRewrite(
+        cause,
+        "The test cannot establish whether design or previous use explains the difference.",
+      ),
+    ).toEqual([]);
+
+    const choices =
+      "Replacement and repair are separate options for customers.";
+    expect(
+      reviewRewrite(
+        choices,
+        "Replacement and repair are mutually exclusive choices for customers.",
+      ),
+    ).toContain(
+      "Protected options changed. Keep the choices distinct without adding a rule that they cannot be combined.",
+    );
+    expect(
+      reviewRewrite(
+        choices,
+        "Customers have two distinct options: repair and replacement.",
+      ),
+    ).toEqual([]);
+  });
+
   it("flags model tool markers while accepting literal markup from the source", () => {
     const original = "The drivers reviewed the route before leaving.";
     expect(reviewRewrite(original, "</tool_call>\n\n" + original)).toContain(

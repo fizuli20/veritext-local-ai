@@ -1,3 +1,11 @@
+# Veritext 5.4.6 neutral explanations and distinct options
+
+A local comparison used the same 4B model on five passages. The experiment compared direct editing with an outline-and-rewrite prompt. The outline pass sometimes copied the source and sometimes added details such as “design flaws” where the source gave design and prior use as neutral explanations. It also described separate repair and replacement options as mutually exclusive. Those unsupported inferences are now checked in the rewrite review. A regression accepts faithful wording and rejects both observed edits.
+
+The comparison took place locally and measured editorial quality. The outline path was not selected for release.
+
+---
+
 # Veritext 5.4.5 sentence-level protection
 
 A protected number in one sentence no longer blocks a source-based restructuring of a different sentence. On the local rowing fixture, the model left the original unchanged. The editor clarified the three-action checklist and preserved the exact rule about more than 8 learners and the radio failure condition. The actual UI rewrite and copy completed successfully.

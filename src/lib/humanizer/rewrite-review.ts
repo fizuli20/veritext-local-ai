@@ -240,6 +240,14 @@ const REFERENCED_PROBLEM =
 const SPECIFIED_PROBLEM =
   /\b(?:problems?|issues?|difficulties|challenges)\s+(?:of|with|such as|including)\s+([^.!?;]+)/gi;
 
+const NEUTRAL_DESIGN_ALTERNATIVE = /\bwhether (?:the )?design (?:or|versus)\b/i;
+const DESIGN_FAULT =
+  /\b(?:design (?:flaws?|defects?|faults?)|(?:flaws?|defects?|faults?) in (?:the )?design)\b/i;
+const DISTINCT_OPTIONS =
+  /\b(?:separate|distinct) (?:options|choices|alternatives)\b/i;
+const EXCLUSIVE_OPTIONS =
+  /\b(?:mutually exclusive|(?:choose|select|pick) only one|one or the other|cannot (?:be )?combin(?:e|ed))\b/i;
+
 function introducedClaim(
   original: string,
   candidate: string,
@@ -506,6 +514,22 @@ export function reviewRewrite(
   if (introducedClaim(original, candidate, context))
     issues.push(
       "Protected meaning changed. Remove the added owner, service or independent claim.",
+    );
+  if (
+    NEUTRAL_DESIGN_ALTERNATIVE.test(original) &&
+    !DESIGN_FAULT.test(context) &&
+    DESIGN_FAULT.test(candidate)
+  )
+    issues.push(
+      "Protected explanation changed. Keep design as a neutral possibility without introducing flaws.",
+    );
+  if (
+    DISTINCT_OPTIONS.test(original) &&
+    !EXCLUSIVE_OPTIONS.test(context) &&
+    EXCLUSIVE_OPTIONS.test(candidate)
+  )
+    issues.push(
+      "Protected options changed. Keep the choices distinct without adding a rule that they cannot be combined.",
     );
   const recommendation = closingRecommendation(original);
   if (
