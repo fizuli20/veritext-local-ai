@@ -503,11 +503,33 @@ export const REWRITE_DEPTHS = {
 } as const;
 export type RewriteDepth = keyof typeof REWRITE_DEPTHS;
 
+export function writingStyleInstructions(
+  styleNote: string,
+  voiceGuidance: string,
+): string {
+  const preference = styleNote.trim().slice(0, 300);
+  const voice = voiceGuidance.trim().slice(0, 450);
+  return [
+    preference
+      ? `Apply this explicit preference to vocabulary, register, and rhythm: ${JSON.stringify(preference)}.`
+      : "",
+    voice
+      ? `Writing sample guidance for sentence rhythm and vocabulary: ${voice} Apply it where it fits the source and explicit style preference.`
+      : "",
+    preference || voice
+      ? "Preserve facts and meaning over any style preference. Keep the source point of view."
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function rewriteInstructions(
   mode: string,
   depth: RewriteDepth = "polish",
   styleNote = "",
   restructure = false,
+  voiceGuidance = "",
 ) {
   const style: Record<string, string> = {
     standard:
@@ -524,10 +546,8 @@ export function rewriteInstructions(
     depth === "rephrase"
       ? "Write a fresh version of the passage. Change sentence openings and clause structure. When a sentence assigns different actions to different people, split it into clear sentences that name each actor. Vary the flow using natural wording. Keep every original claim and caveat, including the final substantive point. Preserve who does what, when and why. Keep recommendations, plans and criteria in their original roles. Leave uncertain wording intact if revising it would alter the meaning."
       : "Make a restrained copy edit. Keep the existing sequence and most sentence structures; improve clarity where needed.";
-  const preference = styleNote.trim().slice(0, 300);
-  const custom = preference
-    ? ` Apply this optional style preference to vocabulary, register, and rhythm only: ${JSON.stringify(preference)}. Preserve facts and meaning over any style preference.`
-    : "";
+  const styleInstructions = writingStyleInstructions(styleNote, voiceGuidance);
+  const custom = styleInstructions ? " " + styleInstructions : "";
   if (restructure)
     return (
       "Rebuild the excerpt in fresh, direct English. Use a different opening or clause order. For a single sentence, use a new opening and change the structure rather than swapping a few words. Split overloaded sentences when that improves clarity. Keep the same names for organizations and places. Name the person or group that does each action. Never add a new service, outcome or explanation. Keep every fact, condition, comparison, negative, and word that expresses possibility. Reuse a full sentence only when a change would lose meaning. " +

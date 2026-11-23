@@ -307,6 +307,7 @@ export async function runRewritePipeline(options: {
   mode: string;
   depth?: RewriteDepth;
   styleNote?: string;
+  voiceGuidance?: string;
   terms?: string[];
   signal?: AbortSignal;
   generate: GenerateRewrite;
@@ -318,6 +319,7 @@ export async function runRewritePipeline(options: {
     mode,
     depth = "polish",
     styleNote,
+    voiceGuidance,
     terms = [],
     signal,
     generate,
@@ -406,6 +408,7 @@ export async function runRewritePipeline(options: {
       text,
       mode,
       styleNote,
+      voiceGuidance,
       terms,
       protectedRanges: documentLocks.ranges ?? [],
       signal,
@@ -520,7 +523,13 @@ export async function runRewritePipeline(options: {
       try {
         candidate = await generate({
           systemPrompt:
-            rewriteInstructions(mode, depth, styleNote, part.restructure) +
+            rewriteInstructions(
+              mode,
+              depth,
+              styleNote,
+              part.restructure,
+              voiceGuidance,
+            ) +
             subjectContext +
             (part.restructure
               ? " " + rewriteQualifierInstructions(originalPart)
@@ -714,7 +723,7 @@ export async function runRewritePipeline(options: {
           const edit = await rewriteEditableExcerpt({
             excerpt,
             systemPrompt:
-              rewriteInstructions(mode, depth, styleNote, true) +
+              rewriteInstructions(mode, depth, styleNote, true, voiceGuidance) +
               (/^(?:it|they|he|she|this|that|these|those|such)\b/i.test(excerpt)
                 ? subjectContext
                 : ""),
@@ -733,7 +742,13 @@ export async function runRewritePipeline(options: {
         try {
           draft = await generate({
             systemPrompt:
-              rewriteInstructions(mode, depth, styleNote, part.restructure) +
+              rewriteInstructions(
+                mode,
+                depth,
+                styleNote,
+                part.restructure,
+                voiceGuidance,
+              ) +
               subjectContext +
               (part.restructure
                 ? " " + rewriteQualifierInstructions(segment.text)

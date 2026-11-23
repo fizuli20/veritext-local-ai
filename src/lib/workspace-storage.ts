@@ -1,5 +1,6 @@
 import type { RewriteDepth } from "./humanizer/rewrite-review";
 import type { DetectorTier } from "./detector/evidence";
+import { VOICE_SAMPLE_LIMIT } from "./humanizer/editor-guidance";
 
 export const WORKSPACE_KEY = "veritext.workspace.v1";
 export const WORKSPACE_ENABLED_KEY = "veritext.workspace.remember";
@@ -21,6 +22,7 @@ export interface WorkspaceSnapshot {
   source: string;
   lockedTerms: string;
   styleNote: string;
+  voiceSample: string;
   mode: RewriteMode;
   outputMode: RewriteMode;
   depth: RewriteDepth;
@@ -59,6 +61,10 @@ export function readWorkspace(raw: string | null): WorkspaceSnapshot | null {
       source,
       lockedTerms: lockedTerms.slice(0, 1000),
       styleNote: styleNote.slice(0, 300),
+      voiceSample:
+        typeof data.voiceSample === "string"
+          ? data.voiceSample.slice(0, VOICE_SAMPLE_LIMIT)
+          : "",
       mode:
         data.mode && REWRITE_MODES.includes(data.mode) ? data.mode : "standard",
       outputMode:

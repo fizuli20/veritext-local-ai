@@ -10,6 +10,7 @@ import {
   reviewRewrite,
   rewriteExtent,
   rewriteInstructions,
+  writingStyleInstructions,
 } from "./rewrite-review";
 
 export interface ParagraphRequest {
@@ -34,6 +35,7 @@ export async function rewriteParagraph({
   text,
   mode,
   styleNote,
+  voiceGuidance,
   terms,
   protectedRanges,
   signal,
@@ -45,6 +47,7 @@ export async function rewriteParagraph({
   text: string;
   mode: string;
   styleNote?: string;
+  voiceGuidance?: string;
   terms: string[];
   protectedRanges: { start: number; end: number }[];
   signal?: AbortSignal;
@@ -79,16 +82,13 @@ export async function rewriteParagraph({
   const editable = parts.filter((part) => !part.fixed);
   if (editable.length < 2) return null;
 
-  const style = styleNote?.trim().slice(0, 300);
   const systemPrompt = [
     "You edit prose for a reader. Change sentence openings or clause order where possible. Preserve meaning, the original language, facts, names, actions, and relationships.",
     "Keep questions, recommendations and criteria in their original roles. Preserve negation, uncertainty and both sides of comparisons. Do not add examples, evidence or explanations.",
     "Read all sentences for context. For each requested ID, return one replacement for that source sentence. It may become two short sentences. Never move a claim into another ID.",
     "Return only the JSON object. Use sentence IDs as keys and edited text as values. Avoid repeating the first few words of a sentence.",
     `Editing tone: ${mode}.`,
-    style
-      ? `Style preference for vocabulary and rhythm: ${JSON.stringify(style)}. Keep meaning over style.`
-      : "",
+    writingStyleInstructions(styleNote ?? "", voiceGuidance ?? ""),
   ]
     .filter(Boolean)
     .join(" ");
@@ -154,7 +154,13 @@ export async function rewriteParagraph({
           candidate = cleanLlmOutput(
             await generateBlock({
               systemPrompt:
-                rewriteInstructions(mode, "rephrase", styleNote, true) +
+                rewriteInstructions(
+                  mode,
+                  "rephrase",
+                  styleNote,
+                  true,
+                  voiceGuidance,
+                ) +
                 (context
                   ? " One earlier sentence for context only: " +
                     JSON.stringify(context)

@@ -726,6 +726,33 @@ body {
 details.vt-lock-toolbar > summary { cursor: pointer; }
 details.vt-lock-toolbar[open] > input { width: 100%; margin-top: 6px; }
 details.vt-lock-toolbar[open] > label { display: block; margin-top: 8px; }
+details.vt-lock-toolbar[open] > textarea {
+  display: block;
+  width: 100%;
+  margin: 6px 0;
+  border: 1px solid #dce4d7;
+  border-radius: 5px;
+  padding: 8px 10px;
+  background: #fdfefa;
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+}
+.vt-personal-details {
+  margin: 10px 24px 18px;
+}
+.vt-personal-details li {
+  margin-top: 10px;
+  padding-inline-start: 10px;
+  border-inline-start: 2px solid #dce4d7;
+}
+.vt-personal-details blockquote {
+  overflow-wrap: anywhere;
+}
+.vt-personal-details .vt-text-button {
+  margin-top: 4px;
+  color: inherit;
+}
 .vt-print-title { display: none; }
 
 @media print {

@@ -39,11 +39,15 @@ describe("paragraph-context editing", () => {
       text: original,
       mode: "standard",
       depth: "rephrase",
+      voiceGuidance: "Favor short, direct sentences.",
       onProgress: () => {},
       generate: legacy,
       generateParagraph: generate,
     });
     expect(legacy).not.toHaveBeenCalled();
+    expect(generate.mock.calls[0]?.[0].systemPrompt).toContain(
+      "Writing sample guidance for sentence rhythm and vocabulary: Favor short, direct sentences.",
+    );
     expect(generate.mock.calls[0]?.[0].userPrompt).toContain(
       "The library will run 12 sessions",
     );

@@ -15,6 +15,12 @@ import {
 } from "lucide-react";
 import { countWords } from "@/lib/nlp/tokenizer";
 import {
+  describeVoiceSample,
+  suggestPersonalDetails,
+  VOICE_SAMPLE_LIMIT,
+  VOICE_SAMPLE_MIN_WORDS,
+} from "@/lib/humanizer/editor-guidance";
+import {
   DETECTOR_PROFILES,
   type DetectorTier,
   describeEvidence,
@@ -102,6 +108,7 @@ export function Workspace() {
   const [depth, setDepth] = useState<RewriteDepth>("rephrase");
   const [mode, setMode] = useState<RewriteMode>("standard");
   const [styleNote, setStyleNote] = useState("");
+  const [voiceSample, setVoiceSample] = useState("");
   const [outputDepth, setOutputDepth] = useState<RewriteDepth>("rephrase");
   const [outputMode, setOutputMode] = useState<RewriteMode>("standard");
   const [writingTier, setWritingTier] = useState<WritingModelTier>("balanced");
@@ -177,6 +184,25 @@ export function Workspace() {
         : [],
     [diff, source, output],
   );
+  const voiceGuidance = useMemo(
+    () => describeVoiceSample(voiceSample),
+    [voiceSample],
+  );
+  const detailSuggestions = useMemo(
+    () => suggestPersonalDetails(output),
+    [output],
+  );
+
+  function selectDetail(start: number, end: number) {
+    setDiff(false);
+    requestAnimationFrame(() => {
+      const field = draftField.current;
+      if (!field || field.value !== output || field.disabled) return;
+      field.focus();
+      field.setSelectionRange(start, end);
+      captureSelection(field);
+    });
+  }
 
   useEffect(() => {
     function handleSelection() {
@@ -203,6 +229,7 @@ export function Workspace() {
           setSource(restored.source);
           setLockedTerms(restored.lockedTerms);
           setStyleNote(restored.styleNote);
+          setVoiceSample(restored.voiceSample);
           setMode(restored.mode);
           setOutputMode(restored.outputMode);
           setDepth(restored.depth);
@@ -240,6 +267,7 @@ export function Workspace() {
         source,
         lockedTerms,
         styleNote,
+        voiceSample,
         mode,
         outputMode,
         depth,
@@ -266,6 +294,7 @@ export function Workspace() {
     source,
     lockedTerms,
     styleNote,
+    voiceSample,
     mode,
     outputMode,
     depth,
@@ -760,6 +789,7 @@ export function Workspace() {
           mode,
           depth,
           styleNote,
+          voiceGuidance,
           terms: lockedTerms
             .split(",")
             .map((t) => t.trim())
@@ -927,6 +957,7 @@ export function Workspace() {
       rewriteReport,
       mode,
       styleNote,
+      voiceGuidance,
       lockedTerms,
       depth,
       useLocal,
@@ -1122,6 +1153,24 @@ export function Workspace() {
                 maxLength={300}
                 placeholder="For example, warm and direct, with short sentences"
               />
+              <label htmlFor="rewrite-voice-sample">Your writing sample</label>
+              <textarea
+                id="rewrite-voice-sample"
+                disabled={!!busy}
+                value={voiceSample}
+                onChange={(event) => setVoiceSample(event.target.value)}
+                maxLength={VOICE_SAMPLE_LIMIT}
+                rows={4}
+                aria-describedby="rewrite-voice-help"
+                placeholder="Paste a paragraph you wrote."
+              />
+              <span id="rewrite-voice-help">
+                {voiceGuidance
+                  ? "Ready. The editor uses your sentence rhythm and word choice as guidance."
+                  : `Use at least ${VOICE_SAMPLE_MIN_WORDS} words in two or more sentences.`}{" "}
+                The sample text stays in this browser. Only style guidance is
+                used for rewrites.
+              </span>
             </details>
           )}
           <div
@@ -1390,6 +1439,29 @@ export function Workspace() {
                           "No changes to tracked numbers, quotes, or protected spans found. This check cannot verify every claim or guarantee meaning."
                         )}
                       </div>
+                    )}
+                    {!busy && detailSuggestions.length > 0 && (
+                      <details className="vt-reference vt-personal-details">
+                        <summary>
+                          Add your own details · {detailSuggestions.length}
+                        </summary>
+                        <ul>
+                          {detailSuggestions.map(
+                            ({ start, end, text, question }) => (
+                              <li key={start}>
+                                <blockquote>{text}</blockquote>
+                                <p>{question}</p>
+                                <button
+                                  className="vt-text-button"
+                                  onClick={() => selectDetail(start, end)}
+                                >
+                                  Select in draft
+                                </button>
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                      </details>
                     )}
                     <div className="vt-pane-footer">
                       <span>{countWords(output)} words</span>
@@ -1721,8 +1793,8 @@ export function Workspace() {
             Remember this workspace
           </label>
           <p>
-            Save the source, draft and detector text in this browser. Turning
-            this off removes the saved copy.
+            Save the source, draft, detector text and voice sample in this
+            browser. Turning this off removes the saved copy.
           </p>
           {storageError && <p role="alert">{storageError}</p>}
         </div>

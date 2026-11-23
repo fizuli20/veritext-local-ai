@@ -1,3 +1,11 @@
+# Veritext 5.2 writing sample and detail suggestions
+
+The rewrite editor derives style guidance from a writing sample in the browser. The regular rewrite and paragraph-context prompts receive the derived guidance. The sample itself is available for opt-in workspace storage and stays in the browser. Explicit tone and style preferences and source fidelity still guide the rewrite.
+
+Draft suggestions point to the exact sentence and ask for an optional source, timeframe, group, or concrete outcome. Selecting a suggestion returns from the changes view and selects the sentence without editing it. Tests cover prompt delivery, sample privacy, opt-in storage, and selecting and clearing a detail suggestion.
+
+---
+
 # Veritext 5.1.3 parallel requirements
 
 In a final browser retest, Llama kept staff responsible for answering questions but made that time a consequence of changes to opening hours. The source gave two parallel requirements. The focused review now rejects that new causal connection and the prose retry explains the distinction.

@@ -127,6 +127,81 @@ test("keeps no workspace by default, restores opted-in texts, and clears the sav
   ).toHaveValue("");
 });
 
+test("guides rewrites with a private voice sample and selects optional detail prompts in the draft", async ({
+  page,
+}) => {
+  const voice =
+    "I dropped my keys by the pier. I didn’t see them at first. A woman with a blue bag helped me look. She found them under a bench beside the lantern. I thanked her and caught the last ferry home.";
+  const original =
+    "We plan to expand the library's weekend hours in the near future.";
+  const revised =
+    "We plan to extend the library's weekend hours in the near future.";
+  const requests: string[] = [];
+  await page.route("http://localhost:1234/**", async (route) => {
+    if (route.request().url().endsWith("/models"))
+      return route.fulfill({ json: { data: [{ id: "voice-fixture" }] } });
+    requests.push(route.request().postData() ?? "");
+    return route.fulfill({
+      contentType: "text/event-stream",
+      body:
+        "data: " +
+        JSON.stringify({ choices: [{ delta: { content: revised } }] }) +
+        "\n\ndata: [DONE]\n\n",
+    });
+  });
+  await page.goto("/");
+  await page.getByText("Custom style", { exact: true }).click();
+  const sample = page.getByRole("textbox", { name: "Your writing sample" });
+  await sample.fill(voice);
+  await expect(
+    page.getByText(/Ready\. The editor uses your sentence rhythm/),
+  ).toBeVisible();
+  await page
+    .getByRole("textbox", { name: "Original text", exact: true })
+    .fill(original);
+  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  const editedDraft = page.getByRole("textbox", {
+    name: "Edited draft",
+    exact: true,
+  });
+  await expect(editedDraft).toHaveValue(revised);
+  expect(requests).toHaveLength(1);
+  expect(requests[0]).toContain("Writing sample guidance");
+  expect(requests[0]).not.toMatch(/pier|lantern|ferry/);
+  await page.getByText(/Add your own details/).click();
+  await expect(page.getByText(/When did this happen/)).toBeVisible();
+  await page.getByRole("button", { name: "Show changes", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Select in draft", exact: true })
+    .click();
+  await expect(editedDraft).toBeFocused();
+  expect(
+    await editedDraft.evaluate((el: HTMLTextAreaElement) =>
+      el.value.slice(el.selectionStart, el.selectionEnd),
+    ),
+  ).toBe(revised);
+  await editedDraft.fill(
+    revised.replace("in the near future", "on December 5"),
+  );
+  await expect(page.getByText(/Add your own details/)).toHaveCount(0);
+  const stored = () =>
+    page.evaluate(() => localStorage.getItem("veritext.workspace.v1"));
+  expect(await stored()).toBeNull();
+  const remember = page.getByRole("checkbox", {
+    name: "Remember this workspace",
+  });
+  await remember.check();
+  await expect
+    .poll(async () => JSON.parse((await stored()) ?? "{}").voiceSample)
+    .toBe(voice);
+  await page.reload();
+  await page.getByText("Custom style", { exact: true }).click();
+  await expect(sample).toHaveValue(voice);
+  await remember.uncheck();
+  await expect.poll(stored).toBeNull();
+});
+
 test("shows widely different checked paragraphs and exports the same passage summary", async ({
   page,
 }) => {
