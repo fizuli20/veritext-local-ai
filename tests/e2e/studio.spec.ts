@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { connectLocal, openEditorSection } from "./editor-controls";
 const source =
   'In 2024, Ana said "wait". The trial did not succeed. We need to review the results before making a decision.';
 const edited =
@@ -23,7 +24,15 @@ test("focused workspace, no automatic downloads, accessible setup, responsive la
   await page
     .getByRole("textbox", { name: "Original text", exact: true })
     .fill(source);
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await expect(
+    page.getByText("Editing options", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel("Keep these names or terms exactly"),
+  ).toBeHidden();
+  await page
+    .getByRole("button", { name: "Model settings", exact: true })
+    .click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
@@ -39,6 +48,117 @@ test("focused workspace, no automatic downloads, accessible setup, responsive la
     ).toBe(true);
   }
   expect(errors).toEqual([]);
+});
+
+test("pastes, loads the default browser model on one click, and copies the checked draft", async ({
+  page,
+}) => {
+  await page.addInitScript(
+    ({ source, edited }) => {
+      let contents = source;
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          readText: async () => contents,
+          writeText: async (text: string) => {
+            contents = text;
+          },
+        },
+      });
+      Object.defineProperty(navigator, "gpu", {
+        configurable: true,
+        value: { requestAdapter: async () => ({}) },
+      });
+      const NativeWorker = window.Worker;
+      window.Worker = class extends NativeWorker {
+        constructor() {
+          const script = `
+          let sent = false;
+          self.onmessage = ({ data }) => {
+            let content;
+            if (data.kind === "reload") {
+              if (data.content.modelId[0] !== "Qwen2.5-1.5B-Instruct-q4f16_1-MLC") {
+                self.postMessage({ kind: "throw", uuid: data.uuid, content: "Unexpected default model" });
+                return;
+              }
+              self.postMessage({kind: "initProgressCallback", content: {
+                progress: 0.5, text: "Downloading the writing model…"
+              }});
+            }
+            if (data.kind === "chatCompletionStreamInit") {
+                sent = false;
+                content = "writing-stream";
+              }
+            if (data.kind === "completionStreamNextChunk" && !sent) {
+              sent = true;
+              content = { choices: [{ delta: { content: ${JSON.stringify(edited)} }, finish_reason: "stop" }] };
+            }
+            self.postMessage({ kind: "return", uuid: data.uuid, content });
+          };
+        `;
+          super(
+            URL.createObjectURL(
+              new Blob([script], { type: "text/javascript" }),
+            ),
+          );
+        }
+      };
+    },
+    { source, edited },
+  );
+  await page.goto("/");
+  await page.getByRole("button", { name: "Paste", exact: true }).click();
+  const original = page.getByRole("textbox", {
+    name: "Original text",
+    exact: true,
+  });
+  await expect(original).toHaveValue(source);
+  await expect(page.getByText(/First run downloads/)).toContainText("1 GB");
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.getByRole("textbox", { name: "Edited draft", exact: true }),
+  ).toHaveValue(edited);
+  await expect(original).toHaveValue(source);
+  await expect(
+    page.getByRole("button", { name: "Show changes", exact: true }),
+  ).toBeHidden();
+  await page.getByRole("button", { name: "Copy", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Copied", exact: true }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    edited,
+  );
+});
+
+test("keeps input and offers model settings when automatic browser setup cannot start", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "gpu", {
+      configurable: true,
+      value: undefined,
+    });
+  });
+  await page.goto("/");
+  const original = page.getByRole("textbox", {
+    name: "Original text",
+    exact: true,
+  });
+  await original.fill(source);
+  const humanize = page.getByRole("button", { name: "Humanize", exact: true });
+  await humanize.click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "WebGPU is unavailable" }),
+  ).toBeVisible();
+  await expect(original).toHaveValue(source);
+  await expect(humanize).toBeEnabled();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Model settings", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toBeVisible();
 });
 
 test("waits until the editor can retain text on a slow first load", async ({
@@ -70,7 +190,7 @@ test("waits until the editor can retain text on a slow first load", async ({
   await editor.fill(source);
   await expect(editor).toHaveValue(source);
   await expect(
-    page.getByRole("button", { name: "Rewrite", exact: true }),
+    page.getByRole("button", { name: "Humanize", exact: true }),
   ).toBeEnabled();
   await page.getByRole("button", { name: "Try a sample" }).click();
   await expect(editor).toHaveValue(/^A neighborhood library/);
@@ -158,16 +278,19 @@ test("local-server integration fixture: discovery, Gemma retry, streamed draft, 
   await page
     .getByRole("textbox", { name: "Original text", exact: true })
     .fill(source);
-  await page.getByRole("button", { name: "Set up AI", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Model settings", exact: true })
+    .click();
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(
     page.getByText("Connected · gemma-integration-fixture", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Return to editor" }).click();
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   await expect(
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(edited);
+  await openEditorSection(page, "Draft tools");
   await expect(
     page.getByText(/^Local model · gemma-integration-fixture/),
   ).toBeVisible();
@@ -180,7 +303,7 @@ test("local-server integration fixture: discovery, Gemma retry, streamed draft, 
   await page
     .getByRole("textbox", { name: "Original text", exact: true })
     .fill(source + " One more source detail.");
-  await expect(page.getByRole("status")).toContainText("previous source");
+  await expect(page.getByRole("status")).toContainText("previous text");
 
   await page.getByRole("button", { name: "Edit draft", exact: true }).click();
   await page
@@ -199,7 +322,9 @@ test("connection errors offer actionable setup without fake output", async ({
 }) => {
   await page.route("http://localhost:1234/**", (r) => r.abort());
   await page.goto("/");
-  await page.getByRole("button", { name: "Set up AI", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Model settings", exact: true })
+    .click();
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     "Enable CORS",
@@ -238,9 +363,8 @@ test("shows a local reasoning retry and publishes only the finished draft", asyn
   await page
     .getByRole("textbox", { name: "Original text", exact: true })
     .fill(source);
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
-  await page.getByRole("button", { name: "Ollama", exact: true }).click();
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await connectLocal(page, "Ollama");
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   const draft = page.getByRole("textbox", {
     name: "Edited draft",
     exact: true,
@@ -289,14 +413,17 @@ test("rewrite retries copied text, preserves quotes and locked terms, and restor
   await page
     .getByRole("textbox", { name: "Original text", exact: true })
     .fill(source);
+  await openEditorSection(page, "Editing options");
   await page.getByLabel("Keep these names or terms exactly").fill("Ana");
-  await page.getByRole("button", { name: "Set up AI", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Model settings", exact: true })
+    .click();
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(
     page.getByText("Connected · fixture-chat", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Return to editor" }).click();
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   try {
     await expect(page.getByRole("status")).toContainText("Refining section 1");
     await expect(
@@ -309,8 +436,9 @@ test("rewrite retries copied text, preserves quotes and locked terms, and restor
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(edited);
   expect(attempts).toBe(2);
+  await openEditorSection(page, "Draft tools");
   await expect(page.getByText(/^Local model .*1 retry$/)).toBeVisible();
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   await expect(
     page
       .getByRole("alert")
@@ -319,7 +447,7 @@ test("rewrite retries copied text, preserves quotes and locked terms, and restor
   await expect(
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(edited);
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Undo", exact: true }),
   ).toBeVisible();
@@ -344,17 +472,23 @@ test("repeated invalid model output is retained and explicitly labelled, never p
   await page
     .getByRole("textbox", { name: "Original text", exact: true })
     .fill(source);
-  await page.getByRole("button", { name: "Set up AI", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Model settings", exact: true })
+    .click();
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(
     page.getByText("Connected · fixture-chat", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Return to editor" }).click();
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("original was retained");
   await expect(
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(source);
+  await openEditorSection(page, "Draft tools");
+  await expect(
+    page.getByRole("button", { name: "Copy original", exact: true }),
+  ).toBeVisible();
   await expect(page.getByText(/^Local model.*Original retained/)).toBeVisible();
   await page.getByText("Rewrite checks", { exact: true }).click();
   await expect(
@@ -389,13 +523,15 @@ test("long drafts above the old 4000-character limit are rewritten section by se
   await page
     .getByRole("textbox", { name: "Original text", exact: true })
     .fill(text);
-  await page.getByRole("button", { name: "Set up AI", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Model settings", exact: true })
+    .click();
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(
     page.getByText("Connected · fixture-chat", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Return to editor" }).click();
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   await expect(
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(text.replaceAll("needs to review", "should review"));
@@ -405,9 +541,7 @@ test("long drafts above the old 4000-character limit are rewritten section by se
   );
 });
 
-test("first rewrite resumes after explicit model setup instead of requiring another click", async ({
-  page,
-}) => {
+test("sends the exact completed draft to the detector", async ({ page }) => {
   await page.route("http://localhost:1234/**", async (route) => {
     if (route.request().url().endsWith("/models"))
       return route.fulfill({
@@ -425,16 +559,14 @@ test("first rewrite resumes after explicit model setup instead of requiring anot
   await page
     .getByRole("textbox", { name: "Original text", exact: true })
     .fill(source);
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
-  await expect(
-    page.getByText("Your rewrite will start automatically after setup."),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await connectLocal(page);
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(edited);
   await page.route("https://huggingface.co/**", (route) => route.abort());
+  await openEditorSection(page, "Draft tools");
   await page
     .getByRole("button", { name: "Check edited draft", exact: true })
     .click();
@@ -496,6 +628,7 @@ test("compares two exact scans and returns to the original rewrite source", asyn
     exact: true,
   });
   await editor.fill(original);
+  await openEditorSection(page, "Editing options");
   await page
     .getByRole("button", { name: "Check original", exact: true })
     .click();
@@ -504,13 +637,14 @@ test("compares two exact scans and returns to the original rewrite source", asyn
   );
   await page.getByRole("button", { name: "AI Humanizer", exact: true }).click();
   await expect(editor).toHaveValue(original);
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await connectLocal(page);
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   const edited = page.getByRole("textbox", {
     name: "Edited draft",
     exact: true,
   });
   await expect(edited).toHaveValue(draft);
+  await openEditorSection(page, "Draft tools");
   await page
     .getByRole("button", { name: "Check edited draft", exact: true })
     .click();
@@ -529,6 +663,7 @@ test("compares two exact scans and returns to the original rewrite source", asyn
   const comparison = page.getByText(
     /Detailed model signals.*Original 82\/100.*Edited draft 63\/100/,
   );
+  await openEditorSection(page, "Draft tools");
   await expect(comparison).toBeVisible();
   await edited.fill(draft + " Users can also ask about upcoming sessions.");
   await expect(comparison).toHaveCount(0);
@@ -643,17 +778,19 @@ test("rewrite depth reaches the engine and the completed draft keeps its depth l
   await page
     .getByRole("textbox", { name: "Original text", exact: true })
     .fill(source);
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await connectLocal(page);
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   await expect(
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(edited);
   expect(prompts[0]).toContain("fresh version");
+  await openEditorSection(page, "Editing options");
+  await openEditorSection(page, "Draft tools");
   await page.getByRole("button", { name: "Light edit", exact: true }).click();
   await expect(
     page.getByText(/^Local model · depth-fixture · Full rewrite/),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   await expect(
     page.getByText(/^Local model · depth-fixture · Light edit/),
   ).toBeVisible();

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { connectLocal, openEditorSection } from "./editor-controls";
 
 const source =
   'In 2024, Ana said "wait". The trial did not succeed. We need to review the results before making a decision.';
@@ -34,8 +35,8 @@ async function createDraft(page: Page) {
   await page
     .getByRole("textbox", { name: "Original text", exact: true })
     .fill(source);
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await connectLocal(page);
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   await expect(
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(draft);
@@ -50,6 +51,7 @@ test("revises only the selected text, protects a quote across the range boundary
     name: "Edited draft",
     exact: true,
   });
+  await openEditorSection(page, "Draft tools");
   const revise = page.getByRole("button", { name: "Revise selection" });
   await expect(revise).toBeDisabled();
   async function select(text: string) {
@@ -114,6 +116,7 @@ test("keeps no workspace by default, restores opted-in texts, and clears the sav
   await expect(
     page.getByRole("textbox", { name: "Edited draft", exact: true }),
   ).toHaveValue(draft);
+  await openEditorSection(page, "Draft tools");
   await expect(page.getByText(/Restored draft ·/)).toBeVisible();
   await remember.uncheck();
   await expect.poll(storedCopy).toBeNull();
@@ -150,6 +153,7 @@ test("guides rewrites with a private voice sample and selects optional detail pr
     });
   });
   await page.goto("/");
+  await openEditorSection(page, "Editing options");
   await page.getByText("Custom style", { exact: true }).click();
   const sample = page.getByRole("textbox", { name: "Your writing sample" });
   await sample.fill(voice);
@@ -159,8 +163,8 @@ test("guides rewrites with a private voice sample and selects optional detail pr
   await page
     .getByRole("textbox", { name: "Original text", exact: true })
     .fill(original);
-  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await connectLocal(page);
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
   const editedDraft = page.getByRole("textbox", {
     name: "Edited draft",
     exact: true,
@@ -169,6 +173,7 @@ test("guides rewrites with a private voice sample and selects optional detail pr
   expect(requests).toHaveLength(1);
   expect(requests[0]).toContain("Writing sample guidance");
   expect(requests[0]).not.toMatch(/pier|lantern|ferry/);
+  await openEditorSection(page, "Draft tools");
   await page.getByText(/Add your own details/).click();
   await expect(page.getByText(/When did this happen/)).toBeVisible();
   await page.getByRole("button", { name: "Show changes", exact: true }).click();
@@ -196,6 +201,7 @@ test("guides rewrites with a private voice sample and selects optional detail pr
     .poll(async () => JSON.parse((await stored()) ?? "{}").voiceSample)
     .toBe(voice);
   await page.reload();
+  await openEditorSection(page, "Editing options");
   await page.getByText("Custom style", { exact: true }).click();
   await expect(sample).toHaveValue(voice);
   await remember.uncheck();

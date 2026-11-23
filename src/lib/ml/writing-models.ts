@@ -2,6 +2,7 @@ export const WRITING_MODELS = {
   fast: {
     id: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
     label: "Light · Llama 1B",
+    downloadSize: "0.7–0.9 GB",
     description:
       "About 0.7–0.9 GB download. Small edits on lower-memory devices.",
     memoryMB: 880,
@@ -9,6 +10,7 @@ export const WRITING_MODELS = {
   balanced: {
     id: "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
     label: "Balanced · Qwen 1.5B",
+    downloadSize: "1 GB",
     description:
       "About 1 GB download and 1.6 GB working GPU memory. Try for more substantial edits.",
     memoryMB: 1630,
@@ -16,6 +18,7 @@ export const WRITING_MODELS = {
   qwen3b: {
     id: "Qwen2.5-3B-Instruct-q4f16_1-MLC",
     label: "Larger · Qwen 3B",
+    downloadSize: "1.8 GB",
     description:
       "About 1.8 GB download and 2.5 GB working GPU memory. Try it for more detailed rewrites on a device with sufficient memory.",
     memoryMB: 2505,
@@ -23,6 +26,7 @@ export const WRITING_MODELS = {
   quality: {
     id: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
     label: "Larger · Llama 3B",
+    downloadSize: "1.8–2.2 GB",
     description:
       "About 1.8–2.2 GB download and 2.3 GB working GPU memory. Requires more memory.",
     memoryMB: 2264,

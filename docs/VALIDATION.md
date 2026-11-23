@@ -1,3 +1,11 @@
+# Veritext 5.3 paste, humanize, copy
+
+[HumanizeAI.pro](https://www.humanizeai.pro/) describes pasting text, clicking **Humanize AI**, completing a CAPTCHA when prompted, and copying the result. It offers optional tone and rewrite strength controls. Its [about page](https://www.humanizeai.pro/about) describes changing word choice and sentence structure. The exact production model and scoring logic are undisclosed. This comparison covers the public workflow.
+
+The first click on Humanize in Veritext starts the browser model and automatically rewrites after it loads. The default requires a working WebGPU adapter and downloads about 1 GB on first use. The paste, automatic startup, and copy path is covered in Chromium using a controlled model-worker response. A separate test verifies that a browser without WebGPU retains the source text and makes model settings available. The local run passed 141 unit tests and 26 browser tests.
+
+---
+
 # Veritext 5.2 writing sample and detail suggestions
 
 The rewrite editor derives style guidance from a writing sample in the browser. The regular rewrite and paragraph-context prompts receive the derived guidance. The sample itself is available for opt-in workspace storage and stays in the browser. Explicit tone and style preferences and source fidelity still guide the rewrite.

@@ -7,7 +7,7 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     product: "Veritext",
-    version: "5.2.0",
+    version: "5.3.0",
     zeroKeyMandate: true,
     externalApiKeysRequired: false,
     engines: {

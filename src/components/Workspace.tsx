@@ -380,9 +380,10 @@ export function Workspace() {
       return;
     }
     setRewriteInput(value);
+    setCopied(false);
     setNotice(
       output && value !== source
-        ? "Source text changed. The edited draft belongs to your previous source. Run Rewrite to create a new draft."
+        ? "The edited draft belongs to your previous text. Choose Humanize to create a new draft."
         : "",
     );
   }
@@ -515,7 +516,7 @@ export function Workspace() {
       setConnecting(false);
     }
   }
-  async function loadBrowser() {
+  async function loadBrowser(automatic = false) {
     if (browserName === WRITING_MODELS[writingTier].id) {
       setUseLocal(false);
       setSettings(false);
@@ -552,9 +553,10 @@ export function Workspace() {
       setBrowserName(loaded.modelId);
       setUseLocal(false);
       setSettings(false);
-      setNotice("Browser writing model is ready.");
+      if (!automatic) setNotice("Browser writing model is ready.");
     } catch (err) {
       if (operation.current === id) {
+        if (automatic) setPendingRewrite(null);
         const message = err instanceof Error ? err.message : String(err);
         if (err instanceof Error && err.name === "QuotaExceededError") {
           setError(
@@ -708,14 +710,7 @@ export function Workspace() {
     async (target: RewriteTarget = "document") => {
       setError("");
       setNotice("");
-      if (!activeName) {
-        setPendingRewrite(target);
-        setSettings(true);
-        setNotice(
-          "Choose a writing model. Your rewrite will start when it is ready.",
-        );
-        return;
-      }
+      setCopied(false);
       const selected = target === "document" ? null : target;
       const original = selected
         ? output.slice(selected.start, selected.end)
@@ -724,6 +719,14 @@ export function Workspace() {
       if (original.length > 12000) {
         setError(
           "Rewrite up to 12,000 characters at a time. Longer text is split into sections to fit the writing model.",
+        );
+        return;
+      }
+      if (!activeName) {
+        setPendingRewrite(target);
+        setSettings(true);
+        setNotice(
+          "Choose a writing model. Your rewrite will start when it is ready.",
         );
         return;
       }
@@ -965,8 +968,20 @@ export function Workspace() {
       connectedUrl,
     ],
   );
+  function humanize() {
+    if (!interactive || busy || connecting || importing || !rewriteInput.trim())
+      return;
+    if (activeName || rewriteInput.length > 12000) {
+      void rewrite();
+      return;
+    }
+    setNotice("");
+    setPendingRewrite("document");
+    void loadBrowser(true);
+  }
+
   // Resume the user's requested rewrite after either engine finishes setup.
-  // No automatic downloads: loading still requires the explicit setup action.
+  // A model download begins only after Humanize or an explicit model load.
   useEffect(() => {
     if (pendingRewrite && activeName && !busy && !connecting) {
       setPendingRewrite(null);
@@ -1031,9 +1046,13 @@ export function Workspace() {
             AI Humanizer
           </button>
         </nav>
-        <button className="vt-engine" onClick={() => setSettings(true)}>
+        <button
+          className="vt-engine"
+          disabled={!!busy}
+          onClick={() => setSettings(true)}
+        >
           <span className={activeName ? "vt-dot ready" : "vt-dot"} />
-          <span>{activeName ? "Model ready" : "Set up AI"}</span>
+          <span>Model settings</span>
           <Settings2 size={15} />
         </button>
       </header>
@@ -1047,7 +1066,7 @@ export function Workspace() {
           </h1>
           <p>
             {tab === "humanizer"
-              ? "Refine a draft without losing what you meant. Private, local, and free of API keys."
+              ? "Paste your text, humanize it, and copy the draft."
               : "Explore AI-like patterns with an open model. A signal to consider, never proof of authorship."}
           </p>
         </div>
@@ -1065,113 +1084,123 @@ export function Workspace() {
           className="vt-studio"
           aria-label={tab === "humanizer" ? "Rewrite editor" : "Text detector"}
         >
-          <div className="vt-toolbar">
-            {tab === "humanizer" ? (
-              <div className="vt-modes" aria-label="Rewrite tone">
-                {(
-                  [
-                    ["standard", "Standard"],
-                    ["academic", "Academic"],
-                    ["casual", "Casual"],
-                    ["professional", "Professional"],
-                    ["concise", "Shorten"],
-                    ["expand", "Expand"],
-                  ] as const
-                ).map(([id, label]) => (
+          {tab === "humanizer" ? (
+            <details className="vt-editing-options">
+              <summary>Editing options</summary>
+              <div className="vt-toolbar">
+                <div className="vt-modes" aria-label="Rewrite tone">
+                  {(
+                    [
+                      ["standard", "Standard"],
+                      ["academic", "Academic"],
+                      ["casual", "Casual"],
+                      ["professional", "Professional"],
+                      ["concise", "Shorten"],
+                      ["expand", "Expand"],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      disabled={!!busy}
+                      aria-pressed={mode === id}
+                      onClick={() => setMode(id)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div
+                className="vt-lock-toolbar"
+                role="group"
+                aria-label="Rewrite depth"
+              >
+                <span>Rewrite depth</span>
+                {Object.entries(REWRITE_DEPTHS).map(([id, choice]) => (
                   <button
                     key={id}
+                    className="vt-secondary"
                     disabled={!!busy}
-                    aria-pressed={mode === id}
-                    onClick={() => setMode(id)}
+                    aria-pressed={depth === id}
+                    onClick={() => setDepth(id as RewriteDepth)}
                   >
-                    {label}
+                    {choice.label}
                   </button>
                 ))}
+                <span>{REWRITE_DEPTHS[depth].description}</span>
               </div>
-            ) : (
+              <div className="vt-lock-toolbar">
+                <label htmlFor="locked-terms">
+                  Keep these names or terms exactly
+                </label>
+                <input
+                  id="locked-terms"
+                  disabled={!!busy}
+                  maxLength={1000}
+                  value={lockedTerms}
+                  onChange={(e) => setLockedTerms(e.target.value)}
+                  placeholder="Optional: Ana, Project Atlas (comma-separated)"
+                />
+                <span>
+                  Numbers, quotes, links and citations are protected
+                  automatically.
+                </span>
+              </div>
+              <details className="vt-lock-toolbar">
+                <summary>Custom style</summary>
+                <label htmlFor="rewrite-style-note">
+                  Describe the voice or audience
+                </label>
+                <input
+                  id="rewrite-style-note"
+                  disabled={!!busy}
+                  value={styleNote}
+                  onChange={(event) => setStyleNote(event.target.value)}
+                  maxLength={300}
+                  placeholder="For example, warm and direct, with short sentences"
+                />
+                <label htmlFor="rewrite-voice-sample">
+                  Your writing sample
+                </label>
+                <textarea
+                  id="rewrite-voice-sample"
+                  disabled={!!busy}
+                  value={voiceSample}
+                  onChange={(event) => setVoiceSample(event.target.value)}
+                  maxLength={VOICE_SAMPLE_LIMIT}
+                  rows={4}
+                  aria-describedby="rewrite-voice-help"
+                  placeholder="Paste a paragraph you wrote."
+                />
+                <span id="rewrite-voice-help">
+                  {voiceGuidance
+                    ? "Ready. The editor uses your sentence rhythm and word choice as guidance."
+                    : `Use at least ${VOICE_SAMPLE_MIN_WORDS} words in two or more sentences.`}{" "}
+                  The sample text stays in this browser. Only style guidance is
+                  used for rewrites.
+                </span>
+              </details>
+              {input.trim() && (
+                <div className="vt-optional-actions">
+                  <button
+                    className="vt-secondary"
+                    disabled={!!busy || importing}
+                    onClick={() => checkRewriteText(rewriteInput, "original")}
+                  >
+                    Check original
+                  </button>
+                </div>
+              )}
+            </details>
+          ) : (
+            <div className="vt-toolbar">
               <span className="vt-tool-label">
                 <ShieldCheck size={17} /> English prose · 80+ words
               </span>
-            )}
-            <span className="vt-protection">
-              {tab === "humanizer"
-                ? "Facts & quotations checked after rewriting"
-                : "Neural analysis · runs in your browser"}
-            </span>
-          </div>
-          {tab === "humanizer" && (
-            <div
-              className="vt-lock-toolbar"
-              role="group"
-              aria-label="Rewrite depth"
-            >
-              <span>Rewrite depth</span>
-              {Object.entries(REWRITE_DEPTHS).map(([id, choice]) => (
-                <button
-                  key={id}
-                  className="vt-secondary"
-                  disabled={!!busy}
-                  aria-pressed={depth === id}
-                  onClick={() => setDepth(id as RewriteDepth)}
-                >
-                  {choice.label}
-                </button>
-              ))}
-              <span>{REWRITE_DEPTHS[depth].description}</span>
-            </div>
-          )}
-          {tab === "humanizer" && (
-            <div className="vt-lock-toolbar">
-              <label htmlFor="locked-terms">
-                Keep these names or terms exactly
-              </label>
-              <input
-                id="locked-terms"
-                disabled={!!busy}
-                maxLength={1000}
-                value={lockedTerms}
-                onChange={(e) => setLockedTerms(e.target.value)}
-                placeholder="Optional: Ana, Project Atlas (comma-separated)"
-              />
-              <span>
-                Numbers, quotes, links and citations are protected
-                automatically.
+              <span className="vt-protection">
+                Neural analysis · runs in your browser
               </span>
             </div>
-          )}
-          {tab === "humanizer" && (
-            <details className="vt-lock-toolbar">
-              <summary>Custom style</summary>
-              <label htmlFor="rewrite-style-note">
-                Describe the voice or audience
-              </label>
-              <input
-                id="rewrite-style-note"
-                disabled={!!busy}
-                value={styleNote}
-                onChange={(event) => setStyleNote(event.target.value)}
-                maxLength={300}
-                placeholder="For example, warm and direct, with short sentences"
-              />
-              <label htmlFor="rewrite-voice-sample">Your writing sample</label>
-              <textarea
-                id="rewrite-voice-sample"
-                disabled={!!busy}
-                value={voiceSample}
-                onChange={(event) => setVoiceSample(event.target.value)}
-                maxLength={VOICE_SAMPLE_LIMIT}
-                rows={4}
-                aria-describedby="rewrite-voice-help"
-                placeholder="Paste a paragraph you wrote."
-              />
-              <span id="rewrite-voice-help">
-                {voiceGuidance
-                  ? "Ready. The editor uses your sentence rhythm and word choice as guidance."
-                  : `Use at least ${VOICE_SAMPLE_MIN_WORDS} words in two or more sentences.`}{" "}
-                The sample text stays in this browser. Only style guidance is
-                used for rewrites.
-              </span>
-            </details>
           )}
           <div
             className={`vt-editors ${tab === "detector" ? "vt-detector-editors" : ""}`}
@@ -1252,7 +1281,7 @@ export function Workspace() {
                 maxLength={20000}
                 placeholder={
                   tab === "humanizer"
-                    ? "Paste your draft here. Keep the ideas. Find the right words."
+                    ? "Paste your text here."
                     : "Paste at least 80 words of English text to explore its writing patterns."
                 }
               />
@@ -1269,27 +1298,18 @@ export function Workspace() {
                   </button>
                 ) : (
                   <div className="vt-actions">
-                    {tab === "humanizer" && input.trim() && (
-                      <button
-                        className="vt-secondary"
-                        disabled={importing}
-                        onClick={() =>
-                          checkRewriteText(rewriteInput, "original")
-                        }
-                      >
-                        Check original
-                      </button>
-                    )}
                     <button
                       className="vt-primary"
-                      disabled={!input.trim() || importing}
+                      disabled={
+                        !interactive || !input.trim() || importing || connecting
+                      }
                       onClick={
-                        tab === "humanizer" ? () => rewrite() : () => detect()
+                        tab === "humanizer" ? humanize : () => void detect()
                       }
                     >
                       {tab === "humanizer" ? (
                         <>
-                          <Sparkles size={16} /> Rewrite
+                          <Sparkles size={16} /> Humanize
                         </>
                       ) : (
                         <>
@@ -1300,24 +1320,41 @@ export function Workspace() {
                   </div>
                 )}
               </div>
+              {tab === "humanizer" && !activeName && !busy && (
+                <p className="vt-first-run">
+                  First run downloads a local writing model, about{" "}
+                  {WRITING_MODELS[writingTier].downloadSize}.
+                </p>
+              )}
             </div>
             <div className="vt-pane vt-output">
               <div className="vt-pane-heading">
                 <span>{tab === "humanizer" ? "Edited draft" : "Analysis"}</span>
                 {tab === "humanizer" && output && (
-                  <button
-                    className="vt-text-button"
-                    disabled={!!busy}
-                    onClick={() => {
-                      if (output.length > 12000) {
-                        setError("Use a shorter draft to compare changes.");
-                        return;
-                      }
-                      setDiff(!diff);
-                    }}
-                  >
-                    {diff ? "Edit draft" : "Show changes"}
-                  </button>
+                  <div className="vt-actions">
+                    {diff && (
+                      <button
+                        className="vt-text-button"
+                        onClick={() => setDiff(false)}
+                      >
+                        Edit draft
+                      </button>
+                    )}
+                    <button
+                      className="vt-primary"
+                      disabled={!!busy}
+                      onClick={copy}
+                    >
+                      {copied ? <Check size={15} /> : <Copy size={15} />}
+                      {copied
+                        ? "Copied"
+                        : source !== rewriteInput
+                          ? "Copy previous draft"
+                          : rewriteReport?.changed === false
+                            ? "Copy original"
+                            : "Copy"}
+                    </button>
+                  </div>
                 )}
               </div>
               {busy && (
@@ -1356,186 +1393,179 @@ export function Workspace() {
                         }
                       />
                     )}
-                    {!diff && (
-                      <div className="vt-provenance vt-selection">
-                        <button
-                          className="vt-secondary"
-                          disabled={!!busy || !selection}
-                          onClick={() => {
-                            if (selection) void rewrite(selection);
-                          }}
-                        >
-                          Revise selection
-                        </button>
-                        <span>
-                          {selection
-                            ? countWords(
-                                output.slice(selection.start, selection.end),
-                              ) + " words selected"
-                            : "Select text in your draft to revise just that part."}
-                        </span>
-                      </div>
-                    )}
-                    <p className="vt-provenance">
-                      {engineName} ·{" "}
-                      {rewriteReport && !rewriteReport.changed
-                        ? "Original retained"
-                        : engineName === "Source-based edit"
-                          ? "Structural changes"
-                          : rewriteReport?.lightFallback
-                            ? "Light edit result"
-                            : REWRITE_DEPTHS[outputDepth].label}
-                      {rewriteReport
-                        ? ` · ${(rewriteReport.elapsedMs / 1000).toFixed(1)} s · ${rewriteReport.retries} retr${rewriteReport.retries === 1 ? "y" : "ies"}`
-                        : ""}
-                      {!!rewriteReport?.sentenceEdits?.fromSource &&
-                        ` · ${rewriteReport.sentenceEdits.fromSource} source-based sentence edits`}
-                    </p>
-                    {comparableSignals && !busy && (
-                      <p className="vt-provenance">
-                        {originalSignal.tier === "detailed"
-                          ? "Detailed"
-                          : "Light"}{" "}
-                        model signals · Original{" "}
-                        {formatModelSignal(originalSignal.score)}/100 · Edited
-                        draft {formatModelSignal(draftSignal.score)}/100
-                        {isNearModelCeiling(originalSignal.score) &&
-                          isNearModelCeiling(draftSignal.score) &&
-                          " · Both are at the top of the model’s scale. The detector cannot distinguish them in this range."}
-                      </p>
-                    )}
-                    {!busy &&
-                      rewriteReport &&
-                      (rewriteReport.checks.length > 0 ||
-                        rewriteReport.warnings.length > 0) && (
-                        <details className="vt-reference">
-                          <summary>Rewrite checks</summary>
-                          {rewriteReport.warnings.map((warning) => (
-                            <p key={warning}>{warning}</p>
-                          ))}
-                          {rewriteReport.checks.map((check, i) => (
-                            <p key={i}>
-                              Section {check.section}, attempt {check.attempt}:{" "}
-                              {check.reason}
-                            </p>
-                          ))}
-                        </details>
-                      )}
-                    {!busy && (
+                    {!busy && issues.length > 0 && (
                       <div
-                        className={`vt-review ${issues.length ? "vt-review-warning" : ""}`}
+                        className="vt-review vt-review-warning"
                         data-testid="rewrite-review"
                       >
-                        {issues.length ? (
-                          <>
-                            <strong>Review needed</strong>
-                            <ul>
-                              {issues.map((issue) => (
-                                <li key={issue}>{issue}</li>
-                              ))}
-                            </ul>
-                          </>
-                        ) : (
-                          "No changes to tracked numbers, quotes, or protected spans found. This check cannot verify every claim or guarantee meaning."
-                        )}
+                        <strong>Review needed</strong>
+                        <ul>
+                          {issues.map((issue) => (
+                            <li key={issue}>{issue}</li>
+                          ))}
+                        </ul>
                       </div>
                     )}
-                    {!busy && detailSuggestions.length > 0 && (
-                      <details className="vt-reference vt-personal-details">
-                        <summary>
-                          Add your own details · {detailSuggestions.length}
-                        </summary>
-                        <ul>
-                          {detailSuggestions.map(
-                            ({ start, end, text, question }) => (
-                              <li key={start}>
-                                <blockquote>{text}</blockquote>
-                                <p>{question}</p>
-                                <button
-                                  className="vt-text-button"
-                                  onClick={() => selectDetail(start, end)}
-                                >
-                                  Select in draft
-                                </button>
-                              </li>
-                            ),
-                          )}
-                        </ul>
-                      </details>
-                    )}
-                    <div className="vt-pane-footer">
-                      <span>{countWords(output)} words</span>
-                      <div className="vt-actions">
-                        {previousDraft && (
+                    <details className="vt-draft-tools">
+                      <summary>Draft tools</summary>
+                      {!diff && (
+                        <button
+                          className="vt-text-button vt-show-changes"
+                          disabled={!!busy}
+                          onClick={() => {
+                            if (output.length > 12000) {
+                              setError(
+                                "Use a shorter draft to compare changes.",
+                              );
+                              return;
+                            }
+                            setDiff(true);
+                          }}
+                        >
+                          Show changes
+                        </button>
+                      )}
+                      {!diff && (
+                        <div className="vt-provenance vt-selection">
                           <button
                             className="vt-secondary"
-                            disabled={!!busy}
+                            disabled={!!busy || !selection}
                             onClick={() => {
-                              setOutput(previousDraft.output);
-                              setSource(previousDraft.source);
-                              setEngineName(previousDraft.engine);
-                              setOutputMode(previousDraft.mode);
-                              setOutputDepth(previousDraft.depth);
-                              setPreviousDraft(null);
-                              setRewriteReport(previousDraft.report);
-                              setSelection(null);
-                              setNotice("Previous draft restored.");
+                              if (selection) void rewrite(selection);
                             }}
                           >
-                            Undo
+                            Revise selection
                           </button>
+                          <span>
+                            {selection
+                              ? countWords(
+                                  output.slice(selection.start, selection.end),
+                                ) + " words selected"
+                              : "Select text in your draft to revise just that part."}
+                          </span>
+                        </div>
+                      )}
+                      <p className="vt-provenance">
+                        {engineName} ·{" "}
+                        {rewriteReport && !rewriteReport.changed
+                          ? "Original retained"
+                          : engineName === "Source-based edit"
+                            ? "Structural changes"
+                            : rewriteReport?.lightFallback
+                              ? "Light edit result"
+                              : REWRITE_DEPTHS[outputDepth].label}
+                        {rewriteReport
+                          ? ` · ${(rewriteReport.elapsedMs / 1000).toFixed(1)} s · ${rewriteReport.retries} retr${rewriteReport.retries === 1 ? "y" : "ies"}`
+                          : ""}
+                        {!!rewriteReport?.sentenceEdits?.fromSource &&
+                          ` · ${rewriteReport.sentenceEdits.fromSource} source-based sentence edits`}
+                      </p>
+                      {comparableSignals && !busy && (
+                        <p className="vt-provenance">
+                          {originalSignal.tier === "detailed"
+                            ? "Detailed"
+                            : "Light"}{" "}
+                          model signals · Original{" "}
+                          {formatModelSignal(originalSignal.score)}/100 · Edited
+                          draft {formatModelSignal(draftSignal.score)}/100
+                          {isNearModelCeiling(originalSignal.score) &&
+                            isNearModelCeiling(draftSignal.score) &&
+                            " · Both are at the top of the model’s scale. The detector cannot distinguish them in this range."}
+                        </p>
+                      )}
+                      {!busy &&
+                        rewriteReport &&
+                        (rewriteReport.checks.length > 0 ||
+                          rewriteReport.warnings.length > 0) && (
+                          <details className="vt-reference">
+                            <summary>Rewrite checks</summary>
+                            {rewriteReport.warnings.map((warning) => (
+                              <p key={warning}>{warning}</p>
+                            ))}
+                            {rewriteReport.checks.map((check, i) => (
+                              <p key={i}>
+                                Section {check.section}, attempt {check.attempt}
+                                : {check.reason}
+                              </p>
+                            ))}
+                          </details>
                         )}
-                        <button
-                          className={controlClass}
-                          disabled={!!busy}
-                          onClick={exportText}
-                        >
-                          <Download size={15} /> Save
-                        </button>
-                        <button
-                          className={controlClass}
-                          disabled={!!busy}
-                          onClick={() => checkRewriteText(output, "draft")}
-                        >
-                          {rewriteReport?.changed === false
-                            ? "Check retained text"
-                            : "Check edited draft"}{" "}
-                          <ArrowRight size={15} />
-                        </button>
-                        <button
-                          className={controlClass}
-                          disabled={!!busy}
-                          onClick={copy}
-                        >
-                          {copied ? <Check size={15} /> : <Copy size={15} />}{" "}
-                          {copied ? "Copied" : "Copy"}
-                        </button>
+                      {!busy && !issues.length && (
+                        <div className="vt-review" data-testid="rewrite-review">
+                          No changes to tracked numbers, quotes, or protected
+                          spans found. This check cannot verify every claim or
+                          guarantee meaning.
+                        </div>
+                      )}
+                      {!busy && detailSuggestions.length > 0 && (
+                        <details className="vt-reference vt-personal-details">
+                          <summary>
+                            Add your own details · {detailSuggestions.length}
+                          </summary>
+                          <ul>
+                            {detailSuggestions.map(
+                              ({ start, end, text, question }) => (
+                                <li key={start}>
+                                  <blockquote>{text}</blockquote>
+                                  <p>{question}</p>
+                                  <button
+                                    className="vt-text-button"
+                                    onClick={() => selectDetail(start, end)}
+                                  >
+                                    Select in draft
+                                  </button>
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        </details>
+                      )}
+                      <div className="vt-optional-actions">
+                        <span>{countWords(output)} words</span>
+                        <div className="vt-actions">
+                          {previousDraft && (
+                            <button
+                              className="vt-secondary"
+                              disabled={!!busy}
+                              onClick={() => {
+                                setOutput(previousDraft.output);
+                                setSource(previousDraft.source);
+                                setEngineName(previousDraft.engine);
+                                setOutputMode(previousDraft.mode);
+                                setOutputDepth(previousDraft.depth);
+                                setPreviousDraft(null);
+                                setRewriteReport(previousDraft.report);
+                                setSelection(null);
+                                setNotice("Previous draft restored.");
+                              }}
+                            >
+                              Undo
+                            </button>
+                          )}
+                          <button
+                            className={controlClass}
+                            disabled={!!busy}
+                            onClick={exportText}
+                          >
+                            <Download size={15} /> Save
+                          </button>
+                          <button
+                            className={controlClass}
+                            disabled={!!busy}
+                            onClick={() => checkRewriteText(output, "draft")}
+                          >
+                            {rewriteReport?.changed === false
+                              ? "Check retained text"
+                              : "Check edited draft"}{" "}
+                            <ArrowRight size={15} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </details>
                   </>
                 ) : busy === "rewrite" ? null : (
                   <div className="vt-empty">
-                    <div className="vt-empty-icon">
-                      <Sparkles size={25} />
-                    </div>
-                    <h2>A thoughtful edit starts here.</h2>
-                    <p>
-                      {activeName
-                        ? "Your writing model is ready. Add your draft and choose Rewrite."
-                        : "Choose where your writing AI runs. Your draft stays on your device."}
-                    </p>
-                    {!activeName && (
-                      <button
-                        className="vt-secondary"
-                        onClick={() => setSettings(true)}
-                      >
-                        Set up a free writing model <ArrowRight size={15} />
-                      </button>
-                    )}
-                    <small>
-                      Real model rewrites. Automatic fact protection. Your final
-                      say.
-                    </small>
+                    <p>Your edited draft will appear here.</p>
                   </div>
                 )
               ) : scan ? (
@@ -1924,7 +1954,7 @@ export function Workspace() {
               <button
                 className="vt-secondary"
                 disabled={!!busy}
-                onClick={loadBrowser}
+                onClick={() => void loadBrowser()}
               >
                 {browserName === WRITING_MODELS[writingTier].id
                   ? "Use browser model"
