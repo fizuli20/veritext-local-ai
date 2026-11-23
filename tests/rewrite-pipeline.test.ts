@@ -7,6 +7,7 @@ import {
 } from "@/lib/humanizer/rewrite-pipeline";
 import {
   focusedComparisonIssue,
+  focusedEvaluationIssue,
   reviewRewrite,
 } from "@/lib/humanizer/rewrite-review";
 import {
@@ -757,6 +758,23 @@ describe("Protected rewrite pipeline", () => {
       focusedComparisonIssue(
         timetable,
         "More readers may benefit from a small timetable change than from a costly renovation.",
+      ),
+    ).toBeUndefined();
+  });
+
+  it("keeps a criterion separate from an asserted result", () => {
+    const source =
+      "The useful measure is whether the library makes everyday life easier for the community it serves.";
+    expect(
+      focusedEvaluationIssue(
+        source,
+        "The library's impact on daily life is undeniable, as it simplifies the community's access to information.",
+      ),
+    ).toContain("criterion");
+    expect(
+      focusedEvaluationIssue(
+        source,
+        "Judge the library by how much easier it makes everyday life for the community it serves.",
       ),
     ).toBeUndefined();
   });

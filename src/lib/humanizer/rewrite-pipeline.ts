@@ -6,6 +6,7 @@ import {
   closingRecommendation,
   conditionalInstructions,
   focusedComparisonIssue,
+  focusedEvaluationIssue,
   preservationInstructions,
   quantityClaims,
   protectedQualifiedSentences,
@@ -273,6 +274,8 @@ async function rewriteEditableExcerpt({
     const issues = reviewRewrite(excerpt, candidate, mode, terms, context);
     const comparisonIssue = focusedComparisonIssue(excerpt, candidate);
     if (comparisonIssue) issues.push(comparisonIssue);
+    const evaluationIssue = focusedEvaluationIssue(excerpt, candidate);
+    if (evaluationIssue) issues.push(evaluationIssue);
     if (!/[?？]/.test(excerpt) && /[?？]/.test(candidate))
       issues.push("Keep the statement as a statement.");
     const extent = rewriteExtent(excerpt, candidate);

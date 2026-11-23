@@ -1,3 +1,9 @@
+# Veritext 5.0.7 evaluation criteria
+
+One focused Llama rewrite turned the proposed measure of the library's usefulness into a claim that its impact was undeniable and that it improved access to information. Focused rewrites now check that a proposed measure remains an evaluation and still refers to its original subject and outcome. The regression covers both the unsupported claim and a faithful restructuring of the measure.
+
+---
+
 # Veritext 5.0.6 comparison preservation
 
 After the excerpt prompts were narrowed, one Llama browser run changed all three sections but invented computer access and lost the comparison between a timetable change and a renovation. The scoped rewrite check now verifies that the comparison remains and still includes its original counterpart. Regression tests cover both failed drafts and meaning-preserving rephrasings of those sentences.

@@ -76,6 +76,10 @@ const COMPARISON_PHRASING =
   /\b(?:than|compared (?:with|to)|outweigh\w*|exceed\w*|surpass\w*)\b/i;
 const OTHER_ACTIVITIES =
   /\b(?:beyond|just one|one (?:of|thing|part|service)|only (?:one|part)|among (?:other|the))\b/i;
+const EVALUATION =
+  /\b(?:measur\w*|judg\w*|criteri\w*|indicator\w*|assess\w*|evaluat\w*|test)\b/i;
+const EVALUATION_TARGET =
+  /\b(?:measure|test|criterion|indicator)\b[^.!?;]{0,45}\b(?:whether|how)\b([^.!?;]+)/i;
 
 /** Retain the other side of a comparison when restructuring a short excerpt. */
 export function focusedComparisonIssue(
@@ -95,6 +99,23 @@ export function focusedComparisonIssue(
     (anchors.length && !anchors.some((word) => rewrittenAnchors.has(word)))
   )
     return `Preserve the original comparison, including this part: ${counterpart}.`;
+}
+
+/** Distinguish a proposed way to judge something from a claim that it succeeded. */
+export function focusedEvaluationIssue(
+  original: string,
+  candidate: string,
+): string | undefined {
+  const evaluation = original.match(EVALUATION_TARGET);
+  if (!evaluation) return;
+  const target = [...new Set(contentAnchors(evaluation[1]!))];
+  const rewritten = new Set(contentAnchors(candidate));
+  if (
+    !EVALUATION.test(candidate) ||
+    target.filter((word) => rewritten.has(word)).length <
+      Math.min(2, target.length)
+  )
+    return "Preserve the original criterion as a way to evaluate success.";
 }
 
 const COORDINATED_DUTY =
