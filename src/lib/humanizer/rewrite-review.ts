@@ -70,6 +70,33 @@ const contentAnchors = (text: string) =>
     word.slice(0, 5),
   );
 
+const COMPARISON =
+  /\b(?:more|less|fewer|better|worse|greater|higher|lower|longer|shorter)\b([^.!?;]{0,100}?)\bthan\b([^.!?;]+)/i;
+const COMPARISON_PHRASING =
+  /\b(?:than|compared (?:with|to)|outweigh\w*|exceed\w*|surpass\w*)\b/i;
+const OTHER_ACTIVITIES =
+  /\b(?:beyond|just one|one (?:of|thing|part|service)|only (?:one|part)|among (?:other|the))\b/i;
+
+/** Retain the other side of a comparison when restructuring a short excerpt. */
+export function focusedComparisonIssue(
+  original: string,
+  candidate: string,
+): string | undefined {
+  const comparison = original.match(COMPARISON);
+  if (!comparison) return;
+  const counterpart = comparison[2]!.trim();
+  const anchors = contentAnchors(counterpart);
+  const rewrittenAnchors = new Set(contentAnchors(candidate));
+  const compares =
+    COMPARISON_PHRASING.test(candidate) ||
+    (!comparison[1]!.trim() && OTHER_ACTIVITIES.test(candidate));
+  if (
+    !compares ||
+    (anchors.length && !anchors.some((word) => rewrittenAnchors.has(word)))
+  )
+    return `Preserve the original comparison, including this part: ${counterpart}.`;
+}
+
 const COORDINATED_DUTY =
   /\b(?:and|but|while|whereas)\s+(?:the\s+)?([\p{L}-]+(?:\s+[\p{L}-]+){0,2})\s+(?:needs?(?:\s+time)?\s+to|must|should|(?:has|have)\s+to)\s+([^.!?;]+)/giu;
 const IMPLICIT_ACTORS = /^(?:he|she|it|we|they|you|I)$/i;

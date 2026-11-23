@@ -5,7 +5,10 @@ import {
   splitRewrite,
   runRewritePipeline,
 } from "@/lib/humanizer/rewrite-pipeline";
-import { reviewRewrite } from "@/lib/humanizer/rewrite-review";
+import {
+  focusedComparisonIssue,
+  reviewRewrite,
+} from "@/lib/humanizer/rewrite-review";
 import {
   cleanLlmOutput,
   RewriteOutputLimitError,
@@ -726,6 +729,36 @@ describe("Protected rewrite pipeline", () => {
         "A library is in the neighborhood. " + source,
       ),
     ).not.toContain(restriction);
+  });
+
+  it("keeps both library comparisons from the focused Llama retest", () => {
+    const opening = "A neighborhood library can do more than lend books.";
+    const timetable =
+      "A small change to the timetable may help more readers than an expensive renovation.";
+    expect(
+      focusedComparisonIssue(
+        opening,
+        "The neighborhood library can also provide access to computers.",
+      ),
+    ).toContain("lend books");
+    expect(
+      focusedComparisonIssue(
+        opening,
+        "Lending books is just one thing a neighborhood library can do.",
+      ),
+    ).toBeUndefined();
+    expect(
+      focusedComparisonIssue(
+        timetable,
+        "The proposed renovation is expensive; a small change to the timetable may help.",
+      ),
+    ).toContain("expensive renovation");
+    expect(
+      focusedComparisonIssue(
+        timetable,
+        "More readers may benefit from a small timetable change than from a costly renovation.",
+      ),
+    ).toBeUndefined();
   });
 
   it("protects distinct actions in a qualified contrast and removes an excerpt preamble", () => {

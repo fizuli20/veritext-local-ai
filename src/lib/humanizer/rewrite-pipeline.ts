@@ -5,6 +5,7 @@ import {
   CLOSING_OMISSION,
   closingRecommendation,
   conditionalInstructions,
+  focusedComparisonIssue,
   preservationInstructions,
   quantityClaims,
   protectedQualifiedSentences,
@@ -270,6 +271,8 @@ async function rewriteEditableExcerpt({
     }
     if (signal?.aborted) throw new Error("Generation stopped.");
     const issues = reviewRewrite(excerpt, candidate, mode, terms, context);
+    const comparisonIssue = focusedComparisonIssue(excerpt, candidate);
+    if (comparisonIssue) issues.push(comparisonIssue);
     if (!/[?？]/.test(excerpt) && /[?？]/.test(candidate))
       issues.push("Keep the statement as a statement.");
     const extent = rewriteExtent(excerpt, candidate);

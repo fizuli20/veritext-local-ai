@@ -1,3 +1,9 @@
+# Veritext 5.0.6 comparison preservation
+
+After the excerpt prompts were narrowed, one Llama browser run changed all three sections but invented computer access and lost the comparison between a timetable change and a renovation. The scoped rewrite check now verifies that the comparison remains and still includes its original counterpart. Regression tests cover both failed drafts and meaning-preserving rephrasings of those sentences.
+
+---
+
 # Veritext 5.0.5 excerpt context
 
 A production Qwen run on 5.0.4 edited two sections in 12.9 seconds. The conclusion stayed unchanged after the model introduced negation into isolated sentences, and it turned the opening statement into a question. Scoped prompts now omit earlier sentences for self-contained excerpts and give single-sentence excerpts a length target. The rewrite check keeps declarative excerpts in statement form. Regression tests exercise each case.
