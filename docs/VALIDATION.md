@@ -1,3 +1,13 @@
+# Veritext 5.4.2 model output and writing model pilots
+
+A local training run produced drafts containing standalone model tool markers. Rewrite review now catches newly introduced tool markers so the model can retry. A regression test covers both generated markers and literal markup present in the source.
+
+The Qwen2.5 pilots and the Qwen3 4B run trained the generator using low-rank adapters. The first pilot often copied the source verbatim, despite its lower validation loss. The second pilot made deeper edits to short prose and sometimes altered claims, especially negation, permissions, and which action a person was meant to carry out. The 4B adapter at full strength also emitted tool markers and sometimes omitted entire sentences. Reducing its inference strength removed those markers on the replay set. All raw drafts and metrics are in the [experiment report](validation/rewriter-fine-tuning.json). Training, checkpoint selection and rewrite selection are independent of detector scores.
+
+The experimental weights are suitable for local evaluation. A live rewrite check validates the application's behavior on a particular sample. It does not establish general writing quality or parity with a proprietary service. See the [training and local setup guide](../scripts/rewriter-training/README.md).
+
+---
+
 # Veritext 5.4.1 separate actions
 
 A fine-tuned model's museum draft turned agreement to a request and a separate request for a copy into agreement to take a copy. Rewrite review now flags a recognized agreement-plus-request construction if the draft loses either action. The original and a faithful rewrite are covered by a regression test.

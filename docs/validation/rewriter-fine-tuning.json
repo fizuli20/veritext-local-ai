@@ -1,0 +1,1465 @@
+{
+  "copyeditPilot": {
+    "baseRevision": "8b403126fc14f14cfc99bb4cfa72ecbc129ea677",
+    "adapterSha256": "3e085035068037ee718c5b4dce7b87d92e3198fbda01525c7d60b4745be650a2",
+    "generation": "greedy, identical prompt, at most 360 output tokens",
+    "benchmarks": {
+      "iterater": {
+        "base": {
+          "examples": 21,
+          "meanChangedBigramFraction": 0.3571,
+          "changed": 21,
+          "numbers": 17,
+          "quotes": 20,
+          "qualifierWords": 20,
+          "comparableLength": 20
+        },
+        "tuned": {
+          "examples": 21,
+          "meanChangedBigramFraction": 0.0154,
+          "changed": 3,
+          "numbers": 21,
+          "quotes": 21,
+          "qualifierWords": 21,
+          "comparableLength": 21
+        }
+      },
+      "originalProbes": {
+        "base": {
+          "examples": 8,
+          "meanChangedBigramFraction": 0.1178,
+          "changed": 8,
+          "numbers": 8,
+          "quotes": 8,
+          "qualifierWords": 5,
+          "comparableLength": 8
+        },
+        "tuned": {
+          "examples": 8,
+          "meanChangedBigramFraction": 0.0,
+          "changed": 0,
+          "numbers": 8,
+          "quotes": 8,
+          "qualifierWords": 8,
+          "comparableLength": 8
+        }
+      }
+    },
+    "originalProbeOutputs": [
+      {
+        "id": "maintenance-notice",
+        "source": "The pool will be closed from 8 a.m. to noon on Thursday so staff can replace a pump. The locker rooms will remain open. Lessons scheduled before noon will move to Friday at their usual times. People who booked a lane may request a refund or move their reservation. The closure does not affect the evening swim session.",
+        "base": {
+          "draft": "The pool will be closed from 8 a.m. to noon on Thursday so staff can replace a pump. The locker rooms will remain open. Lessons scheduled before noon will move to Friday at their usual times. People who booked a lane may request a refund or move their reservation. The evening swim session is unaffected.",
+          "checks": {
+            "extent": 0.0862,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "The pool will be closed from 8 a.m. to noon on Thursday so staff can replace a pump. The locker rooms will remain open. Lessons scheduled before noon will move to Friday at their usual times. People who booked a lane may request a refund or move their reservation. The closure does not affect the evening swim session.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "product-comparison",
+        "source": "A weekly summary may help more customers than an extra alert. The summary would show changes since the last visit, while the alert would reach people as soon as one price changes. The team should test both options before choosing one. The useful measure is whether customers notice price changes without receiving more messages than they want.",
+        "base": {
+          "draft": "A weekly summary could help more customers than an extra alert. It would show changes since the last visit, while an alert would reach people as soon as one price changes. The team should test both options before making a choice. The key is whether customers notice price changes without receiving more messages than they want.",
+          "checks": {
+            "extent": 0.2321,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "A weekly summary may help more customers than an extra alert. The summary would show changes since the last visit, while the alert would reach people as soon as one price changes. The team should test both options before choosing one. The useful measure is whether customers notice price changes without receiving more messages than they want.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "civic-funding",
+        "source": "Maya said, \"Hold the application until Monday.\" She asked the finance team to verify the 12 receipts before submitting the form. The legal team must review the separate contract, even if the receipts arrive early. The city has approved the training budget, but it has not approved the equipment purchase. The next meeting will focus on that purchase.",
+        "base": {
+          "draft": "Maya said, \"Hold the application until Monday.\" She asked the finance team to verify the 12 receipts before submitting the form. The legal team must review the separate contract, even if the receipts arrive early. The city has approved the training budget, but it has not approved the equipment purchase. The next meeting will focus on the equipment purchase.",
+          "checks": {
+            "extent": 0.0351,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Maya said, \"Hold the application until Monday.\" She asked the finance team to verify the 12 receipts before submitting the form. The legal team must review the separate contract, even if the receipts arrive early. The city has approved the training budget, but it has not approved the equipment purchase. The next meeting will focus on that purchase.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "personal-narrative",
+        "source": "I found the notebook on the bus after most of the passengers had left. A phone number was written inside the cover, and I called it from the station. The person who answered said her brother had lost the notebook the day before. She asked me to leave it with the driver, so I went back to the bus.",
+        "base": {
+          "draft": "I discovered the notebook on the bus after most of the passengers had disembarked. Inside the cover, a phone number was written. I contacted the number from the station. The person who answered said her brother had misplaced the notebook the day prior. She requested me to keep it with the bus driver, so I returned to the bus.",
+          "checks": {
+            "extent": 0.3793,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "I found the notebook on the bus after most of the passengers had left. A phone number was written inside the cover, and I called it from the station. The person who answered said her brother had lost the notebook the day before. She asked me to leave it with the driver, so I went back to the bus.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "research-finding",
+        "source": "We compared 24 farms during the dry season. Farms with more shade used less water on average, but those farms also grew different crops. The study did not establish that shade caused the difference. We plan to repeat the comparison on farms that grow the same crop. The follow-up will measure water use and crop yield separately.",
+        "base": {
+          "draft": "We compared 24 farms during the dry season. Farms with more shade used less water on average, but they also grew different crops. The study did not establish that shade caused the difference. We plan to repeat the comparison on farms that grow the same crop. The follow-up will measure water use and crop yield separately.",
+          "checks": {
+            "extent": 0.0536,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "We compared 24 farms during the dry season. Farms with more shade used less water on average, but those farms also grew different crops. The study did not establish that shade caused the difference. We plan to repeat the comparison on farms that grow the same crop. The follow-up will measure water use and crop yield separately.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "event-instructions",
+        "source": "Before moving the workshop outdoors, the organizer should check the forecast, ask the instructor about equipment, and call attendees who requested accessible seating. If the forecast shows lightning, the workshop stays indoors. Staff can open a second room for people who arrive late. That room is overflow space, and the main workshop will still start at 6 p.m.",
+        "base": {
+          "draft": "Before moving the workshop outdoors, the organizer should check the forecast, ask the instructor about equipment, and call attendees who requested accessible seating. If the forecast shows lightning, the workshop stays indoors. Staff can open a second room for people who arrive late. That room is overflow space, and the main workshop will still start at 6 p. m.",
+          "checks": {
+            "extent": 0.0,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Before moving the workshop outdoors, the organizer should check the forecast, ask the instructor about equipment, and call attendees who requested accessible seating. If the forecast shows lightning, the workshop stays indoors. Staff can open a second room for people who arrive late. That room is overflow space, and the main workshop will still start at 6 p.m.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "role-tracking",
+        "source": "The warehouse manager showed the driver where to collect the empty crates. The driver then gave the route sheet to the dispatcher. The manager did not sign the route sheet. Before lunch, the dispatcher will call the two stores that missed their deliveries. The stores can choose to wait until tomorrow or collect their orders from the warehouse.",
+        "base": {
+          "draft": "The warehouse manager showed the driver where to collect the empty crates. The driver then handed the route sheet to the dispatcher. The manager did not sign the route sheet. Before lunch, the dispatcher will call the two stores that missed their deliveries. The stores can choose to wait until tomorrow or collect their orders from the warehouse.",
+          "checks": {
+            "extent": 0.0351,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "The warehouse manager showed the driver where to collect the empty crates. The driver then gave the route sheet to the dispatcher. The manager did not sign the route sheet. Before lunch, the dispatcher will call the two stores that missed their deliveries. The stores can choose to wait until tomorrow or collect their orders from the warehouse.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "conditional-cause",
+        "source": "The clinic can send appointment reminders by text. Patients who opt in will still receive letters about changes to their prescriptions. The text service may cut missed appointments, but the clinic has yet to measure that effect. Staff should set aside time to answer questions and keep the phone line open for patients who do not use text messages.",
+        "base": {
+          "draft": "The clinic can send appointment reminders by text. Patients who opt in will still receive letters about changes to their prescriptions. The text service may reduce missed appointments, but the clinic has not yet measured the effect. Staff should set aside time to answer questions and keep the phone line open for patients who do not use text messages.",
+          "checks": {
+            "extent": 0.1207,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "The clinic can send appointment reminders by text. Patients who opt in will still receive letters about changes to their prescriptions. The text service may cut missed appointments, but the clinic has yet to measure that effect. Staff should set aside time to answer questions and keep the phone line open for patients who do not use text messages.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      }
+    ],
+    "validation": {
+      "selectedStep": 120,
+      "validationLoss": {
+        "1": 1.024,
+        "40": 0.63,
+        "80": 0.644,
+        "120": 0.581
+      }
+    },
+    "testLoss": {
+      "base": 1.147,
+      "tuned": 0.79
+    }
+  },
+  "fullRewritePilot": {
+    "baseRevision": "8b403126fc14f14cfc99bb4cfa72ecbc129ea677",
+    "adapterSha256": "38bb5fe26dfda60a8e6da8a5eb3f2065a9198c33b8bc6830fe66d0e16c34243d",
+    "generation": "greedy, identical prompt, at most 360 output tokens",
+    "fullRewritePrompt": true,
+    "benchmarks": {
+      "iterater": {
+        "base": {
+          "examples": 21,
+          "meanChangedBigramFraction": 0.4662,
+          "changed": 21,
+          "numbers": 17,
+          "quotes": 20,
+          "qualifierWords": 20,
+          "comparableLength": 19
+        },
+        "tuned": {
+          "examples": 21,
+          "meanChangedBigramFraction": 0.0283,
+          "changed": 7,
+          "numbers": 21,
+          "quotes": 21,
+          "qualifierWords": 21,
+          "comparableLength": 21
+        },
+        "firstPilot": {
+          "examples": 21,
+          "meanChangedBigramFraction": 0.0129,
+          "changed": 7,
+          "numbers": 21,
+          "quotes": 21,
+          "qualifierWords": 21,
+          "comparableLength": 18
+        }
+      },
+      "originalProbes": {
+        "base": {
+          "examples": 9,
+          "meanChangedBigramFraction": 0.1761,
+          "changed": 9,
+          "numbers": 9,
+          "quotes": 9,
+          "qualifierWords": 6,
+          "comparableLength": 9
+        },
+        "tuned": {
+          "examples": 9,
+          "meanChangedBigramFraction": 0.325,
+          "changed": 8,
+          "numbers": 9,
+          "quotes": 9,
+          "qualifierWords": 2,
+          "comparableLength": 9
+        },
+        "firstPilot": {
+          "examples": 9,
+          "meanChangedBigramFraction": 0.0,
+          "changed": 2,
+          "numbers": 9,
+          "quotes": 9,
+          "qualifierWords": 9,
+          "comparableLength": 7
+        }
+      }
+    },
+    "originalProbeOutputs": [
+      {
+        "id": "municipal-change",
+        "source": "Water service will be interrupted in the two northern blocks from 10 a.m. to 2 p.m. on Tuesday because crews need to install a valve. The interruption does not include the school. The city will put a water tank outside the fire station for residents who need to collect water during the work.",
+        "base": {
+          "draft": "On Tuesday, from 10 a. m. to 2 p. m., water service will be interrupted in the two northern blocks due to the need to install a valve. The school is not affected. A water tank will be placed outside the fire station for residents who need to collect water.",
+          "checks": {
+            "extent": 0.3519,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Tuesday's work to install a valve in the two northern blocks will interrupt water service from 10 a.m. to 2 p.m. The school is exempt. The city will put a water tank outside the fire station for residents who need to collect water during the work.",
+          "checks": {
+            "extent": 0.3333,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "firstPilot": {
+          "draft": "Water service will be interrupted in the two northern blocks from 10 a.m. to 2 p.m. on Tuesday because crews need to install a valve. The interruption does not include the school. The city will put a water tank outside the fire station for residents who need to collect water during the work.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "paired-actors",
+        "source": "Before the weigh-in, Lena handed her bag to the volunteer. The volunteer gave the bag to the coach after the weigh-in. Lena stayed with the team and did not meet the coach that morning. The coach will return the bag at the next practice if Lena brings her receipt.",
+        "base": {
+          "draft": "Before the weigh-in, Lena handed her bag to the volunteer. The volunteer then gave the bag to the coach after the weigh-in. Lena stayed with the team that morning but did not meet the coach. The coach will return the bag at the next practice if Lena brings her receipt.",
+          "checks": {
+            "extent": 0.1042,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Before the weigh-in, Lena handed her bag to the volunteer. After the weigh-in, the volunteer passed the bag to the coach. Lena stayed with the team that morning. The coach wants to return the bag at the next practice if Lena brings back her receipt.",
+          "checks": {
+            "extent": 0.3125,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "firstPilot": {
+          "draft": "Before the weigh-in, Lena handed her bag to the volunteer. The volunteer gave the bag to the coach after the weigh-in. Lena stayed with the team and did not meet the coach that morning. The coach will return the bag at the next practice if Lena brings her receipt.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "limited-study",
+        "source": "The pilot included 36 households and ran for 4 weeks. Households that received weekly reminders used less electricity on average, but they had also used less electricity before the pilot. The study cannot say whether the reminders reduced consumption. A follow-up will randomly assign households to receive reminders or receive no messages.",
+        "base": {
+          "draft": "The pilot involved 36 households that ran for 4 weeks. Households that received weekly reminders used less electricity on average, but they had also used less electricity before the pilot. The study cannot determine whether the reminders reduced consumption. A follow-up will randomly assign households to receive reminders or no messages.",
+          "checks": {
+            "extent": 0.1569,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "The pilot included 36 households and ran for 4 weeks. Households that received weekly reminders used less electricity on average, but they had also used less electricity before the pilot. The study cannot say whether the reminders reduced consumption. A follow-up will randomly assign households to receive reminders or receive no messages.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "firstPilot": {
+          "draft": "Recast this passage in fresh, natural English. Change the sentence structure and wording noticeably while keeping each fact, role, condition, and claim. Return only the rewritten passage.\n\nThe pilot included 36 households and ran for 4 weeks. Households that received weekly reminders used less electricity on average, but they had also used less electricity before the pilot. The study cannot say whether the reminders reduced consumption. A follow-up will randomly assign households to receive reminders or receive no messages.",
+          "checks": {
+            "extent": 0.0,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": false
+          }
+        }
+      },
+      {
+        "id": "project-options",
+        "source": "A second recycling pickup could be more useful to apartment residents than a larger drop-off site. The second pickup would take more staff time. The site would cost more to build and could accept items that the pickup truck cannot carry. The council will compare both options before deciding what to fund.",
+        "base": {
+          "draft": "A second recycling pickup would be more useful to apartment residents than a larger drop-off site. The second pickup would require more staff time. The site would be more expensive to build and could accept items the pickup truck cannot carry. The council will compare both options before deciding which to fund.",
+          "checks": {
+            "extent": 0.2157,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "A second pickup could be more useful to apartment residents than a larger drop-off site. The second pickup would take more staff time. The site would cost more to build and could accept items that the pickup truck cannot carry. The council will weigh both options before deciding what to fund.",
+          "checks": {
+            "extent": 0.0784,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "firstPilot": {
+          "draft": "Recast this passage in fresh, natural English. Change the sentence structure and wording noticeably while keeping each fact, role, condition, and claim. Return only the rewritten passage.\n\nA second recycling pickup could be more useful to apartment residents than a larger drop-off site. The second pickup would take more staff time. The site would cost more to build and could accept items that the pickup truck cannot carry. The council will compare both options before deciding what to fund.",
+          "checks": {
+            "extent": 0.0,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": false
+          }
+        }
+      },
+      {
+        "id": "museum-letter",
+        "source": "I sent the photograph to the museum after my aunt recognized the street. She remembered the bakery on the corner, although she could not place the year. The museum asked if it could keep a scan and return the original. I said yes and asked for a copy of any notes about the picture.",
+        "base": {
+          "draft": "I sent the photograph to the museum after my aunt recognized the street. She remembered the bakery on the corner, although she couldn't place the year. The museum asked if it could keep a scan and return the original. I said yes and asked for a copy of any notes about the picture.",
+          "checks": {
+            "extent": 0.0566,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "My aunt recognized the street from a photograph I sent to the museum. She remembered the bakery on the corner, although she couldn't place the year. The museum wanted to keep a scan and return the original. I said yes and asked for any notes on the picture.",
+          "checks": {
+            "extent": 0.3774,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "firstPilot": {
+          "draft": "I sent the photograph to the museum after my aunt recognized the street. She remembered the bakery on the corner, although she could not place the year. The museum asked if it could keep a scan and return the original. I said yes and asked for a copy of any notes about the picture.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "procedure-exception",
+        "source": "Before closing a file, the reviewer should check the dates, attach the signed form, and make sure the customer has received the decision. If the signature is missing, staff should contact the customer and leave the file open. A supervisor can approve an exception for an urgent case, but the reviewer must still record the reason.",
+        "base": {
+          "draft": "Before closing a file, the reviewer should check the dates, attach the signed form, and ensure the customer has received the decision. If the signature is missing, staff should contact the customer and leave the file open. A supervisor can approve an exception for an urgent case, but the reviewer must still record the reason.",
+          "checks": {
+            "extent": 0.0545,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Before you finish a file, the reviewer should look over the dates, sign the form, and make sure the customer gets the decision. If the signature is missing, staff should reach out to the customer and keep the file open. A supervisor can approve an exception for a rush case, but the reviewer still needs to note the reason.",
+          "checks": {
+            "extent": 0.4,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "firstPilot": {
+          "draft": "Before closing a file, the reviewer should check the dates, attach the signed form, and make sure the customer has received the decision. If the signature is missing, staff should contact the customer and leave the file open. A supervisor can approve an exception for an urgent case, but the reviewer must still record the reason.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "weekly-rate",
+        "source": "The basic subscription costs $12 per month and includes access to the recording archive. A weekly pass costs $5 and also includes the live sessions. The trial does not include either feature. Customers who move from a trial to a paid plan can choose either option before the trial expires.",
+        "base": {
+          "draft": "The basic subscription costs $12 per month and includes access to the recording archive. A weekly pass costs $5 and also includes live sessions. The trial does not include either feature. Customers who move from a trial to a paid plan can choose either option before the trial expires.",
+          "checks": {
+            "extent": 0.0408,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "You pay $12 a month for access to the archive. A weekly pass costs $5 and lets you watch live sessions. You can switch between the trial and a paid plan before the trial ends.",
+          "checks": {
+            "extent": 0.7143,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "firstPilot": {
+          "draft": "The basic subscription costs $12 per month and includes access to the recording archive. A weekly pass costs $5 and also includes the live sessions. The trial does not include either feature. Customers who move from a trial to a paid plan can choose either option before the trial expires.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "public-benefit",
+        "source": "The repair center can do more than fix appliances. It gives volunteers a place to practice skills they might not otherwise have a chance to use. Evening demonstrations can help residents identify common faults, while afternoon sessions give people time to work on their own repairs. The benefits depend on the availability of tools and on having staff who can answer questions.",
+        "base": {
+          "draft": "The repair center offers more than just fixing appliances. It provides volunteers with a chance to practice skills they might not otherwise have the opportunity to use. Evening demonstrations help residents identify common faults, while afternoon sessions allow people to work on their own repairs. The benefits depend on the availability of tools and having staff who can answer questions.",
+          "checks": {
+            "extent": 0.3115,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Volunteers can practice skills they might not otherwise have a chance to use, while evening demonstrations help residents identify common faults, while afternoon sessions give people time to work on their own repairs. The benefits depend on the availability of tools and on having staff who can answer questions.",
+          "checks": {
+            "extent": 0.2951,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "firstPilot": {
+          "draft": "The repair center can do more than fix appliances. It gives volunteers a place to practice skills they might not otherwise have a chance to use. Evening demonstrations can help residents identify common faults, while afternoon sessions give people time to work on their own repairs. The benefits depend on the availability of tools and on having staff who can answer questions.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "logbook-entry",
+        "source": "The ferry crew found a wallet under a seat after the final trip. Nina wrote \"Blue wallet\" in the log and left the wallet in the locked office. Amir called the number on a card inside the wallet the next morning. He did not leave the wallet at the ticket desk. The owner can collect it after showing identification.",
+        "base": {
+          "draft": "The ferry crew discovered a wallet under a seat during the final trip. Nina recorded \"Blue wallet\" in the log and left it in the locked office. The next morning, Amir called the number on a card inside the wallet and retrieved it. He did not leave it at the ticket desk. The owner can collect it after presenting identification.",
+          "checks": {
+            "extent": 0.2931,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Nina logged \"Blue wallet\" in the log and left the wallet in the office. Amir called the number on a card inside the wallet the next morning. Nina had left the wallet at the ticket desk. The owner could collect it after showing identification.",
+          "checks": {
+            "extent": 0.4138,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "firstPilot": {
+          "draft": "The ferry crew found a wallet under a seat after the final trip. Nina wrote \"Blue wallet\" in the log and left the wallet in the locked office. Amir called the number on a card inside the wallet the next morning. He did not leave the wallet at the ticket desk. The owner can collect it after showing identification.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "library-replay",
+        "source": "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.",
+        "base": {
+          "draft": "A neighborhood library can provide more than just books. It offers a space for study, socializing, and skill acquisition. Evening classes help adults use online services, while quiet rooms allow students to work in peace. These benefits depend on practical decisions. Opening hours should match residents' lifestyles, and staff need time to answer questions rather than sorting returns. A larger building alone won't solve the problem. Before expansion, library managers should gather feedback from users, listen to those who never visit, and assess whether current services reach the intended audience. A small adjustment to the schedule can be more effective than an expensive renovation. The key is whether the library makes everyday life easier for the community it serves.",
+          "checks": {
+            "extent": 0.6358,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "firstPilot": {
+          "draft": "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.",
+          "checks": {
+            "extent": 0.0,
+            "changed": false,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      }
+    ],
+    "validation": {
+      "selectedStep": 60,
+      "validationLoss": {
+        "1": 1.057,
+        "30": 0.613,
+        "60": 0.575,
+        "90": 0.58,
+        "95": 0.603
+      }
+    },
+    "dataset": {
+      "datasetRevision": "3b0bdabb090d04062ebc17e54ac889a64f5cb791",
+      "sha256": {
+        "train": "3f60e9989879b7a51b994edbe4536a5bd30556670f47b6677815bf0ed45c0acc",
+        "dev": "9b8e216ca1874260bcf63365877225b2ee1547b70f1945fc172be1fcd945fc70",
+        "test": "b3f371261389662eebd8395f8b78020eef84a85218c03b2df6823d2c7f551b4b"
+      },
+      "splits": {
+        "test": {
+          "examples": 21,
+          "documents": 19,
+          "domains": {
+            "wiki": 6,
+            "arxiv": 9,
+            "news": 6
+          }
+        },
+        "valid": {
+          "examples": 11,
+          "documents": 11,
+          "domains": {
+            "news": 4,
+            "arxiv": 4,
+            "wiki": 3
+          }
+        },
+        "train": {
+          "examples": 85,
+          "documents": 59,
+          "domains": {
+            "original": 52,
+            "wiki": 17,
+            "news": 9,
+            "arxiv": 7
+          }
+        }
+      },
+      "authoredTrainingExamples": 26,
+      "authoredWeight": 2
+    }
+  },
+  "qwen3FullStrength": {
+    "baseRevision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+    "adapterSha256": "de7d7898011cc110106bf97a51ea7b8782528dedaddc484d23f2b9170a8792d2",
+    "generation": "greedy, identical prompt, at most 360 output tokens",
+    "fullRewritePrompt": true,
+    "benchmarks": {
+      "originalProbes": {
+        "base": {
+          "examples": 8,
+          "meanChangedBigramFraction": 0.7133,
+          "changed": 8,
+          "numbers": 6,
+          "quotes": 8,
+          "qualifierWords": 0,
+          "comparableLength": 8
+        },
+        "tuned": {
+          "examples": 8,
+          "meanChangedBigramFraction": 0.4047,
+          "changed": 8,
+          "numbers": 7,
+          "quotes": 7,
+          "qualifierWords": 1,
+          "comparableLength": 6
+        }
+      }
+    },
+    "originalProbeOutputs": [
+      {
+        "id": "building-access",
+        "source": "Contractors will close the west stairway on Wednesday between 8 a.m. and 11 a.m. The elevator and the east stairway will remain open. Staff should still use the west door for deliveries until 8 a.m. A second inspection may be needed, but the building manager has not scheduled it.",
+        "base": {
+          "draft": "Starting Wednesday, the west staircase will be closed from 8 a.m. to 11 a.m. for contractor work. During that time, the elevator and the east staircase will stay accessible. Employees are still expected to use the west entrance for deliveries up to 8 a.m. A follow-up inspection might be required, though no such appointment has been set by the building manager.",
+          "checks": {
+            "extent": 0.6667,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "</tool_call>\n\n</tool_call>\n\nThe west stairway will close Wednesday between 8 a.m. and 11 a.m. The elevator and the east stairway will stay open. Staff should still use the west door for deliveries until 8 a.m. A second inspection may be needed, though the building manager has not scheduled one.",
+          "checks": {
+            "extent": 0.1765,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "call-sequence",
+        "source": "After the rehearsal, Eva gave the notes to the stage manager, who passed them to Sam. Sam did not call the director because the notes were still incomplete. Eva will finish them by noon on Friday. The stage manager should check them before Sam calls the director.",
+        "base": {
+          "draft": "Following the rehearsal, Eva handed the notes over to the stage manager, who then forwarded them to Sam. Sam didn’t reach out to the director since the notes weren’t yet finished. Eva plans to wrap them up by noon on Friday. Before Sam contacts the director, the stage manager should review the notes.",
+          "checks": {
+            "extent": 0.5652,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "</tool_call>\n\n</tool_call>\n\nAfter the rehearsal, Eva gave the notes to the stage manager, who passed them to Sam. Sam didn't call the director because the notes were still incomplete. Eva will finish them by noon on Friday. The stage manager should check them before Sam calls the director.",
+          "checks": {
+            "extent": 0.0652,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "clinic-comparison",
+        "source": "A part-time nurse might help more patients than a larger waiting room. The nurse could answer questions from people waiting for test results. A larger room would give visitors more seats but would not reduce the time it takes to receive a result. The clinic will ask patients about each option before requesting funds.",
+        "base": {
+          "draft": "A smaller, part-time nurse might serve more people than a room full of waiting chairs. She could field questions from those awaiting their test results, offering clarity and comfort. While a bigger waiting area would provide more seating, it wouldn’t shorten the time patients wait for their results. Before approving any funding, the clinic will personally discuss each option with patients.",
+          "checks": {
+            "extent": 0.8302,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "</tool_call>\n\n</tool_call>\n\nYou might get more patients helped by a part-time nurse than by a larger waiting room. The nurse could answer questions from people waiting for test results. A larger room would give visitors more seats, but it wouldn't reduce the time it takes to get a result. The clinic will ask patients about each option before asking for funds.",
+          "checks": {
+            "extent": 0.2264,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "equipment-research",
+        "source": "Technicians tested 18 sensors using the same battery type. The older sensors did not last as long, but they had also been used outdoors for more months. The test cannot tell whether the design or prior use explains the difference. Next time, technicians will compare unused sensors from both designs.",
+        "base": {
+          "draft": "Eighteen sensors were evaluated under identical battery conditions. While the older models lasted less time, they had previously operated in outdoor environments for longer periods. The results don’t clarify whether the difference stems from design flaws or extended prior exposure. In the following test, technicians will compare sensors that have never been used, one from each design.",
+          "checks": {
+            "extent": 0.8571,
+            "changed": true,
+            "numbers": false,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "</tool_call>\n\n</tool_call>\n\nNext time, technicians will compare unused sensors from both designs.",
+          "checks": {
+            "extent": 0.8163,
+            "changed": true,
+            "numbers": false,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": false
+          }
+        }
+      },
+      {
+        "id": "school-trip",
+        "source": "Mae wrote \"Keep the receipt\" on the envelope for the school trip. The driver must bring the original receipt back to the office after dropping off the group. Pupils do not need to keep copies. If the envelope is lost, teachers should ask the office for another one before handing over the receipt.",
+        "base": {
+          "draft": "Mae had the students write \"Keep the receipt\" on the envelope for the field trip. The driver is responsible for returning the original receipt to the office once the group has been dropped off. Students don’t need to retain any copies. Should the envelope go missing, the teacher should request a new one from the office before releasing the receipt.",
+          "checks": {
+            "extent": 0.6538,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "</tool_call>\n\n</tool_call>\n\nThe envelope for the school trip had a note on it: \"Keep the receipt.\" The driver must hand the original receipt back to the office after dropping off the group. Pupils don't need to keep copies. If the envelope is lost, teachers should ask the office for a replacement before giving the receipt.",
+          "checks": {
+            "extent": 0.3077,
+            "changed": true,
+            "numbers": true,
+            "quotes": false,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "rowing-instruction",
+        "source": "Before putting the boat in the water, the instructor should check the wind, count the life jackets, and confirm that the radio works. A second tutor can join the group if more than 8 learners attend. The group does not go out if the radio fails, even when a second tutor is present.",
+        "base": {
+          "draft": "Prior to launching, the instructor must verify wind conditions, ensure every life jacket is accounted for, and test the radio’s functionality. If the class exceeds eight students, a second guide may accompany the group. However, if the radio isn’t working, the trip is canceled regardless of whether a second tutor is on board.",
+          "checks": {
+            "extent": 0.8462,
+            "changed": true,
+            "numbers": false,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "</tool_call>\n\n</tool_call>\n\nBefore putting the boat in the water, the instructor should check the wind, count the life jackets, and confirm the radio works. If more than 8 learners attend, a second tutor can join. The group stays in the water only if the radio works.",
+          "checks": {
+            "extent": 0.3654,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "shipping-offer",
+        "source": "The shop will ship the replacement at no cost if the customer returns the damaged part by May 12. Under the repair option, the customer can keep the part, but the shop will charge $15 for the work. The replacement and repair are separate options. The offer does not include installation.",
+        "base": {
+          "draft": "If the customer sends back the damaged item by May 12, the shop will send out a replacement at no charge. With the repair service, the customer keeps the original part, but pays a $15 fee for the repair work. These are two distinct choices. Neither option covers the cost of installation.",
+          "checks": {
+            "extent": 0.74,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "</tool_call>\n\n</tool_call>\n\nThe shop will send out a replacement at no cost if the customer returns the damaged part by May 12. The repair option allows the customer to keep the part, but the shop will charge $15 for the repair. The replacement and repair are separate. The offer does not cover installation.",
+          "checks": {
+            "extent": 0.28,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "postcard",
+        "source": "I did not see the postcard until I got home from the station. My brother had left it in the outside pocket of my bag. The message said he would meet me at the station on Sunday if the train was running. I called on Saturday to ask if he had checked the timetable.",
+        "base": {
+          "draft": "I didn’t spot the postcard until I was back home from the station. It had been tucked into the outside pocket of my bag, left there by my brother. The note said he’d meet me at the station on Sunday, provided the train was running. I’d called on Saturday to find out if he’d looked up the schedule.",
+          "checks": {
+            "extent": 0.5472,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "</tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>\n\n<tool_call>",
+          "checks": {
+            "extent": 1.0,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": false
+          }
+        }
+      },
+      {
+        "id": "library-replay",
+        "source": "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.",
+        "base": {
+          "draft": "A local library isn’t just about borrowing books—it’s a hub where people can study, connect with neighbors, and build skills they’d otherwise never get to practice. After dark, adults can take classes to learn how to navigate online tools, while quiet spaces offer students a peaceful spot to focus when home life is noisy. But these benefits only work if the library’s operations reflect real community needs. Hours should align with people’s schedules, and staff should have time to assist visitors instead of spending every shift processing returned items. A bigger building doesn’t automatically fix those issues. Before making any expansion, managers should talk to users about what they actually use, hear from those who don’t visit at all, and verify that current services are meeting the needs of the people they’re meant to serve. Sometimes, a simple adjustment to the schedule can help more people than a costly renovation. Ultimately, the real test is whether the library makes daily life easier for the community it supports.",
+          "checks": {
+            "extent": 0.8477,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "</tool_call>\n\n</tool_call>\n\nYou can do more than lend books. A neighborhood library can offer a quiet place to study, meet neighbors, and practice skills you might not otherwise get a chance to practice. Evening classes can help adults learn how to use online services, while quiet rooms give students a place to work when home is too noisy. The benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions, not spend every shift sorting returns. A larger building won't fix those problems by itself. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.",
+          "checks": {
+            "extent": 0.1854,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      }
+    ],
+    "inferenceAdapterScale": 8.0,
+    "evaluationSet": "8 new probes plus library replay",
+    "tunedOutputsWithToolMarkers": 9
+  },
+  "qwen3LowerStrengthReplay": {
+    "baseRevision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+    "adapterSha256": "de7d7898011cc110106bf97a51ea7b8782528dedaddc484d23f2b9170a8792d2",
+    "generation": "greedy, identical prompt, at most 360 output tokens",
+    "fullRewritePrompt": true,
+    "benchmarks": {
+      "originalProbes": {
+        "base": {
+          "examples": 8,
+          "meanChangedBigramFraction": 0.7133,
+          "changed": 8,
+          "numbers": 6,
+          "quotes": 8,
+          "qualifierWords": 0,
+          "comparableLength": 8
+        },
+        "tuned": {
+          "examples": 8,
+          "meanChangedBigramFraction": 0.5381,
+          "changed": 8,
+          "numbers": 7,
+          "quotes": 7,
+          "qualifierWords": 0,
+          "comparableLength": 8
+        }
+      }
+    },
+    "originalProbeOutputs": [
+      {
+        "id": "building-access",
+        "source": "Contractors will close the west stairway on Wednesday between 8 a.m. and 11 a.m. The elevator and the east stairway will remain open. Staff should still use the west door for deliveries until 8 a.m. A second inspection may be needed, but the building manager has not scheduled it.",
+        "base": {
+          "draft": "Starting Wednesday, the west staircase will be closed from 8 a.m. to 11 a.m. for contractor work. During that time, the elevator and the east staircase will stay accessible. Employees are still expected to use the west entrance for deliveries up to 8 a.m. A follow-up inspection might be required, though no such appointment has been set by the building manager.",
+          "checks": {
+            "extent": 0.6667,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Starting Wednesday, the west stairwell will be closed from 8 a.m. to 11 a.m. for contractors. During that time, the elevator and the east stairwell will stay open. Staff should continue using the west door for deliveries until 8 a.m. A second inspection might be required, though the building manager has not yet set one.",
+          "checks": {
+            "extent": 0.4902,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "call-sequence",
+        "source": "After the rehearsal, Eva gave the notes to the stage manager, who passed them to Sam. Sam did not call the director because the notes were still incomplete. Eva will finish them by noon on Friday. The stage manager should check them before Sam calls the director.",
+        "base": {
+          "draft": "Following the rehearsal, Eva handed the notes over to the stage manager, who then forwarded them to Sam. Sam didn’t reach out to the director since the notes weren’t yet finished. Eva plans to wrap them up by noon on Friday. Before Sam contacts the director, the stage manager should review the notes.",
+          "checks": {
+            "extent": 0.5652,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Following the rehearsal, Eva handed the notes to the stage manager, who then passed them along to Sam. Sam didn’t contact the director because the notes weren’t complete yet. Eva plans to finish them by noon on Friday. The stage manager should review them before Sam reaches out to the director.",
+          "checks": {
+            "extent": 0.413,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "clinic-comparison",
+        "source": "A part-time nurse might help more patients than a larger waiting room. The nurse could answer questions from people waiting for test results. A larger room would give visitors more seats but would not reduce the time it takes to receive a result. The clinic will ask patients about each option before requesting funds.",
+        "base": {
+          "draft": "A smaller, part-time nurse might serve more people than a room full of waiting chairs. She could field questions from those awaiting their test results, offering clarity and comfort. While a bigger waiting area would provide more seating, it wouldn’t shorten the time patients wait for their results. Before approving any funding, the clinic will personally discuss each option with patients.",
+          "checks": {
+            "extent": 0.8302,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "A nurse working part-time could actually assist more patients than a bigger waiting room would allow. She could answer questions for people waiting for test results, offering support and clarity. While a larger room would offer more seating, it wouldn't shorten the time it takes to get a result. Before asking for funding, the clinic will ask each patient about the different options.",
+          "checks": {
+            "extent": 0.6038,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "equipment-research",
+        "source": "Technicians tested 18 sensors using the same battery type. The older sensors did not last as long, but they had also been used outdoors for more months. The test cannot tell whether the design or prior use explains the difference. Next time, technicians will compare unused sensors from both designs.",
+        "base": {
+          "draft": "Eighteen sensors were evaluated under identical battery conditions. While the older models lasted less time, they had previously operated in outdoor environments for longer periods. The results don’t clarify whether the difference stems from design flaws or extended prior exposure. In the following test, technicians will compare sensors that have never been used, one from each design.",
+          "checks": {
+            "extent": 0.8571,
+            "changed": true,
+            "numbers": false,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "The team ran a test on 18 sensors, all using the same battery. The older models lasted less, but they had been used outdoors for more months. That doesn't mean the design or prior exposure is to blame—those factors remain unconfirmed. In the next test, they'll compare unused sensors from both designs.",
+          "checks": {
+            "extent": 0.5918,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "school-trip",
+        "source": "Mae wrote \"Keep the receipt\" on the envelope for the school trip. The driver must bring the original receipt back to the office after dropping off the group. Pupils do not need to keep copies. If the envelope is lost, teachers should ask the office for another one before handing over the receipt.",
+        "base": {
+          "draft": "Mae had the students write \"Keep the receipt\" on the envelope for the field trip. The driver is responsible for returning the original receipt to the office once the group has been dropped off. Students don’t need to retain any copies. Should the envelope go missing, the teacher should request a new one from the office before releasing the receipt.",
+          "checks": {
+            "extent": 0.6538,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Mae wrote on the envelope for the school trip: \"Please return the original receipt to the office after dropping off the group.\" The pupils don't need to keep copies. If the envelope goes missing, the teacher should request a new one from the office before giving the receipt to the office.",
+          "checks": {
+            "extent": 0.5385,
+            "changed": true,
+            "numbers": true,
+            "quotes": false,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "rowing-instruction",
+        "source": "Before putting the boat in the water, the instructor should check the wind, count the life jackets, and confirm that the radio works. A second tutor can join the group if more than 8 learners attend. The group does not go out if the radio fails, even when a second tutor is present.",
+        "base": {
+          "draft": "Prior to launching, the instructor must verify wind conditions, ensure every life jacket is accounted for, and test the radio’s functionality. If the class exceeds eight students, a second guide may accompany the group. However, if the radio isn’t working, the trip is canceled regardless of whether a second tutor is on board.",
+          "checks": {
+            "extent": 0.8462,
+            "changed": true,
+            "numbers": false,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Prior to launching, the instructor must verify wind conditions, count the life jackets, and ensure the radio is functioning. If more than eight learners are signed up, a second tutor can join. However, the group won't go out if the radio fails, regardless of whether a second tutor is present.",
+          "checks": {
+            "extent": 0.5769,
+            "changed": true,
+            "numbers": false,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "shipping-offer",
+        "source": "The shop will ship the replacement at no cost if the customer returns the damaged part by May 12. Under the repair option, the customer can keep the part, but the shop will charge $15 for the work. The replacement and repair are separate options. The offer does not include installation.",
+        "base": {
+          "draft": "If the customer sends back the damaged item by May 12, the shop will send out a replacement at no charge. With the repair service, the customer keeps the original part, but pays a $15 fee for the repair work. These are two distinct choices. Neither option covers the cost of installation.",
+          "checks": {
+            "extent": 0.74,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "If the customer sends back the damaged part by May 12, the shop will send out the replacement at no charge. For the repair option, the customer keeps the part, but pays $15 for the labor. These are two distinct choices. Installation is not included in either offer.",
+          "checks": {
+            "extent": 0.6,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "postcard",
+        "source": "I did not see the postcard until I got home from the station. My brother had left it in the outside pocket of my bag. The message said he would meet me at the station on Sunday if the train was running. I called on Saturday to ask if he had checked the timetable.",
+        "base": {
+          "draft": "I didn’t spot the postcard until I was back home from the station. It had been tucked into the outside pocket of my bag, left there by my brother. The note said he’d meet me at the station on Sunday, provided the train was running. I’d called on Saturday to find out if he’d looked up the schedule.",
+          "checks": {
+            "extent": 0.5472,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "I didn't see the postcard until I was home from the station. It had been tucked into the outside pocket of my bag. The note said he'd meet me at the station on Sunday, provided the train was running. I called on Saturday to check if he'd looked up the schedule.",
+          "checks": {
+            "extent": 0.4906,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "library-replay",
+        "source": "A neighborhood library can do more than lend books. It gives people a place to study, meet neighbors, and learn skills they might not otherwise have the chance to practice. Evening classes can help adults use online services, while quiet rooms give students somewhere to work when home is crowded. These benefits depend on practical choices. Opening hours need to match the lives of local residents, and staff need time to answer questions rather than spend every shift sorting returns. A larger building will not solve those problems on its own. Before expanding, library managers should ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for. A small change to the timetable may help more readers than an expensive renovation. The useful measure is whether the library makes everyday life easier for the community it serves.",
+        "base": {
+          "draft": "A local library isn’t just about borrowing books—it’s a hub where people can study, connect with neighbors, and build skills they’d otherwise never get to practice. After dark, adults can take classes to learn how to navigate online tools, while quiet spaces offer students a peaceful spot to focus when home life is noisy. But these benefits only work if the library’s operations reflect real community needs. Hours should align with people’s schedules, and staff should have time to assist visitors instead of spending every shift processing returned items. A bigger building doesn’t automatically fix those issues. Before making any expansion, managers should talk to users about what they actually use, hear from those who don’t visit at all, and verify that current services are meeting the needs of the people they’re meant to serve. Sometimes, a simple adjustment to the schedule can help more people than a costly renovation. Ultimately, the real test is whether the library makes daily life easier for the community it supports.",
+          "checks": {
+            "extent": 0.8477,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "A library isn’t just a book lending spot. It can be a quiet corner for studying, a meeting place for neighbors, and a chance to learn skills most people never get to practice. Evening workshops can help adults get comfortable with online tools, while quiet study rooms offer a refuge for students when home life gets noisy. But these benefits only work if the library meets real needs. Hours should fit the rhythm of daily life, and staff should have time to help people, not just handle book returns. A bigger building won’t fix that. Before expanding, managers should ask visitors what they actually use, listen to those who never step in, and check whether current services are reaching the people they were meant to serve. A small tweak to the schedule might help more people than a costly renovation. Ultimately, the real test is whether the library makes everyday life easier for the people it serves.",
+          "checks": {
+            "extent": 0.7351,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      }
+    ],
+    "inferenceAdapterScale": 2.0,
+    "evaluationSet": "same 8 probes plus library replay",
+    "tunedOutputsWithToolMarkers": 0
+  },
+  "qwen3LowerStrengthHeldOut": {
+    "baseRevision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+    "adapterSha256": "de7d7898011cc110106bf97a51ea7b8782528dedaddc484d23f2b9170a8792d2",
+    "generation": "greedy, identical prompt, at most 360 output tokens",
+    "fullRewritePrompt": true,
+    "benchmarks": {
+      "originalProbes": {
+        "base": {
+          "examples": 5,
+          "meanChangedBigramFraction": 0.7569,
+          "changed": 5,
+          "numbers": 4,
+          "quotes": 5,
+          "qualifierWords": 2,
+          "comparableLength": 5
+        },
+        "tuned": {
+          "examples": 5,
+          "meanChangedBigramFraction": 0.5273,
+          "changed": 5,
+          "numbers": 4,
+          "quotes": 5,
+          "qualifierWords": 0,
+          "comparableLength": 5
+        }
+      }
+    },
+    "originalProbeOutputs": [
+      {
+        "id": "training-session",
+        "source": "Instructors will run the first aid session twice on Friday. The morning session begins at 9 a.m., and the afternoon session begins at 2 p.m. Both sessions cover the same material. Staff who need step-free access should book the afternoon session because the morning room is upstairs and the lift is being repaired.",
+        "base": {
+          "draft": "On Friday, two first aid workshops will take place—one in the morning and one in the afternoon. The morning class starts at 9 a.m., and the afternoon one begins at 2 p.m. Both sessions include identical content. If you require a floor-level entry, we recommend attending the afternoon session, as the morning room is on the upper floor and the elevator is currently out of service.",
+          "checks": {
+            "extent": 0.6111,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "On Friday, two sessions will be offered for first aid training. The morning session starts at 9 a.m., and the afternoon session begins at 2 p.m. Both sessions cover identical content. If you need a session without stairs, go for the afternoon one. The morning room is on the upper floor, and the elevator is currently out of service.",
+          "checks": {
+            "extent": 0.5556,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "park-rules",
+        "source": "The park may open the footpath this weekend if contractors finish replacing the rails. The playground will remain closed until a separate inspection has taken place. Children can still use the play area near the entrance. The council has asked visitors to keep dogs away from the fenced construction area.",
+        "base": {
+          "draft": "This weekend, the park could unveil its footpath—if construction crews complete the rail replacement. However, the main playground will stay shut until a dedicated safety check is done. Kids can still enjoy the play zone just outside the main entrance. The local council is urging visitors to keep their dogs out of the fenced-off construction zone.",
+          "checks": {
+            "extent": 0.8163,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "This weekend, the park could open its footpath if contractors finish replacing the rails. The playground will stay shut until a separate inspection is completed. Kids can still use the play area by the entrance. The council is asking visitors to keep their dogs out of the fenced construction zone.",
+          "checks": {
+            "extent": 0.4898,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "equipment-transfer",
+        "source": "Nora handed the spare microphone to Isaac during the break. Isaac gave it to the sound technician, who put it back in the cupboard. The organizer did not borrow the spare microphone. She will ask the sound technician to check it before the next event.",
+        "base": {
+          "draft": "During the pause, Nora passed the backup mic to Isaac. He then handed it over to the sound tech, who returned it to the cabinet. The event coordinator didn’t take the spare mic. She plans to have the sound technician inspect it prior to the next show.",
+          "checks": {
+            "extent": 0.7955,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "During the break, Nora passed the spare mic to Isaac. He handed it over to the sound tech, who put it back in the cupboard. The organizer didn’t take the spare mic. She plans to ask the sound technician to inspect it before the next event.",
+          "checks": {
+            "extent": 0.4773,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "pilot-results",
+        "source": "For 3 months, the team tested an app that sends a message before a bill is due. The participants missed fewer payments than they had in the previous 3 months. The team cannot tell whether the app made the difference because there was no comparison group. The next trial will use a comparison group.",
+        "base": {
+          "draft": "Over a three-month period, the group piloted an app that alerts users ahead of their bill due date. Participants reported missing fewer payments compared to the prior three months. However, the team can't determine if the app was responsible for the improvement, since no control group was included. The following test will incorporate a comparison group.",
+          "checks": {
+            "extent": 0.8679,
+            "changed": true,
+            "numbers": false,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Over a three-month period, the team ran a trial with an app that sends a reminder before a bill is due. Participants made fewer missed payments than they had in the prior three months. However, the team can't determine if the app caused the improvement, since there was no control group for comparison. The next test will include a comparison group.",
+          "checks": {
+            "extent": 0.6038,
+            "changed": true,
+            "numbers": false,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      },
+      {
+        "id": "library-return",
+        "source": "The branch will continue accepting returns while the checkout desk is closed. Visitors can return books by putting them in the slot near the entrance. People returning a borrowed laptop must wait until the desk reopens. Staff will update the notice on Thursday if the repairs take longer than planned.",
+        "base": {
+          "draft": "Returns are still allowed, even though the checkout counter is currently closed. Guests can drop off books using the slot located at the front entrance. Anyone returning a borrowed laptop must wait until the desk reopens. The staff will revise the update on Thursday if the repair work extends beyond the original schedule.",
+          "checks": {
+            "extent": 0.6939,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": true,
+            "comparableLength": true
+          }
+        },
+        "tuned": {
+          "draft": "Returns will still be accepted, even though the checkout desk is closed. You can drop off books in the slot by the front entrance. If you're returning a borrowed laptop, you'll need to wait until the desk reopens. Staff will revise the notice on Thursday if the repairs take longer than expected.",
+          "checks": {
+            "extent": 0.5102,
+            "changed": true,
+            "numbers": true,
+            "quotes": true,
+            "qualifierWords": false,
+            "comparableLength": true
+          }
+        }
+      }
+    ],
+    "inferenceAdapterScale": 2.0,
+    "evaluationSet": "5 additional probes",
+    "tunedOutputsWithToolMarkers": 0
+  },
+  "qwen3TrainingValidation": {
+    "selectedStep": 60,
+    "validationLoss": {
+      "1": 3.656,
+      "30": 0.86,
+      "60": 0.785
+    }
+  }
+}

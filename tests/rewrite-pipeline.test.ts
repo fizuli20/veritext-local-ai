@@ -768,6 +768,15 @@ describe("Protected rewrite pipeline", () => {
     ).toBeUndefined();
   });
 
+  it("flags model tool markers while accepting literal markup from the source", () => {
+    const original = "The drivers reviewed the route before leaving.";
+    expect(reviewRewrite(original, "</tool_call>\n\n" + original)).toContain(
+      "Protected output format. Return the rewritten prose without tool markers.",
+    );
+    const withMarker = original + "\n<tool_call>";
+    expect(reviewRewrite(withMarker, withMarker)).toEqual([]);
+  });
+
   it("keeps agreement to an earlier request separate from asking for something", () => {
     const source =
       "The museum asked if it could keep a scan and return the original. I said yes and asked for a copy of any notes about the picture.";

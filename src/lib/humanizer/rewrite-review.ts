@@ -7,6 +7,7 @@ import {
 
 const NEGATION =
   /\b(?:no|not|never|neither|cannot|without)\b|\b[\p{L}]+n['’]t\b/giu;
+const MODEL_TOOL_MARKER = /^\s*<\/?tool_call>\s*$/gim;
 const POSSIBILITY = /\b(?:can|could|may|might)\b/gi;
 const NUMBER =
   /(?<![\p{L}\p{N}_])(?:[$€£])?[+-]?\d+(?:[,.]\d+)*(?:[eE][+-]?\d+)?(?:\s?%)?/gu;
@@ -423,6 +424,13 @@ export function reviewRewrite(
   context = original,
 ): string[] {
   const issues: string[] = [];
+  if (
+    (candidate.match(MODEL_TOOL_MARKER) ?? []).length >
+    (original.match(MODEL_TOOL_MARKER) ?? []).length
+  )
+    issues.push(
+      "Protected output format. Return the rewritten prose without tool markers.",
+    );
   if (
     BARE_OPENINGS.test(candidate) &&
     (original.match(SERVICE_HOURS) ?? []).length >
