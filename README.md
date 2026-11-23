@@ -1,4 +1,4 @@
-# Veritext 5.4.4
+# Veritext 5.4.5
 
 **5.0 workspace.** Revise a selected range in the edited draft with the same preservation checks, then undo if needed. The detector reports when checked paragraphs have widely different raw scores and includes their summary in the JSON export. Remember this workspace is off by default. Enable it to save source text, the edited draft, detector text and editing preferences, including the voice sample, in the current browser. Turning it off removes the saved copy. Restored text can be scanned again to generate fresh evidence.
 

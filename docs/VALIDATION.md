@@ -1,3 +1,9 @@
+# Veritext 5.4.5 sentence-level protection
+
+A protected number in one sentence no longer blocks a source-based restructuring of a different sentence. On the local rowing fixture, the model left the original unchanged. The editor clarified the three-action checklist and preserved the exact rule about more than 8 learners and the radio failure condition. The actual UI rewrite and copy completed successfully.
+
+---
+
 # Veritext 5.4.4 complete comparisons and conditional rewrites
 
 A local-model output ended an open-ended comparison at “a neighborhood library can.” The shared review rejects this incomplete form. If a Full rewrite leaves matching sentences verbatim, standard and professional modes can apply a checked source-based edit. These edits can reorder two qualified benefits or present a prerequisite and its three existing actions as a clear checklist. The prerequisite, actor and actions stay together. Sentences with locked spans stay in their protected path. A three-item noun list does not qualify as a checklist.

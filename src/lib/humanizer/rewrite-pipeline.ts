@@ -812,12 +812,22 @@ export async function runRewritePipeline(options: {
     }
     if (
       depth === "rephrase" &&
-      (mode === "standard" || mode === "professional") &&
-      locked.locks.length === 0
+      (mode === "standard" || mode === "professional")
     ) {
       const draft = accepted ?? originalPart;
+      const protectedRanges = locked.locks.length
+        ? (lockRewriteSpans(originalPart, terms).ranges ?? [])
+        : [];
       const sourceSentences = new Set(
-        tokenizeSentences(originalPart).map(({ text }) => text),
+        tokenizeSentences(originalPart)
+          .filter(
+            (sentence) =>
+              !protectedRanges.some(
+                ({ start, end }) =>
+                  start < sentence.end && end > sentence.start,
+              ),
+          )
+          .map(({ text }) => text),
       );
       let revised = draft;
       for (const sentence of tokenizeSentences(draft).reverse()) {

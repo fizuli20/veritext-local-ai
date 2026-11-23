@@ -759,6 +759,26 @@ describe("Protected rewrite pipeline", () => {
     ).toBe(true);
   });
 
+  it("recasts a checklist beside a locked measurement and preserves exact locked text", async () => {
+    const checklist =
+      "Before putting the boat in the water, the instructor should check the wind, count the life jackets, and confirm that the radio works.";
+    const condition =
+      "A second tutor can join the group if more than 8 learners attend.";
+    const text = checklist + " " + condition;
+    const result = await runRewritePipeline({
+      text,
+      mode: "standard",
+      depth: "rephrase",
+      onProgress: noop,
+      generate: async ({ userPrompt }) => userPrompt.split("\n\n").at(-1)!,
+    });
+    expect(result.text).toBe(
+      checklist.replace("should check", "should do three things: check") +
+        " " +
+        condition,
+    );
+  });
+
   it("distinguishes an action checklist from a list of items", () => {
     const actions =
       "Before leaving, staff should check the doors, record the time, and call the manager.";
