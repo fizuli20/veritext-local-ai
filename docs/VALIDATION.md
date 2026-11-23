@@ -1,3 +1,11 @@
+# Veritext 5.4.4 complete comparisons and conditional rewrites
+
+A local-model output ended an open-ended comparison at “a neighborhood library can.” The shared review rejects this incomplete form. If a Full rewrite leaves matching sentences verbatim, standard and professional modes can apply a checked source-based edit. These edits can reorder two qualified benefits or present a prerequisite and its three existing actions as a clear checklist. The prerequisite, actor and actions stay together. Sentences with locked spans stay in their protected path. A three-item noun list does not qualify as a checklist.
+
+The local Qwen3 4B library replay changed 8 of the 9 original sentences, with one-click rewrite and copy verified. The regression reproduces the user's incomplete comparison and checks that the recovery returns a complete sentence. The browser paragraph tests verify provenance and that paragraph separators are preserved. Sentence changes measure editing coverage. The pasted local draft received 100% in one normal [ZeroGPT](https://www.zerogpt.com/) check.
+
+---
+
 # Veritext 5.4.3 frequency qualifiers
 
 The local 4B library rewrite dropped “every shift” from the instruction about sorting returns. The existing check for that frequency now runs in the shared rewrite review, including on local models. It recognizes “each shift”, “all shifts” and “shift after shift”.

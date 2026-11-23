@@ -24,6 +24,24 @@ export function restructureQualifiedBenefit(text: string): string | undefined {
   }
 }
 
+const THREE_ACTIONS =
+  /^(Before [\p{Ll}]+ing(?: [^,;.!?]+)?), ([\p{L}][\p{L}'’ -]{1,70}) should ([^,;.!?]+), ([^,;.!?]+), and ([^,;.!?]+)\.$/u;
+
+const CHECKLIST_VERB =
+  /^(?:ask|call|check|collect|compare|confirm|count|find|give|inspect|listen|make|read|record|review|send|speak|test|verify|write) /i;
+
+/** Present a three-action prerequisite without changing its actor, scope or actions. */
+export function restructureConditionalInstructions(
+  text: string,
+): string | undefined {
+  const checklist = text.match(THREE_ACTIONS);
+  if (!checklist) return;
+  const [, prerequisite, actor, first, second, third] = checklist;
+  if (![first!, second!, third!].every((action) => CHECKLIST_VERB.test(action)))
+    return;
+  return `${prerequisite}, ${actor} should do three things: ${first}, ${second}, and ${third}.`;
+}
+
 function lowerArticle(text: string): string {
   return text.replace(/^(?:A|An|The)\b/, (article) => article.toLowerCase());
 }

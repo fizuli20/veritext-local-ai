@@ -7,7 +7,7 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     product: "Veritext",
-    version: "5.4.3",
+    version: "5.4.4",
     zeroKeyMandate: true,
     externalApiKeysRequired: false,
     engines: {
@@ -31,6 +31,7 @@ export async function GET() {
           "User-connected LM Studio/Ollama",
         ],
         automaticRuleFallback: false,
+        sourceBasedRestructuring: true,
         semanticGuarantee: false,
         protectedSpans: true,
         selectedTextRevision: true,

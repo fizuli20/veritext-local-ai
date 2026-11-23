@@ -2,6 +2,11 @@ import { countWords, tokenizeSentences } from "../nlp/tokenizer";
 import { RewriteOutputLimitError } from "./output-cleaner";
 import { rewriteParagraph, type GenerateParagraph } from "./paragraph-rewrite";
 import {
+  restructureConditionalInstructions,
+  restructureFromSource,
+  restructureQualifiedBenefit,
+} from "./source-edits";
+import {
   reviewRewrite,
   CLOSING_OMISSION,
   closingRecommendation,
@@ -802,6 +807,41 @@ export async function runRewritePipeline(options: {
           retainedProtected
             ? `Section ${section}: protected sentences kept intact. The model revised smaller passages.`
             : `Section ${section}: the model revised smaller passages after the whole-section draft failed its checks.`,
+        );
+      }
+    }
+    if (
+      depth === "rephrase" &&
+      (mode === "standard" || mode === "professional") &&
+      locked.locks.length === 0
+    ) {
+      const draft = accepted ?? originalPart;
+      const sourceSentences = new Set(
+        tokenizeSentences(originalPart).map(({ text }) => text),
+      );
+      let revised = draft;
+      for (const sentence of tokenizeSentences(draft).reverse()) {
+        if (!sourceSentences.has(sentence.text)) continue;
+        const edit =
+          restructureConditionalInstructions(sentence.text) ??
+          restructureQualifiedBenefit(sentence.text) ??
+          restructureFromSource(sentence.text);
+        if (
+          edit &&
+          !reviewFocusedRewrite(sentence.text, edit, mode, terms, text).length
+        )
+          revised =
+            revised.slice(0, sentence.start) +
+            edit +
+            revised.slice(sentence.end);
+      }
+      if (
+        revised !== draft &&
+        !reviewRewrite(originalPart, revised, mode, terms, text).length
+      ) {
+        accepted = revised;
+        warnings.push(
+          `Section ${section}: source wording was reorganized in sentences the model left unchanged.`,
         );
       }
     }

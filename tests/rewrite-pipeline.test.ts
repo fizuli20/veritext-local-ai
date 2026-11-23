@@ -635,10 +635,10 @@ describe("Protected rewrite pipeline", () => {
     expect(result.text).toBe(
       [
         rewrittenOpening,
-        benefits,
-        contrast,
+        "It gives people somewhere to study, meet neighbors, and learn skills they might not otherwise have the chance to practice.",
+        "While quiet rooms give students somewhere to work when home is crowded, evening classes can help adults use online services.",
         rewrittenOperations,
-        checklist,
+        "Before expanding, library managers should do three things: ask visitors what they use, listen to people who never come through the door, and check whether existing services reach the people they were designed for.",
         rewrittenComparison,
         rewrittenMeasure,
       ].join("  "),
@@ -730,6 +730,51 @@ describe("Protected rewrite pipeline", () => {
         "A library is in the neighborhood. " + source,
       ),
     ).not.toContain(restriction);
+  });
+
+  it("rejects the reported incomplete modal and recovers a complete comparison", async () => {
+    const source = "A neighborhood library can do more than lend books.";
+    const broken = "More than lending books, a neighborhood library can.";
+    const complete =
+      "Lending books is just one thing a neighborhood library can do.";
+    expect(reviewRewrite(source, broken + " The rooms are open.")).toContain(
+      "Protected comparison is incomplete. Use a complete sentence with a main verb after the modal.",
+    );
+    expect(reviewRewrite(source, complete)).toEqual([]);
+
+    const result = await runRewritePipeline({
+      text: source,
+      mode: "standard",
+      depth: "rephrase",
+      onProgress: noop,
+      generate: async () => broken,
+    });
+    expect(result.text).toBe(
+      "A neighborhood library can lend books, among other things.",
+    );
+    expect(
+      result.checks.some(({ reason }) =>
+        reason.includes("comparison is incomplete"),
+      ),
+    ).toBe(true);
+  });
+
+  it("distinguishes an action checklist from a list of items", () => {
+    const actions =
+      "Before leaving, staff should check the doors, record the time, and call the manager.";
+    const rewritten =
+      "Before leaving, staff should do three things: check the doors, record the time, and call the manager.";
+    expect(reviewRewrite(actions, rewritten)).toEqual([]);
+    const items =
+      "Before leaving, staff should collect the keys, the tools, and the radio.";
+    expect(
+      reviewRewrite(
+        items,
+        items.replace("collect", "do three things: collect"),
+      ),
+    ).toContain(
+      "Protected conditional instructions changed. Preserve the prerequisite and its full list of actions.",
+    );
   });
 
   it("keeps both library comparisons from the focused Llama retest", () => {
@@ -826,7 +871,7 @@ describe("Protected rewrite pipeline", () => {
     ).toBe(original);
   });
 
-  it("stops before generation and never substitutes a rule-based rewrite", async () => {
+  it("stops before generation and retains prose with no valid edit", async () => {
     const controller = new AbortController();
     controller.abort();
     const generate = vi.fn();

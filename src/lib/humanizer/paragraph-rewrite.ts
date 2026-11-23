@@ -3,6 +3,7 @@ import { cleanLlmOutput } from "./output-cleaner";
 import { flagsPossibleMeaningChange } from "./paraphrase-review";
 import {
   restructureFromSource,
+  restructureConditionalInstructions,
   restructureQualifiedBenefit,
 } from "./source-edits";
 import {
@@ -69,9 +70,10 @@ export async function rewriteParagraph({
   if (/\n|^(?:[-*#>]\s|\d+[.)]\s)/.test(text.trim())) return null;
 
   const qualified = new Set(protectedQualifiedSentences(text));
+  const conditional = new Set(conditionalInstructions(text));
+  const sourceStyle = mode === "standard" || mode === "professional";
   const exactSentences = new Set([
     ...quantityClaims(text),
-    ...conditionalInstructions(text),
     closingRecommendation(text),
   ]);
   const parts = sentences.map((sentence, index) => {
@@ -81,16 +83,18 @@ export async function rewriteParagraph({
         (range) => range.start < sentence.end && range.end > sentence.start,
       );
     const qualifiedBenefit = qualified.has(sentence.text);
-    const sourceEdit =
-      !locked &&
-      qualifiedBenefit &&
-      (mode === "standard" || mode === "professional")
-        ? restructureQualifiedBenefit(sentence.text)
-        : undefined;
+    const conditionalList = conditional.has(sentence.text);
+    let sourceEdit: string | undefined;
+    if (!locked && sourceStyle) {
+      if (qualifiedBenefit)
+        sourceEdit = restructureQualifiedBenefit(sentence.text);
+      if (conditionalList)
+        sourceEdit = restructureConditionalInstructions(sentence.text);
+    }
     return {
       ...sentence,
       id: `s${index + 1}`,
-      fixed: locked || (qualifiedBenefit && !sourceEdit),
+      fixed: locked || ((qualifiedBenefit || conditionalList) && !sourceEdit),
       sourceEdit,
     };
   });
@@ -114,7 +118,7 @@ export async function rewriteParagraph({
     string,
     { text: string; extent: number; fromSource?: true; flagged?: boolean }
   >();
-  if (mode === "standard" || mode === "professional") {
+  if (sourceStyle) {
     for (const part of editable) {
       const edit = part.sourceEdit ?? restructureFromSource(part.text);
       if (

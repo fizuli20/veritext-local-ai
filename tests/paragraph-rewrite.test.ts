@@ -63,9 +63,9 @@ describe("paragraph-context editing", () => {
       ),
     ).toEqual([["s2", "s4"], ["s4"]]);
     expect(result.sentenceEdits).toEqual({
-      edited: 5,
-      eligible: 5,
-      fromSource: 3,
+      edited: 6,
+      eligible: 6,
+      fromSource: 4,
     });
     expect(result.lightFallback).toBe(false);
     expect(result.retries).toBe(1);
@@ -86,8 +86,8 @@ describe("paragraph-context editing", () => {
       generate: async () => '{"s2":',
       onRetry: () => {},
     });
-    expect(result?.edited).toBe(3);
-    expect(result?.fromSource).toBe(3);
+    expect(result?.edited).toBe(4);
+    expect(result?.fromSource).toBe(4);
     expect(result?.text).toContain("Its programs give people a place to study");
   });
 
@@ -126,9 +126,9 @@ describe("paragraph-context editing", () => {
     });
     expect(result.text.split("\r\n\r\n")).toHaveLength(2);
     expect(result.sentenceEdits).toEqual({
-      edited: 6,
-      eligible: 10,
-      fromSource: 6,
+      edited: 8,
+      eligible: 12,
+      fromSource: 8,
     });
     expect(result.parts).toBe(2);
   });

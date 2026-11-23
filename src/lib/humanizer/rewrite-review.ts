@@ -2,6 +2,7 @@ import { maskProtectedSpans, restoreProtectedSpans } from "./protected-spans";
 import { countWords, tokenizeSentences } from "../nlp/tokenizer";
 import {
   QUALIFIED_COMPARISON,
+  restructureConditionalInstructions,
   restructureQualifiedBenefit,
 } from "./source-edits";
 
@@ -82,6 +83,8 @@ const COMPARISON_PHRASING =
 const OTHER_ACTIVITIES =
   /\b(?:beyond|just one|one (?:of|thing|part|service)|only (?:one|part)|among (?:other|the))\b/i;
 const OPEN_ENDED_ACTIVITIES = /\b(?:can|could|may|might) do more than\b/i;
+const INCOMPLETE_OPEN_ENDED_COMPARISON =
+  /^(?:more than|beyond)\b[^,;.!?]+,\s*[^,;.!?]+\s+(?:can|could|may|might)[.!?]$/i;
 const GENERAL_COMPARISON_WORDS = new Set(
   contentAnchors(
     "activity also additional among another aspect beyond broaden extend function include lending offering other provide reach scope serve service simple merely simply thing",
@@ -466,13 +469,26 @@ export function reviewRewrite(
     JSON.stringify(Object.entries(after).sort())
   )
     issues.push("Numbers or amounts changed.");
+  if (
+    OPEN_ENDED_ACTIVITIES.test(original) &&
+    tokenizeSentences(candidate).some(({ text }) =>
+      INCOMPLETE_OPEN_ENDED_COMPARISON.test(normalizeWhitespace(text)),
+    )
+  )
+    issues.push(
+      "Protected comparison is incomplete. Use a complete sentence with a main verb after the modal.",
+    );
   const normalizedDraft = normalizeWhitespace(candidate);
   for (const claim of quantityClaims(original)) {
     if (!normalizedDraft.includes(normalizeWhitespace(claim)))
       issues.push("Protected quantity claim changed: " + claim.slice(0, 140));
   }
   for (const instructions of conditionalInstructions(original)) {
-    if (!normalizedDraft.includes(normalizeWhitespace(instructions)))
+    const equivalent = restructureConditionalInstructions(instructions);
+    if (
+      !normalizedDraft.includes(normalizeWhitespace(instructions)) &&
+      !(equivalent && normalizedDraft.includes(normalizeWhitespace(equivalent)))
+    )
       issues.push(
         "Protected conditional instructions changed. Preserve the prerequisite and its full list of actions.",
       );
