@@ -5,7 +5,8 @@ const OPEN_ENDED_ABILITY =
 const QUALIFIED_COMPARISON =
   /^((?:A|An|The) [\p{L}][\p{L} '-]{2,80}) (may|might|can|could) (help|benefit|reach|serve) (more|fewer) ([\p{L}][\p{L} '-]{2,45}) than ((?:a|an|the) [\p{L}][\p{L} '-]{2,80})\.$/u;
 const USEFUL_MEASURE = /^The useful measure is whether (\S[^.!?]+)\.$/i;
-const ON_ITS_OWN = /^((?:A|An|The) [^,;.!?]{6,155}) on (its|their) own\.$/;
+const ON_ITS_OWN =
+  /^((?:A|An|The) [^,;.!?]{2,75} (?:will|can|could|may|might|does) (?:not )?(?:solve|fix|address|resolve|prevent) [^,;.!?]{2,75}) on its own\.$/;
 
 function lowerArticle(text: string): string {
   return text.replace(/^(?:A|An|The)\b/, (article) => article.toLowerCase());
@@ -23,7 +24,11 @@ export function restructureFromSource(text: string): string | undefined {
   const comparison = text.match(QUALIFIED_COMPARISON);
   if (comparison) {
     const [, first, modality, action, direction, group, second] = comparison;
-    if (!/\b(?:their|its|his|her|our|my|your|own)\b/i.test(group!)) {
+    if (
+      ![first, group, second].some((phrase) =>
+        /\b(?:their|its|his|her|our|my|your|own|and|or)\b/i.test(phrase!),
+      )
+    ) {
       const opening = second![0]!.toUpperCase() + second!.slice(1);
       return `${opening} ${modality} ${action} ${direction === "more" ? "fewer" : "more"} ${group} than ${lowerArticle(first!)}.`;
     }
@@ -38,7 +43,7 @@ export function restructureFromSource(text: string): string | undefined {
     alone &&
     !/\b(?:and|or|because|when|if|unless|although|while)\b/i.test(alone[1]!)
   )
-    return `On ${alone[2]} own, ${lowerArticle(alone[1]!)}.`;
+    return `On its own, ${lowerArticle(alone[1]!)}.`;
 
   const condition = text.match(BOUNDED_CLAUSE);
   if (condition) {
@@ -49,7 +54,7 @@ export function restructureFromSource(text: string): string | undefined {
     if (
       markers?.length === 1 &&
       /^(?:A|An|The|I)\b/.test(main!) &&
-      !/\b(?:not|never|no)\b|n['’]t\b/i.test(main!)
+      !/\b(?:not|never|no|only|just)\b|n['’]t\b/i.test(main!)
     ) {
       const opening = connective![0]!.toUpperCase() + connective!.slice(1);
       return `${opening} ${dependent}, ${lowerArticle(main!)}.`;

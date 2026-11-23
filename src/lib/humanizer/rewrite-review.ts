@@ -468,6 +468,13 @@ export function reviewFocusedRewrite(
   if (comparison) issues.push(comparison);
   const evaluation = focusedEvaluationIssue(original, candidate);
   if (evaluation) issues.push(evaluation);
+  if (
+    /\b(?:every|each) shift\b/i.test(original) &&
+    !/\b(?:(?:every|each) shift|all shifts|shift after shift)\b/i.test(
+      candidate,
+    )
+  )
+    issues.push("Keep the original frequency of every shift.");
   if (!/[?？]/.test(original) && /[?？]/.test(candidate))
     issues.push("Keep the statement as a statement.");
   return issues;

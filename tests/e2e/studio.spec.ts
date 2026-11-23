@@ -519,7 +519,7 @@ test("compares two exact scans and returns to the original rewrite source", asyn
     "63/100 model signal",
   );
   await expect(page.getByTestId("detector-result")).toContainText(
-    "Veritext used a writing model to edit this draft.",
+    "This is the exact draft from Veritext’s rewrite editor.",
   );
   await page
     .getByRole("button", { name: "Back to rewrite", exact: true })

@@ -1,3 +1,11 @@
+# Veritext 5.1.1 rewrite fidelity
+
+The first live Qwen 3B retest with the paragraph pipeline edited five of six editable sentences in 2.6 seconds, including four source-based edits. The model weakened “every shift” to “shifts” in that run. The focused check now keeps that frequency qualifier. Source-based rules also skip ambiguous negations, comparisons with possessive or combined subjects, and cases where “on its own” may modify the object.
+
+The Detailed detector scored the original AI-authored library sample 97.6/100 and the source-based edit from the Llama session 98.4/100. The comparison used the exact texts and the same detector. The edited draft retains its high writing-pattern signal.
+
+---
+
 # Veritext 5.1 paragraph rewrites
 
 Full rewrite in the browser can read a bounded paragraph, edit a connected passage in prose and request individual replacements for the remaining sentences. Exact facts and protected sentences are restored from the source. The editor checks replacements separately before checking the assembled paragraph. When an explicit comparison or clause can be reorganized from source wording, the editor can apply that structural edit even if the model copies the source or returns an incomplete answer. The draft identifies those source-based edits.

@@ -8,6 +8,7 @@ import {
   runRewritePipeline,
 } from "@/lib/humanizer/rewrite-pipeline";
 import { restructureFromSource } from "@/lib/humanizer/source-edits";
+import { reviewFocusedRewrite } from "@/lib/humanizer/rewrite-review";
 
 const original = [
   "A neighborhood library can do more than lend books.",
@@ -94,6 +95,14 @@ describe("paragraph-context editing", () => {
     expect(
       restructureFromSource("The clinic stays open when the school is closed."),
     ).toBe("When the school is closed, the clinic stays open.");
+    expect(
+      restructureFromSource("A technician left the machine on its own."),
+    ).toBeUndefined();
+    expect(
+      restructureFromSource(
+        "A larger building will not solve those problems on its own.",
+      ),
+    ).toBe("On its own, a larger building will not solve those problems.");
   });
 
   it("preserves paragraph breaks and totals the edits across the document", async () => {
@@ -112,5 +121,28 @@ describe("paragraph-context editing", () => {
       fromSource: 6,
     });
     expect(result.parts).toBe(2);
+  });
+
+  it("retains the original frequency in a connected rewrite", () => {
+    const text =
+      "Staff need time to answer questions rather than spend every shift sorting returns.";
+    expect(
+      reviewFocusedRewrite(
+        text,
+        text.replace("every shift", "shifts"),
+        "standard",
+        [],
+        text,
+      ),
+    ).toContain("Keep the original frequency of every shift.");
+    expect(
+      reviewFocusedRewrite(
+        text,
+        text.replace("every shift", "each shift"),
+        "standard",
+        [],
+        text,
+      ),
+    ).toEqual([]);
   });
 });

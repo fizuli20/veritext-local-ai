@@ -1505,13 +1505,10 @@ export function Workspace() {
                     scan.text === output &&
                     scan.text === rewriteReport.text && (
                       <p className="vt-caution">
-                        {rewriteReport.sentenceEdits?.fromSource ===
-                          rewriteReport.sentenceEdits?.edited &&
-                        rewriteReport.sentenceEdits
-                          ? "Veritext edited this draft using the source wording."
-                          : "Veritext used a writing model to edit this draft."}{" "}
-                        The detector measures writing patterns. Use Show changes
-                        in the editor to review the edits.
+                        This is the exact draft from Veritext’s rewrite editor.
+                        AI-assisted drafts can still receive high scores. Use
+                        Show changes in the editor to review the wording
+                        changes.
                       </p>
                     )}
                   <p>{scan.evidence.explanation}</p>
