@@ -1,3 +1,9 @@
+# Veritext 5.4.1 separate actions
+
+A fine-tuned model's museum draft turned agreement to a request and a separate request for a copy into agreement to take a copy. Rewrite review now flags a recognized agreement-plus-request construction if the draft loses either action. The original and a faithful rewrite are covered by a regression test.
+
+---
+
 # Veritext 5.4.0 paraphrase review and qualified edits
 
 The generator is still the selected browser or local model. We trained a compact local review model on 49,401 sentence pairs from [Google Research PAWS-Wiki](https://github.com/google-research-datasets/paws). It considers shared words, phrase order and length for short, closely overlapping edits. The supplied HumanizeAI library drafts were excluded from training and threshold selection. No detector score participates in generation or review.

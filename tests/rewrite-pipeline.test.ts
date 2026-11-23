@@ -768,6 +768,25 @@ describe("Protected rewrite pipeline", () => {
     ).toBeUndefined();
   });
 
+  it("keeps agreement to an earlier request separate from asking for something", () => {
+    const source =
+      "The museum asked if it could keep a scan and return the original. I said yes and asked for a copy of any notes about the picture.";
+    expect(
+      reviewRewrite(
+        source,
+        "The museum asked if it could keep a scan and return the original. I agreed to take a copy of any notes about the picture.",
+      ),
+    ).toContain(
+      "Protected consent and request changed. Keep both the agreement and the separate request.",
+    );
+    expect(
+      reviewRewrite(
+        source,
+        "The museum asked if it could keep a scan and return the original. I agreed and asked the museum to send me a copy of any notes about the picture.",
+      ),
+    ).toEqual([]);
+  });
+
   it("keeps a criterion separate from an asserted result", () => {
     const source =
       "The useful measure is whether the library makes everyday life easier for the community it serves.";

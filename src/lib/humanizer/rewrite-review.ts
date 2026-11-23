@@ -187,6 +187,13 @@ export function focusedEvaluationIssue(
 
 const COORDINATED_DUTY =
   /\b(?:and|but|while|whereas)\s+(?:the\s+)?([\p{L}-]+(?:\s+[\p{L}-]+){0,2})\s+(?:needs?(?:\s+time)?\s+to|must|should|(?:has|have)\s+to)\s+([^.!?;]+)/giu;
+const CONSENT_AND_REQUEST =
+  /\b(?:said yes|agreed|accepted(?: the request)?)\s*,?\s*(?:and|then)\s+(?:also\s+)?(?:asked for|requested)\b/i;
+const CONSENT =
+  /\b(?:said yes|agreed|accepted|consented|gave (?:[\p{L}]+ )?permission)\b/iu;
+const REQUEST =
+  /\b(?:asked for|requested|asked (?:the [\p{L}]+|them|her|him) to)\b/giu;
+
 const IMPLICIT_ACTORS = /^(?:he|she|it|we|they|you|I)$/i;
 const CAUSAL_LINK =
   /\b(?:because|therefore|thereby|as a result|so that|(?:this|that|it) (?:will |would )?(?:allows?|enables?)|allowing (?:them|staff|workers|employees|residents) to)\b/i;
@@ -518,6 +525,15 @@ export function reviewRewrite(
       "Protected actor changed. Keep " +
         missingActor +
         " responsible for the original action.",
+    );
+  if (
+    CONSENT_AND_REQUEST.test(original) &&
+    (!CONSENT.test(candidate) ||
+      (candidate.match(REQUEST) ?? []).length <
+        (original.match(REQUEST) ?? []).length)
+  )
+    issues.push(
+      "Protected consent and request changed. Keep both the agreement and the separate request.",
     );
   if (closingSentenceLooksOmitted(original, candidate))
     issues.push(CLOSING_OMISSION + ". Keep the final substantive point.");
