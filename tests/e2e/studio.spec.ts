@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { connectLocal, openEditorSection } from "./editor-controls";
+import { rebuildAudit, rebuildSource, rebuiltDraft } from "../fixtures/rebuild";
 const source =
   'In 2024, Ana said "wait". The trial did not succeed. We need to review the results before making a decision.';
 const edited =
@@ -795,6 +796,57 @@ test("rewrite depth reaches the engine and the completed draft keeps its depth l
     page.getByText(/^Local model · depth-fixture · Light edit/),
   ).toBeVisible();
   expect(prompts.at(-1)).toContain("restrained copy edit");
+});
+
+test("rebuilds one paragraph and publishes it only after the second check", async ({
+  page,
+}) => {
+  let releaseAudit = () => {};
+  const auditCanFinish = new Promise<void>((resolve) => {
+    releaseAudit = resolve;
+  });
+  await page.route("http://localhost:1234/**", async (route) => {
+    if (route.request().url().endsWith("/models"))
+      return route.fulfill({ json: { data: [{ id: "rebuild-fixture" }] } });
+    const { messages } = route.request().postDataJSON();
+    const audit = messages[0].content.includes("You check editorial accuracy.");
+    if (audit) await auditCanFinish;
+    const content = audit ? JSON.stringify(rebuildAudit) : rebuiltDraft;
+    return route.fulfill({
+      contentType: "text/event-stream",
+      body: `data: ${JSON.stringify({ choices: [{ delta: { content }, finish_reason: "stop" }] })}\n\ndata: [DONE]\n\n`,
+    });
+  });
+  await page.goto("/");
+  await page
+    .getByRole("textbox", { name: "Original text", exact: true })
+    .fill(rebuildSource);
+  await connectLocal(page);
+  await openEditorSection(page, "Editing options");
+  await page
+    .getByRole("button", { name: "Rebuild paragraph", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Humanize", exact: true }).click();
+  try {
+    await expect(page.getByRole("status")).toContainText(
+      "Checking the rebuilt draft against the source",
+    );
+    await expect(
+      page.getByRole("textbox", { name: "Edited draft", exact: true }),
+    ).toHaveCount(0);
+  } finally {
+    releaseAudit();
+  }
+  await expect(
+    page.getByRole("textbox", { name: "Edited draft", exact: true }),
+  ).toHaveValue(rebuiltDraft);
+  await openEditorSection(page, "Draft tools");
+  await expect(
+    page.getByText(/^Local model · rebuild-fixture · Rebuild paragraph/),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Copy", exact: true }),
+  ).toBeEnabled();
 });
 
 test("shows a nonzero detector signal below one point and preserves the exact export score", async ({

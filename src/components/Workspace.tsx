@@ -750,6 +750,7 @@ export function Workspace() {
           restructure,
           responseSchema,
           maxTokens,
+          temperature,
         }: Parameters<GenerateRewrite>[0] & { responseSchema?: string }) {
           if (!browserEngine.current)
             throw new Error("Load a writing model before rewriting.");
@@ -759,13 +760,15 @@ export function Workspace() {
               { role: "user", content: userPrompt },
             ],
             stream: true,
-            temperature: responseSchema
-              ? attempt
-                ? 0.55
-                : 0.4
-              : attempt || restructure
-                ? 0.65
-                : 0.5,
+            temperature:
+              temperature ??
+              (responseSchema
+                ? attempt
+                  ? 0.55
+                  : 0.4
+                : attempt || restructure
+                  ? 0.65
+                  : 0.5),
             ...(responseSchema
               ? {
                   response_format: {
@@ -810,6 +813,7 @@ export function Workspace() {
             attempt,
             restructure,
             maxTokens,
+            temperature,
           }) => {
             if (useLocal && modelId && connectedUrl) {
               const waiting = setTimeout(() => {
@@ -826,6 +830,8 @@ export function Workspace() {
                   userPrompt,
                   signal: controller.signal,
                   style: mode === "academic" ? "academic" : "default",
+                  maxTokens: temperature === undefined ? undefined : maxTokens,
+                  temperature,
                   onModelPhase: (phase) => {
                     clearTimeout(waiting);
                     if (operation.current !== id) return;
@@ -850,6 +856,7 @@ export function Workspace() {
               attempt,
               restructure,
               maxTokens,
+              temperature,
             });
           },
         });
@@ -902,7 +909,9 @@ export function Workspace() {
           setSource(original);
           setOutputMode(mode);
         }
-        setOutputDepth(depth);
+        setOutputDepth(
+          depth === "rebuild" && !result.rebuilt ? "rephrase" : depth,
+        );
         setSelection(null);
         setDiff(false);
         const sourceOnly =
@@ -920,11 +929,13 @@ export function Workspace() {
           });
         }
         setNotice(
-          selected
-            ? "Selected text revised. Review the updated draft."
-            : result.changed
-              ? `${sourceOnly ? "Structure edited using the source wording." : result.lightFallback ? "Light edit ready." : "Draft ready."} ${result.sentenceEdits ? `${result.sentenceEdits.edited} of ${result.sentenceEdits.eligible} editable sentences changed.` : `${result.parts - result.retained} of ${result.parts} sections edited.`} Review the changes before using the text.`
-              : "The model did not produce a changed draft that passed preservation checks. Your original was retained.",
+          depth === "rebuild" && !result.rebuilt
+            ? (result.warnings[0] ?? "Full rewrite was used.")
+            : selected
+              ? "Selected text revised. Review the updated draft."
+              : result.changed
+                ? `${sourceOnly ? "Structure edited using the source wording." : result.lightFallback ? "Light edit ready." : "Draft ready."} ${result.sentenceEdits ? `${result.sentenceEdits.edited} of ${result.sentenceEdits.eligible} editable sentences changed.` : `${result.parts - result.retained} of ${result.parts} sections edited.`} Review the changes before using the text.`
+                : "The model did not produce a changed draft that passed preservation checks. Your original was retained.",
         );
       } catch (err) {
         if (operation.current === id) {

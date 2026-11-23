@@ -383,6 +383,8 @@ export function classifyLocalServerError(
 }
 
 export interface StreamChatCompletionOptions {
+  maxTokens?: number;
+  temperature?: number;
   baseUrl: string;
   apiKey?: string;
   modelId: string;
@@ -465,6 +467,8 @@ export async function streamChatCompletion(
     style,
     signal,
     onModelPhase,
+    maxTokens,
+    temperature,
   } = options;
   const cleanBase = localApiBase(baseUrl);
   const url = cleanBase + "/chat/completions";
@@ -482,9 +486,9 @@ export async function streamChatCompletion(
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
-    temperature: sampling.temperature,
+    temperature: temperature ?? sampling.temperature,
     top_p: sampling.top_p,
-    max_tokens: sampling.max_tokens,
+    max_tokens: maxTokens ?? sampling.max_tokens,
     stream: true,
   };
   let optional: Record<string, string | number> = {
@@ -541,7 +545,7 @@ export async function streamChatCompletion(
   );
   if (!result.text && result.reasoned && result.truncated) {
     onModelPhase?.("retrying");
-    body.max_tokens = sampling.max_tokens * 2;
+    body.max_tokens = Math.max(sampling.max_tokens, body.max_tokens * 2);
     result = await readLocalCompletion(
       await requestCompletion(),
       options,

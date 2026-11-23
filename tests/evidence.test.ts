@@ -121,7 +121,11 @@ describe("Meaning review", () => {
     );
   });
   it("separates rewriting depth from tone without relaxing factual preservation", () => {
-    expect(Object.keys(REWRITE_DEPTHS)).toEqual(["polish", "rephrase"]);
+    expect(Object.keys(REWRITE_DEPTHS)).toEqual([
+      "polish",
+      "rephrase",
+      "rebuild",
+    ]);
     const full = rewriteInstructions("professional", "rephrase");
     expect(full).toContain("fresh version");
     expect(full).toContain("courteous professional");
@@ -142,6 +146,20 @@ describe("Meaning review", () => {
         (issue) => issue.startsWith("Protected url-email changed"),
       ),
     ).toBe(true);
+  });
+  it("preserves a level route without inventing a universal access claim", () => {
+    const original = "The east entrance has a level path to the main hall.";
+    expect(
+      reviewRewrite(original, original + " It is accessible for all visitors."),
+    ).toContain(
+      "Protected access detail changed. Keep the described route without adding a universal accessibility claim.",
+    );
+    expect(
+      reviewRewrite(
+        original,
+        "A level path leads from the east entrance to the main hall.",
+      ),
+    ).toEqual([]);
   });
   it("accepts tracked invariants while never claiming semantic proof", () => {
     expect(

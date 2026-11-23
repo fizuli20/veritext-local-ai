@@ -1,5 +1,6 @@
 import { countWords, tokenizeSentences } from "../nlp/tokenizer";
 import { RewriteOutputLimitError } from "./output-cleaner";
+import { rebuildParagraph } from "./rebuild-paragraph";
 import { rewriteParagraph, type GenerateParagraph } from "./paragraph-rewrite";
 import {
   restructureConditionalInstructions,
@@ -201,6 +202,7 @@ export interface GenerateRewrite {
     attempt: number;
     restructure?: boolean;
     maxTokens?: number;
+    temperature?: number;
   }): Promise<string>;
 }
 export interface RewriteOutcome {
@@ -212,6 +214,7 @@ export interface RewriteOutcome {
   elapsedMs: number;
   changed: boolean;
   lightFallback: boolean;
+  rebuilt?: true;
   sentenceEdits?: { edited: number; eligible: number; fromSource: number };
   checks: { section: number; attempt: number; reason: string }[];
 }
@@ -333,6 +336,43 @@ export async function runRewritePipeline(options: {
   } = options;
   const started = performance.now();
   const documentLocks = lockRewriteSpans(text, terms);
+  if (depth === "rebuild") {
+    const result = await rebuildParagraph({
+      text,
+      mode,
+      styleNote,
+      voiceGuidance,
+      terms,
+      protectedRanges: documentLocks.ranges ?? [],
+      generate,
+      generateAudit: generateParagraph,
+      signal,
+      onProgress,
+    });
+    if ("draft" in result)
+      return {
+        text: result.draft,
+        parts: 1,
+        retained: 0,
+        retries: result.retries,
+        warnings: [],
+        checks: [],
+        elapsedMs: Math.round(performance.now() - started),
+        changed: true,
+        lightFallback: false,
+        rebuilt: true,
+      };
+
+    const fallback = await runRewritePipeline({
+      ...options,
+      depth: "rephrase",
+    });
+    return {
+      ...fallback,
+      warnings: [result.reason, ...fallback.warnings],
+      elapsedMs: Math.round(performance.now() - started),
+    };
+  }
   const paragraphBreak = /((?:\r?\n)[\t ]*(?:\r?\n)+)/;
   if (
     depth === "rephrase" &&

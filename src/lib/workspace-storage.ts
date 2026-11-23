@@ -71,8 +71,14 @@ export function readWorkspace(raw: string | null): WorkspaceSnapshot | null {
         data.outputMode && REWRITE_MODES.includes(data.outputMode)
           ? data.outputMode
           : "standard",
-      depth: data.depth === "polish" ? "polish" : "rephrase",
-      outputDepth: data.outputDepth === "polish" ? "polish" : "rephrase",
+      depth:
+        data.depth === "polish" || data.depth === "rebuild"
+          ? data.depth
+          : "rephrase",
+      outputDepth:
+        data.outputDepth === "polish" || data.outputDepth === "rebuild"
+          ? data.outputDepth
+          : "rephrase",
       detectorTier: data.detectorTier === "light" ? "light" : "detailed",
       tab: data.tab === "detector" ? "detector" : "humanizer",
     };

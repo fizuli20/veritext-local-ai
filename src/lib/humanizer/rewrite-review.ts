@@ -243,6 +243,8 @@ const SPECIFIED_PROBLEM =
 const NEUTRAL_DESIGN_ALTERNATIVE = /\bwhether (?:the )?design (?:or|versus)\b/i;
 const DESIGN_FAULT =
   /\b(?:design (?:flaws?|defects?|faults?)|(?:flaws?|defects?|faults?) in (?:the )?design)\b/i;
+const UNIVERSAL_ACCESS =
+  /\b(?:fully accessible|accessible (?:to|for) (?:everyone|all (?:visitors|people)))\b/i;
 const DISTINCT_OPTIONS =
   /\b(?:separate|distinct) (?:options|choices|alternatives)\b/i;
 const EXCLUSIVE_OPTIONS =
@@ -524,6 +526,14 @@ export function reviewRewrite(
       "Protected explanation changed. Keep design as a neutral possibility without introducing flaws.",
     );
   if (
+    /\b(?:level path|step-free (?:access|entrance))\b/i.test(context) &&
+    !UNIVERSAL_ACCESS.test(context) &&
+    UNIVERSAL_ACCESS.test(candidate)
+  )
+    issues.push(
+      "Protected access detail changed. Keep the described route without adding a universal accessibility claim.",
+    );
+  if (
     DISTINCT_OPTIONS.test(original) &&
     !EXCLUSIVE_OPTIONS.test(context) &&
     EXCLUSIVE_OPTIONS.test(candidate)
@@ -638,6 +648,11 @@ export const REWRITE_DEPTHS = {
     label: "Full rewrite",
     description:
       "Recast sentences and vary the flow while keeping every claim.",
+  },
+  rebuild: {
+    label: "Rebuild paragraph",
+    description:
+      "Reorganize a prose paragraph and run a second check for missing or added claims.",
   },
 } as const;
 export type RewriteDepth = keyof typeof REWRITE_DEPTHS;
