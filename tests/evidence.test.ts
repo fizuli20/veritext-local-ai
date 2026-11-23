@@ -147,6 +147,35 @@ describe("Meaning review", () => {
       ),
     ).toBe(true);
   });
+  it("rejects editorial feedback copied into the library draft", () => {
+    const original =
+      "These benefits depend on practical choices. Opening hours need to match the lives of local residents.";
+    const feedback = "The protected operating schedule has been changed.";
+    expect(reviewRewrite(original, feedback + " " + original)).toContain(
+      "Protected output format. Return only edited prose and keep editorial feedback out of the draft.",
+    );
+    expect(reviewRewrite(feedback, feedback)).toEqual([]);
+  });
+
+  it("keeps practical choices distinct from the problems those choices address", () => {
+    const original =
+      "A larger building will not solve those problems on its own.";
+    expect(
+      reviewRewrite(
+        original,
+        "A larger building alone will not address these practical choices.",
+      ),
+    ).toContain(
+      "Protected meaning changed. Remove the added owner, service or independent claim.",
+    );
+    expect(
+      reviewRewrite(
+        original,
+        "A larger building alone will not address these problems.",
+      ),
+    ).toEqual([]);
+  });
+
   it("preserves a level route without inventing a universal access claim", () => {
     const original = "The east entrance has a level path to the main hall.";
     expect(

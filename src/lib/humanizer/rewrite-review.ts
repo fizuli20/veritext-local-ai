@@ -8,6 +8,8 @@ import {
 
 const NEGATION =
   /\b(?:no|not|never|neither|cannot|without)\b|\b[\p{L}]+n['’]t\b/giu;
+const EDITOR_FEEDBACK =
+  /\bprotected (?:operating schedule|conditional instructions|qualified claim|frequency|comparison|meaning|actor|output format|closing recommendation|source text|access detail) (?:is |was |has been )?(?:changed|reversed|incomplete|missing)\b/gi;
 const MODEL_TOOL_MARKER = /^\s*<\/?tool_call>\s*$/gim;
 const POSSIBILITY = /\b(?:can|could|may|might)\b/gi;
 const NUMBER =
@@ -200,7 +202,7 @@ const REQUEST =
 
 const IMPLICIT_ACTORS = /^(?:he|she|it|we|they|you|I)$/i;
 const CAUSAL_LINK =
-  /\b(?:because|therefore|thereby|as a result|so that|(?:this|that|it) (?:will |would )?(?:allows?|enables?)|allowing (?:them|staff|workers|employees|residents) to)\b/i;
+  /\b(?:because|therefore|thereby|as a result|so that|(?:this|that|it) (?:will |would )?(?:allows?|enables?)|allowing (?:them|staff|workers|employees|residents) to|ensuring (?:that )?(?:they|the staff|staff|workers|employees|residents) (?:have|can|will))\b/i;
 
 function missingDutyActor(
   original: string,
@@ -237,6 +239,8 @@ const ORGANIZATION_KINDS = [
 
 const REFERENCED_PROBLEM =
   /\b(?:these|those|the same) (?:problems?|issues?|difficulties|challenges)\b/i;
+const MISSTATED_PROBLEM =
+  /\b(?:solve|address|resolve|fix)\s+(?:these|those|the same) (?:practical )?choices\b/i;
 const SPECIFIED_PROBLEM =
   /\b(?:problems?|issues?|difficulties|challenges)\s+(?:of|with|such as|including)\s+([^.!?;]+)/gi;
 
@@ -277,6 +281,8 @@ function introducedClaim(
   // A reference to previously described problems cannot introduce new problems by name.
   if (REFERENCED_PROBLEM.test(original)) {
     const contextAnchors = new Set(contentAnchors(context));
+    if (MISSTATED_PROBLEM.test(candidate) && !MISSTATED_PROBLEM.test(context))
+      return true;
     const inventedProblem = [...candidate.matchAll(SPECIFIED_PROBLEM)].some(
       (match) => {
         const details = [...new Set(contentAnchors(match[1]!))];
@@ -437,6 +443,13 @@ export function reviewRewrite(
   context = original,
 ): string[] {
   const issues: string[] = [];
+  if (
+    (candidate.match(EDITOR_FEEDBACK) ?? []).length >
+    (context.match(EDITOR_FEEDBACK) ?? []).length
+  )
+    issues.push(
+      "Protected output format. Return only edited prose and keep editorial feedback out of the draft.",
+    );
   if (
     (candidate.match(MODEL_TOOL_MARKER) ?? []).length >
     (original.match(MODEL_TOOL_MARKER) ?? []).length
