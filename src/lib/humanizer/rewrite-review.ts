@@ -543,6 +543,15 @@ export function reviewRewrite(
     issues.push(
       "Protected consent and request changed. Keep both the agreement and the separate request.",
     );
+  if (
+    /\b(?:every|each) shift\b/i.test(original) &&
+    !/\b(?:(?:every|each) shift|all shifts|shift after shift)\b/i.test(
+      candidate,
+    )
+  )
+    issues.push(
+      "Protected frequency changed. Keep the original frequency of every shift.",
+    );
   if (closingSentenceLooksOmitted(original, candidate))
     issues.push(CLOSING_OMISSION + ". Keep the final substantive point.");
   const ratio = countWords(candidate) / Math.max(1, countWords(original));
@@ -575,13 +584,6 @@ export function reviewFocusedRewrite(
     issues.push(
       "Keep the original duties independent. Do not make one duty a cause or result of the other.",
     );
-  if (
-    /\b(?:every|each) shift\b/i.test(original) &&
-    !/\b(?:(?:every|each) shift|all shifts|shift after shift)\b/i.test(
-      candidate,
-    )
-  )
-    issues.push("Keep the original frequency of every shift.");
   if (!/[?？]/.test(original) && /[?？]/.test(candidate))
     issues.push("Keep the statement as a statement.");
   return issues;

@@ -203,14 +203,10 @@ describe("paragraph-context editing", () => {
     const text =
       "Staff need time to answer questions rather than spend every shift sorting returns.";
     expect(
-      reviewFocusedRewrite(
-        text,
-        text.replace("every shift", "shifts"),
-        "standard",
-        [],
-        text,
-      ),
-    ).toContain("Keep the original frequency of every shift.");
+      reviewRewrite(text, text.replace("every shift", "shifts")),
+    ).toContain(
+      "Protected frequency changed. Keep the original frequency of every shift.",
+    );
     expect(
       reviewFocusedRewrite(
         text,

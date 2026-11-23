@@ -1,3 +1,9 @@
+# Veritext 5.4.3 frequency qualifiers
+
+The local 4B library rewrite dropped “every shift” from the instruction about sorting returns. The existing check for that frequency now runs in the shared rewrite review, including on local models. It recognizes “each shift”, “all shifts” and “shift after shift”.
+
+---
+
 # Veritext 5.4.2 model output and writing model pilots
 
 A local training run produced drafts containing standalone model tool markers. Rewrite review now catches newly introduced tool markers so the model can retry. A regression test covers both generated markers and literal markup present in the source.
