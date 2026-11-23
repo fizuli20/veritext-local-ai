@@ -750,6 +750,12 @@ describe("Protected rewrite pipeline", () => {
     ).toBeUndefined();
     expect(
       focusedComparisonIssue(
+        opening,
+        "More than lending books, a neighborhood library can host community events.",
+      ),
+    ).toContain("open-ended");
+    expect(
+      focusedComparisonIssue(
         timetable,
         "The proposed renovation is expensive; a small change to the timetable may help.",
       ),

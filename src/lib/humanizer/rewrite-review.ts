@@ -76,6 +76,12 @@ const COMPARISON_PHRASING =
   /\b(?:than|compared (?:with|to)|outweigh\w*|exceed\w*|surpass\w*)\b/i;
 const OTHER_ACTIVITIES =
   /\b(?:beyond|just one|one (?:of|thing|part|service)|only (?:one|part)|among (?:other|the))\b/i;
+const OPEN_ENDED_ACTIVITIES = /\b(?:can|could|may|might) do more than\b/i;
+const GENERAL_COMPARISON_WORDS = new Set(
+  contentAnchors(
+    "activity also additional another aspect beyond broaden extend function include lending offering other provide reach scope serve service simple merely simply thing",
+  ),
+);
 const EVALUATION =
   /\b(?:measur\w*|judg\w*|criteri\w*|indicator\w*|assess\w*|evaluat\w*|test)\b/i;
 const EVALUATION_TARGET =
@@ -99,6 +105,16 @@ export function focusedComparisonIssue(
     (anchors.length && !anchors.some((word) => rewrittenAnchors.has(word)))
   )
     return `Preserve the original comparison, including this part: ${counterpart}.`;
+  if (OPEN_ENDED_ACTIVITIES.test(original)) {
+    const sourceAnchors = new Set(contentAnchors(original));
+    if (
+      [...rewrittenAnchors].some(
+        (word) =>
+          !sourceAnchors.has(word) && !GENERAL_COMPARISON_WORDS.has(word),
+      )
+    )
+      return "Keep the comparison open-ended. Leave any unspecified activities and examples unspecified.";
+  }
 }
 
 /** Distinguish a proposed way to judge something from a claim that it succeeded. */

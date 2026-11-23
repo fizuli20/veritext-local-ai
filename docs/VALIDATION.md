@@ -1,3 +1,9 @@
+# Veritext 5.0.8 open-ended statements
+
+The live Qwen retest added community events to an opening that left other library activities unspecified. Focused rewrites now keep the original level of detail and check for new specifics in that open-ended comparison. The regression rejects the observed addition and still accepts a rearrangement of the original claim.
+
+---
+
 # Veritext 5.0.7 evaluation criteria
 
 One focused Llama rewrite turned the proposed measure of the library's usefulness into a claim that its impact was undeniable and that it improved access to information. Focused rewrites now check that a proposed measure remains an evaluation and still refers to its original subject and outcome. The regression covers both the unsupported claim and a faithful restructuring of the measure.

@@ -245,6 +245,7 @@ async function rewriteEditableExcerpt({
           userPrompt:
             [
               "Rewrite only this excerpt. Move a clause or start with another idea already in the source.",
+              "Keep the same level of detail. Leave any unspecified examples unspecified.",
               sizeHint,
               previousIssue,
               rewriteQualifierInstructions(excerpt),
