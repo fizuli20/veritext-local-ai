@@ -146,6 +146,25 @@ describe("paragraph-context editing", () => {
     ).toEqual([]);
   });
 
+  it("keeps independent requirements from becoming cause and effect", () => {
+    const original =
+      "Opening hours need to match local residents' lives, and staff need time to answer questions rather than spend every shift sorting returns.";
+    const inaccurate =
+      "Opening hours should fit local residents' schedules. This allows staff to answer questions rather than spend every shift sorting returns.";
+    const faithful = inaccurate.replace(
+      "This allows staff",
+      "Staff also need time",
+    );
+    expect(
+      reviewFocusedRewrite(original, inaccurate, "standard", [], original),
+    ).toContain(
+      "Keep the original duties independent. Do not make one duty a cause or result of the other.",
+    );
+    expect(
+      reviewFocusedRewrite(original, faithful, "standard", [], original),
+    ).toEqual([]);
+  });
+
   it("uses a prose retry with the exact qualifier before falling back", async () => {
     const duty =
       "Staff need time to answer questions rather than spend every shift sorting returns.";

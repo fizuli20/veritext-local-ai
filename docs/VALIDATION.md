@@ -1,3 +1,9 @@
+# Veritext 5.1.3 parallel requirements
+
+In a final browser retest, Llama kept staff responsible for answering questions but made that time a consequence of changes to opening hours. The source gave two parallel requirements. The focused review now rejects that new causal connection and the prose retry explains the distinction.
+
+---
+
 # Veritext 5.1.2 connected-passage retry
 
 Connected passages now tell the model when a frequency qualifier must stay attached to its original action. If the passage fails review, the editor retries once with the specific preservation feedback before relying on sentence replacements or verified source changes.

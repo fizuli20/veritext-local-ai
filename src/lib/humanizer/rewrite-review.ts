@@ -137,6 +137,8 @@ export function focusedEvaluationIssue(
 const COORDINATED_DUTY =
   /\b(?:and|but|while|whereas)\s+(?:the\s+)?([\p{L}-]+(?:\s+[\p{L}-]+){0,2})\s+(?:needs?(?:\s+time)?\s+to|must|should|(?:has|have)\s+to)\s+([^.!?;]+)/giu;
 const IMPLICIT_ACTORS = /^(?:he|she|it|we|they|you|I)$/i;
+const CAUSAL_LINK =
+  /\b(?:because|therefore|thereby|as a result|so that|(?:this|that|it) (?:will |would )?(?:allows?|enables?)|allowing (?:them|staff|workers|employees|residents) to)\b/i;
 
 function missingDutyActor(
   original: string,
@@ -468,6 +470,14 @@ export function reviewFocusedRewrite(
   if (comparison) issues.push(comparison);
   const evaluation = focusedEvaluationIssue(original, candidate);
   if (evaluation) issues.push(evaluation);
+  if (
+    [...original.matchAll(COORDINATED_DUTY)].length &&
+    !CAUSAL_LINK.test(original) &&
+    CAUSAL_LINK.test(candidate)
+  )
+    issues.push(
+      "Keep the original duties independent. Do not make one duty a cause or result of the other.",
+    );
   if (
     /\b(?:every|each) shift\b/i.test(original) &&
     !/\b(?:(?:every|each) shift|all shifts|shift after shift)\b/i.test(

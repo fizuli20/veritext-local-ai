@@ -161,7 +161,7 @@ export async function rewriteParagraph({
                   : ""),
               userPrompt:
                 [
-                  "Recast the target passage into clear prose. Use separate sentences for different actors where that helps. Return the target passage only.",
+                  "Recast the target passage into clear prose. Use separate sentences for different actors where that helps. Keep independent requirements independent. Return the target passage only.",
                   qualifier
                     ? "Keep this exact qualifier attached to its original action: " +
                       JSON.stringify(qualifier) +
