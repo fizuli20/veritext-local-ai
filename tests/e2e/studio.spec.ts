@@ -57,6 +57,9 @@ test("waits until the editor can retain text on a slow first load", async ({
     await expect(
       page.getByRole("textbox", { name: "Original text", exact: true }),
     ).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Try a sample" }),
+    ).toBeDisabled();
   } finally {
     loadScripts();
   }
@@ -69,6 +72,8 @@ test("waits until the editor can retain text on a slow first load", async ({
   await expect(
     page.getByRole("button", { name: "Rewrite", exact: true }),
   ).toBeEnabled();
+  await page.getByRole("button", { name: "Try a sample" }).click();
+  await expect(editor).toHaveValue(/^A neighborhood library/);
 });
 
 test("short and non-English text receive no fake score", async ({ page }) => {
@@ -512,6 +517,9 @@ test("compares two exact scans and returns to the original rewrite source", asyn
   await expect(editor).toHaveValue(draft);
   await expect(page.getByTestId("detector-result")).toContainText(
     "63/100 model signal",
+  );
+  await expect(page.getByTestId("detector-result")).toContainText(
+    "Veritext used a writing model to edit this draft.",
   );
   await page
     .getByRole("button", { name: "Back to rewrite", exact: true })

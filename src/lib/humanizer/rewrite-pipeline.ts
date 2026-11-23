@@ -1,12 +1,12 @@
 import { countWords, tokenizeSentences } from "../nlp/tokenizer";
 import { RewriteOutputLimitError } from "./output-cleaner";
+import { rewriteParagraph, type GenerateParagraph } from "./paragraph-rewrite";
 import {
   reviewRewrite,
   CLOSING_OMISSION,
   closingRecommendation,
   conditionalInstructions,
-  focusedComparisonIssue,
-  focusedEvaluationIssue,
+  reviewFocusedRewrite,
   preservationInstructions,
   quantityClaims,
   protectedQualifiedSentences,
@@ -195,6 +195,7 @@ export interface GenerateRewrite {
     userPrompt: string;
     attempt: number;
     restructure?: boolean;
+    maxTokens?: number;
   }): Promise<string>;
 }
 export interface RewriteOutcome {
@@ -206,6 +207,7 @@ export interface RewriteOutcome {
   elapsedMs: number;
   changed: boolean;
   lightFallback: boolean;
+  sentenceEdits?: { edited: number; eligible: number; fromSource: number };
   checks: { section: number; attempt: number; reason: string }[];
 }
 async function rewriteEditableExcerpt({
@@ -272,13 +274,13 @@ async function rewriteEditableExcerpt({
       break;
     }
     if (signal?.aborted) throw new Error("Generation stopped.");
-    const issues = reviewRewrite(excerpt, candidate, mode, terms, context);
-    const comparisonIssue = focusedComparisonIssue(excerpt, candidate);
-    if (comparisonIssue) issues.push(comparisonIssue);
-    const evaluationIssue = focusedEvaluationIssue(excerpt, candidate);
-    if (evaluationIssue) issues.push(evaluationIssue);
-    if (!/[?？]/.test(excerpt) && /[?？]/.test(candidate))
-      issues.push("Keep the statement as a statement.");
+    const issues = reviewFocusedRewrite(
+      excerpt,
+      candidate,
+      mode,
+      terms,
+      context,
+    );
     const extent = rewriteExtent(excerpt, candidate);
     if (!issues.length && extent > bestExtent) {
       best = candidate;
@@ -308,6 +310,7 @@ export async function runRewritePipeline(options: {
   terms?: string[];
   signal?: AbortSignal;
   generate: GenerateRewrite;
+  generateParagraph?: GenerateParagraph;
   onProgress: (message: string) => void;
 }): Promise<RewriteOutcome> {
   const {
@@ -318,10 +321,125 @@ export async function runRewritePipeline(options: {
     terms = [],
     signal,
     generate,
+    generateParagraph,
     onProgress,
   } = options;
   const started = performance.now();
   const documentLocks = lockRewriteSpans(text, terms);
+  const paragraphBreak = /((?:\r?\n)[\t ]*(?:\r?\n)+)/;
+  if (
+    depth === "rephrase" &&
+    generateParagraph &&
+    paragraphBreak.test(text) &&
+    !documentLocks.ranges?.some(({ start, end }) =>
+      paragraphBreak.test(text.slice(start, end)),
+    )
+  ) {
+    const blocks = text.split(paragraphBreak);
+    const total = blocks.filter(
+      (block, index) => index % 2 === 0 && block.trim(),
+    ).length;
+    let completed = "";
+    let paragraph = 0;
+    let parts = 0;
+    let retained = 0;
+    let retries = 0;
+    const warnings: string[] = [];
+    const checks: RewriteOutcome["checks"] = [];
+    let allPlanned = true;
+    const sentenceEdits = { edited: 0, eligible: 0, fromSource: 0 };
+    for (let index = 0; index < blocks.length; index++) {
+      const block = blocks[index]!;
+      if (index % 2 === 1 || !block.trim()) {
+        completed += block;
+        continue;
+      }
+      paragraph++;
+      const outcome = await runRewritePipeline({
+        ...options,
+        text: block,
+        onProgress: (message) =>
+          onProgress(`Paragraph ${paragraph} of ${total}. ${message}`),
+      });
+      completed += outcome.text;
+      retries += outcome.retries;
+      retained += outcome.retained;
+      warnings.push(
+        ...outcome.warnings.map(
+          (warning) => `Paragraph ${paragraph}. ${warning}`,
+        ),
+      );
+      checks.push(
+        ...outcome.checks.map((check) => ({
+          ...check,
+          section: check.section + parts,
+        })),
+      );
+      parts += outcome.parts;
+      if (outcome.sentenceEdits) {
+        sentenceEdits.edited += outcome.sentenceEdits.edited;
+        sentenceEdits.eligible += outcome.sentenceEdits.eligible;
+        sentenceEdits.fromSource += outcome.sentenceEdits.fromSource;
+      } else {
+        allPlanned = false;
+      }
+    }
+    const changed = completed.trim() !== text.trim();
+    return {
+      text: completed,
+      parts,
+      retained,
+      retries,
+      warnings,
+      checks,
+      elapsedMs: Math.round(performance.now() - started),
+      changed,
+      lightFallback:
+        changed &&
+        countWords(text) >= 60 &&
+        rewriteExtent(text, completed) < 0.2,
+      ...(allPlanned && sentenceEdits.eligible ? { sentenceEdits } : {}),
+    };
+  }
+  if (depth === "rephrase" && generateParagraph && text.length <= 1600) {
+    const result = await rewriteParagraph({
+      text,
+      mode,
+      styleNote,
+      terms,
+      protectedRanges: documentLocks.ranges ?? [],
+      signal,
+      generateBlock: (request) => generate({ ...request, restructure: true }),
+      onGenerate: () => onProgress("Rewriting a connected passage…"),
+      generate: async (request) => {
+        if (request.attempt === 0)
+          onProgress("Rewriting with paragraph context…");
+        return generateParagraph(request);
+      },
+      onRetry: () => onProgress("Refining individual sentences…"),
+    });
+    if (result) {
+      const lightFallback = rewriteExtent(text, result.text) < 0.2;
+      return {
+        text: result.text,
+        parts: 1,
+        retained: 0,
+        retries: result.retries,
+        warnings: lightFallback
+          ? ["The completed draft contains light wording changes."]
+          : [],
+        elapsedMs: Math.round(performance.now() - started),
+        changed: true,
+        lightFallback,
+        sentenceEdits: {
+          edited: result.edited,
+          eligible: result.eligible,
+          fromSource: result.fromSource,
+        },
+        checks: [],
+      };
+    }
+  }
   const sections = splitRewrite(documentLocks.text);
   const parts =
     depth === "rephrase"

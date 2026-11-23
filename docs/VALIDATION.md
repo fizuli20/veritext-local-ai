@@ -1,3 +1,13 @@
+# Veritext 5.1 paragraph rewrites
+
+Full rewrite in the browser can read a bounded paragraph, edit a connected passage in prose and request individual replacements for the remaining sentences. Exact facts and protected sentences are restored from the source. The editor checks replacements separately before checking the assembled paragraph. When an explicit comparison or clause can be reorganized from source wording, the editor can apply that structural edit even if the model copies the source or returns an incomplete answer. The draft identifies those source-based edits.
+
+The comparison and criterion regressions cover lost qualifications, protected numbers, and damaged model responses. Tests cover independent retries and preservation of paragraph breaks. A separate experiment with a compact natural language inference model accepted a swapped-actor example, so it was excluded from the release.
+
+Scans of the exact edited draft explain its origin. The detector signal remains independent of rewrite quality and cannot establish an authorship percentage.
+
+---
+
 # Veritext 5.0.8 open-ended statements
 
 The live Qwen retest added community events to an opening that left other library activities unspecified. Focused rewrites now keep the original level of detail and check for new specifics in that open-ended comparison. The regression rejects the observed addition and still accepts a rearrangement of the original claim.

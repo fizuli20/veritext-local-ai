@@ -39,6 +39,7 @@ import {
 } from "@/lib/humanizer/rewrite-review";
 import {
   runRewritePipeline,
+  type GenerateRewrite,
   type RewriteOutcome,
 } from "@/lib/humanizer/rewrite-pipeline";
 import { WRITING_MODELS, type WritingModelTier } from "@/lib/ml/writing-models";
@@ -710,6 +711,50 @@ export function Workspace() {
       }, 600000);
       let rewriteStep = "";
       try {
+        async function generateInBrowser({
+          systemPrompt,
+          userPrompt,
+          attempt,
+          restructure,
+          responseSchema,
+          maxTokens,
+        }: Parameters<GenerateRewrite>[0] & { responseSchema?: string }) {
+          if (!browserEngine.current)
+            throw new Error("Load a writing model before rewriting.");
+          const stream = await browserEngine.current.chat.completions.create({
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
+            ],
+            stream: true,
+            temperature: responseSchema
+              ? attempt
+                ? 0.55
+                : 0.4
+              : attempt || restructure
+                ? 0.65
+                : 0.5,
+            ...(responseSchema
+              ? {
+                  response_format: {
+                    type: "json_object" as const,
+                    schema: responseSchema,
+                  },
+                }
+              : {}),
+            max_tokens: maxTokens ?? 1800,
+          });
+          let draft = "",
+            truncated = false;
+          for await (const chunk of stream) {
+            if (controller.signal.aborted || operation.current !== id)
+              throw new Error("Generation stopped.");
+            if (chunk.choices[0]?.finish_reason === "length") truncated = true;
+            draft += chunk.choices[0]?.delta.content ?? "";
+          }
+          if (truncated) throw new RewriteOutputLimitError();
+          return cleanLlmOutput(draft);
+        }
         const result = await runRewritePipeline({
           text: original,
           mode,
@@ -724,11 +769,14 @@ export function Workspace() {
             rewriteStep = message;
             if (operation.current === id) setProgress(message);
           },
+          generateParagraph:
+            useLocal && modelId && connectedUrl ? undefined : generateInBrowser,
           generate: async ({
             systemPrompt,
             userPrompt,
             attempt,
             restructure,
+            maxTokens,
           }) => {
             if (useLocal && modelId && connectedUrl) {
               const waiting = setTimeout(() => {
@@ -763,28 +811,13 @@ export function Workspace() {
                 clearTimeout(waiting);
               }
             }
-            if (!browserEngine.current)
-              throw new Error("Load a writing model before rewriting.");
-            const stream = await browserEngine.current.chat.completions.create({
-              messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt },
-              ],
-              stream: true,
-              temperature: attempt || restructure ? 0.65 : 0.5,
-              max_tokens: 1800,
+            return generateInBrowser({
+              systemPrompt,
+              userPrompt,
+              attempt,
+              restructure,
+              maxTokens,
             });
-            let draft = "",
-              truncated = false;
-            for await (const chunk of stream) {
-              if (controller.signal.aborted || operation.current !== id)
-                throw new Error("Generation stopped.");
-              if (chunk.choices[0]?.finish_reason === "length")
-                truncated = true;
-              draft += chunk.choices[0]?.delta.content ?? "";
-            }
-            if (truncated) throw new RewriteOutputLimitError();
-            return cleanLlmOutput(draft);
           },
         });
         if (operation.current !== id) return;
@@ -839,7 +872,10 @@ export function Workspace() {
         setOutputDepth(depth);
         setSelection(null);
         setDiff(false);
-        setEngineName(activeName);
+        const sourceOnly =
+          result.sentenceEdits &&
+          result.sentenceEdits.fromSource === result.sentenceEdits.edited;
+        setEngineName(sourceOnly ? "Source-based edit" : activeName);
         setOutput(nextDraft);
         setRewriteReport(result);
         if (!selected) {
@@ -854,7 +890,7 @@ export function Workspace() {
           selected
             ? "Selected text revised. Review the updated draft."
             : result.changed
-              ? `${result.lightFallback ? "Light edit ready." : "Draft ready."} ${result.parts - result.retained} of ${result.parts} sections edited. Review the changes before using the text.`
+              ? `${sourceOnly ? "Structure edited using the source wording." : result.lightFallback ? "Light edit ready." : "Draft ready."} ${result.sentenceEdits ? `${result.sentenceEdits.edited} of ${result.sentenceEdits.eligible} editable sentences changed.` : `${result.parts - result.retained} of ${result.parts} sections edited.`} Review the changes before using the text.`
               : "The model did not produce a changed draft that passed preservation checks. Your original was retained.",
         );
       } catch (err) {
@@ -1295,12 +1331,16 @@ export function Workspace() {
                       {engineName} ·{" "}
                       {rewriteReport && !rewriteReport.changed
                         ? "Original retained"
-                        : rewriteReport?.lightFallback
-                          ? "Light edit result"
-                          : REWRITE_DEPTHS[outputDepth].label}
+                        : engineName === "Source-based edit"
+                          ? "Structural changes"
+                          : rewriteReport?.lightFallback
+                            ? "Light edit result"
+                            : REWRITE_DEPTHS[outputDepth].label}
                       {rewriteReport
                         ? ` · ${(rewriteReport.elapsedMs / 1000).toFixed(1)} s · ${rewriteReport.retries} retr${rewriteReport.retries === 1 ? "y" : "ies"}`
                         : ""}
+                      {!!rewriteReport?.sentenceEdits?.fromSource &&
+                        ` · ${rewriteReport.sentenceEdits.fromSource} source-based sentence edits`}
                     </p>
                     {comparableSignals && !busy && (
                       <p className="vt-provenance">
@@ -1461,6 +1501,19 @@ export function Workspace() {
                       <span>/100 model signal</span>
                     </div>
                   )}
+                  {rewriteReport?.changed &&
+                    scan.text === output &&
+                    scan.text === rewriteReport.text && (
+                      <p className="vt-caution">
+                        {rewriteReport.sentenceEdits?.fromSource ===
+                          rewriteReport.sentenceEdits?.edited &&
+                        rewriteReport.sentenceEdits
+                          ? "Veritext edited this draft using the source wording."
+                          : "Veritext used a writing model to edit this draft."}{" "}
+                        The detector measures writing patterns. Use Show changes
+                        in the editor to review the edits.
+                      </p>
+                    )}
                   <p>{scan.evidence.explanation}</p>
                   {scan.evidence.modelScore !== null &&
                     isNearModelCeiling(scan.evidence.modelScore) && (
@@ -1643,7 +1696,7 @@ export function Workspace() {
         <div className="vt-below">
           <button
             className="vt-text-button"
-            disabled={!!busy}
+            disabled={!interactive || !!busy}
             onClick={() => {
               editInput(sample);
               setNotice(

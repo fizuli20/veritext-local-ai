@@ -79,7 +79,7 @@ const OTHER_ACTIVITIES =
 const OPEN_ENDED_ACTIVITIES = /\b(?:can|could|may|might) do more than\b/i;
 const GENERAL_COMPARISON_WORDS = new Set(
   contentAnchors(
-    "activity also additional another aspect beyond broaden extend function include lending offering other provide reach scope serve service simple merely simply thing",
+    "activity also additional among another aspect beyond broaden extend function include lending offering other provide reach scope serve service simple merely simply thing",
   ),
 );
 const EVALUATION =
@@ -454,6 +454,23 @@ export function reviewRewrite(
   )
     issues.push("Substantial length change; check for omissions or additions.");
   return [...new Set(issues)];
+}
+
+export function reviewFocusedRewrite(
+  original: string,
+  candidate: string,
+  mode: string,
+  terms: string[],
+  context: string,
+): string[] {
+  const issues = reviewRewrite(original, candidate, mode, terms, context);
+  const comparison = focusedComparisonIssue(original, candidate);
+  if (comparison) issues.push(comparison);
+  const evaluation = focusedEvaluationIssue(original, candidate);
+  if (evaluation) issues.push(evaluation);
+  if (!/[?？]/.test(original) && /[?？]/.test(candidate))
+    issues.push("Keep the statement as a statement.");
+  return issues;
 }
 
 export const REWRITE_DEPTHS = {
