@@ -1,6 +1,9 @@
 import { maskProtectedSpans, restoreProtectedSpans } from "./protected-spans";
 import { countWords, tokenizeSentences } from "../nlp/tokenizer";
-import { QUALIFIED_COMPARISON } from "./source-edits";
+import {
+  QUALIFIED_COMPARISON,
+  restructureQualifiedBenefit,
+} from "./source-edits";
 
 const NEGATION =
   /\b(?:no|not|never|neither|cannot|without)\b|\b[\p{L}]+n['’]t\b/giu;
@@ -460,7 +463,11 @@ export function reviewRewrite(
       );
   }
   for (const claim of protectedQualifiedSentences(original)) {
-    if (!normalizedDraft.includes(normalizeWhitespace(claim)))
+    const equivalent = restructureQualifiedBenefit(claim);
+    if (
+      !normalizedDraft.includes(normalizeWhitespace(claim)) &&
+      !(equivalent && normalizedDraft.includes(normalizeWhitespace(equivalent)))
+    )
       issues.push(
         "Protected qualified claim changed. Retain its original subjects and their separate actions.",
       );

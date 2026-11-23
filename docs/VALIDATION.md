@@ -1,3 +1,15 @@
+# Veritext 5.4.0 paraphrase review and qualified edits
+
+The generator is still the selected browser or local model. We trained a compact local review model on 49,401 sentence pairs from [Google Research PAWS-Wiki](https://github.com/google-research-datasets/paws). It considers shared words, phrase order and length for short, closely overlapping edits. The supplied HumanizeAI library drafts were excluded from training and threshold selection. No detector score participates in generation or review.
+
+On the official 8,000-pair test split, the review flagged 1,315 pairs. Human labels identified a meaning change in 1,190 of these flags. The other 125 were false flags. ROC AUC was 0.8656. This tests sentence comparison on PAWS-Wiki. It does not measure the fluency of Veritext drafts, whole-document fidelity or third-party detector results. In the browser's structured sentence pass, the review can trigger the existing retry and favor a usable alternate. An advisory flag alone never removes the available draft.
+
+Full rewrite can also rearrange two common qualified-benefit constructions using source-derived wording. The validator accepts the specific equivalent phrasing while continuing to flag changes to subjects and conditions. Tests cover the new source-based edits on a community-center passage and a trained review retry that corrects swapped roles.
+
+The [training script](../scripts/train-paraphrase-review.py) pins the three input files by SHA-256 and uses the same features as the browser. The [training report](validation/paraphrase-review-5.4.0.json) records the split counts and cutoff. To reproduce it, download the train, validation and test Parquet files from the [pinned PAWS-Wiki dataset](https://huggingface.co/datasets/google-research-datasets/paws/tree/161ece9501cf0a11f3e48bd356eaa82de46d6a09/labeled_final), rename them to `train.parquet`, `validation.parquet` and `test.parquet`, and run the script with Python (NumPy 2.5.5, PyArrow 26.0.1, scikit-learn 1.9.1) and Node 24.
+
+---
+
 # Veritext 5.3.1 connected edits and source fidelity
 
 Five supplied drafts of the same library passage made extensive wording changes. In manual review, one draft muddled which choice benefits more readers, another omitted the final measure of success, and another replaced a crowded home with a noisy one. The reported ZeroGPT percentages are observations about those drafts on that run. The examples share the same source passage and do not establish a success rate across other writing or other detectors.

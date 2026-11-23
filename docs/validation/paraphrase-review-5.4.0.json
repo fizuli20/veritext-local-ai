@@ -1,0 +1,24 @@
+{
+  "dataset": "Google Research PAWS-Wiki Labeled Final",
+  "datasetRevision": "161ece9501cf0a11f3e48bd356eaa82de46d6a09",
+  "trainingPairs": 49401,
+  "reviewLogitCutoff": 1.9,
+  "validation": {
+    "pairs": 8000,
+    "eligible": 7871,
+    "flagged": 1271,
+    "correctFlags": 1147,
+    "falseFlags": 124,
+    "precision": 0.9024,
+    "rocAuc": 0.8719
+  },
+  "test": {
+    "pairs": 8000,
+    "eligible": 7903,
+    "flagged": 1315,
+    "correctFlags": 1190,
+    "falseFlags": 125,
+    "precision": 0.9049,
+    "rocAuc": 0.8656
+  }
+}

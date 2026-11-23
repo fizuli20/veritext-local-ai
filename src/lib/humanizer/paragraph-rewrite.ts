@@ -1,6 +1,10 @@
 import { countWords, tokenizeSentences } from "../nlp/tokenizer";
 import { cleanLlmOutput } from "./output-cleaner";
-import { restructureFromSource } from "./source-edits";
+import { flagsPossibleMeaningChange } from "./paraphrase-review";
+import {
+  restructureFromSource,
+  restructureQualifiedBenefit,
+} from "./source-edits";
 import {
   closingRecommendation,
   conditionalInstructions,
@@ -64,21 +68,32 @@ export async function rewriteParagraph({
   // Preserve paragraph structure and list items through the existing path.
   if (/\n|^(?:[-*#>]\s|\d+[.)]\s)/.test(text.trim())) return null;
 
+  const qualified = new Set(protectedQualifiedSentences(text));
   const exactSentences = new Set([
     ...quantityClaims(text),
     ...conditionalInstructions(text),
-    ...protectedQualifiedSentences(text),
     closingRecommendation(text),
   ]);
-  const parts = sentences.map((sentence, index) => ({
-    ...sentence,
-    id: `s${index + 1}`,
-    fixed:
+  const parts = sentences.map((sentence, index) => {
+    const locked =
       exactSentences.has(sentence.text) ||
       protectedRanges.some(
         (range) => range.start < sentence.end && range.end > sentence.start,
-      ),
-  }));
+      );
+    const qualifiedBenefit = qualified.has(sentence.text);
+    const sourceEdit =
+      !locked &&
+      qualifiedBenefit &&
+      (mode === "standard" || mode === "professional")
+        ? restructureQualifiedBenefit(sentence.text)
+        : undefined;
+    return {
+      ...sentence,
+      id: `s${index + 1}`,
+      fixed: locked || (qualifiedBenefit && !sourceEdit),
+      sourceEdit,
+    };
+  });
   const editable = parts.filter((part) => !part.fixed);
   if (editable.length < 2) return null;
 
@@ -97,11 +112,11 @@ export async function rewriteParagraph({
   );
   const edits = new Map<
     string,
-    { text: string; extent: number; fromSource?: true }
+    { text: string; extent: number; fromSource?: true; flagged?: boolean }
   >();
   if (mode === "standard" || mode === "professional") {
     for (const part of editable) {
-      const edit = restructureFromSource(part.text);
+      const edit = part.sourceEdit ?? restructureFromSource(part.text);
       if (
         edit &&
         !reviewFocusedRewrite(part.text, edit, mode, terms, text).length
@@ -125,7 +140,7 @@ export async function rewriteParagraph({
     const groups: (typeof parts)[] = [];
     let current: typeof parts = [];
     for (const part of parts) {
-      if (part.fixed) {
+      if (part.fixed || part.sourceEdit) {
         if (current.length) groups.push(current);
         current = [];
       } else {
@@ -288,15 +303,30 @@ export async function rewriteParagraph({
         terms,
         text,
       );
+      if (issues.length) {
+        problems.set(part.id, issues.join(" "));
+        continue;
+      }
       const extent = rewriteExtent(part.text, candidate);
-      if (issues.length || extent < 0.3)
+      const flagged = flagsPossibleMeaningChange(part.text, candidate);
+      if (flagged)
         problems.set(
           part.id,
-          issues.join(" ") || "Use a different opening or clause order.",
+          "Check who does each action and keep the original relationships clear.",
         );
+      else if (extent < 0.3)
+        problems.set(part.id, "Use a different opening or clause order.");
       else problems.delete(part.id);
-      if (!issues.length && extent > (edits.get(part.id)?.extent ?? 0))
-        edits.set(part.id, { text: candidate, extent });
+
+      const previous = edits.get(part.id);
+      // Prefer a retry without the advisory flag if it still makes a useful edit.
+      // Retain a usable first candidate when the retry copies or fails review.
+      if (
+        extent > 0 &&
+        (!previous ||
+          (flagged === previous.flagged ? extent > previous.extent : !flagged))
+      )
+        edits.set(part.id, { text: candidate, extent, flagged });
     }
     requested = requested.filter(({ id }) => problems.has(id));
   }

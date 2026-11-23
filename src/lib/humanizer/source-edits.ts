@@ -8,6 +8,22 @@ const USEFUL_MEASURE = /^The useful measure is whether (\S[^.!?]+)\.$/i;
 const ON_ITS_OWN =
   /^((?:A|An|The) [^,;.!?]{2,75} (?:will|can|could|may|might|does) (?:not )?(?:solve|fix|address|resolve|prevent) [^,;.!?]{2,75}) on its own\.$/;
 
+const SHARED_SPACE =
+  /^((?:It gives|They give) [\p{L}]+(?: [\p{L}]+){0,2}) a place to ([^.!?;]+)\.$/u;
+const PARALLEL_BENEFITS =
+  /^((The|A|An|Evening|Morning|Afternoon|Weekend|Online) [\p{L}][\p{L} -]{1,60} (?:can|could|may|might) (?:help|give|offer|provide) [^,.!?;]+), while ([\p{Ll}][\p{L} -]{1,60} (?:gives?|offers?|provides?) [^,.!?;]+)\.$/u;
+
+/** Restructure a qualified benefit while preserving the two exact claims. */
+export function restructureQualifiedBenefit(text: string): string | undefined {
+  const shared = text.match(SHARED_SPACE);
+  if (shared) return `${shared[1]} somewhere to ${shared[2]}.`;
+  const parallel = text.match(PARALLEL_BENEFITS);
+  if (parallel) {
+    const [, main, opening, contrast] = parallel;
+    return `While ${contrast}, ${opening!.toLowerCase()}${main!.slice(opening!.length)}.`;
+  }
+}
+
 function lowerArticle(text: string): string {
   return text.replace(/^(?:A|An|The)\b/, (article) => article.toLowerCase());
 }

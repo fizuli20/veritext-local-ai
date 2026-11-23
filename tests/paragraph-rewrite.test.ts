@@ -7,6 +7,7 @@ import {
   lockRewriteSpans,
   runRewritePipeline,
 } from "@/lib/humanizer/rewrite-pipeline";
+import { flagsPossibleMeaningChange } from "@/lib/humanizer/paraphrase-review";
 import { restructureFromSource } from "@/lib/humanizer/source-edits";
 import {
   reviewFocusedRewrite,
@@ -130,6 +131,72 @@ describe("paragraph-context editing", () => {
       fromSource: 6,
     });
     expect(result.parts).toBe(2);
+  });
+
+  it("rewrites protected benefit sentences through source-preserving transformations", async () => {
+    const passage = [
+      "The community center runs classes and shares equipment with nearby residents.",
+      "It gives volunteers a place to practice skills they might not have used before.",
+      "Weekend classes can help beginners learn repair skills, while workshop stations give members somewhere to finish projects after class.",
+      "The main entrance on the south side of the building will remain open during the center's normal operating hours throughout the week.",
+    ].join(" ");
+    const result = await rewriteParagraph({
+      text: passage,
+      mode: "standard",
+      terms: [],
+      protectedRanges: [],
+      generate: async () => "{}",
+      onRetry: () => {},
+    });
+    expect(result?.fromSource).toBe(2);
+    expect(result?.text).toContain(
+      "It gives volunteers somewhere to practice skills they might not have used before.",
+    );
+    expect(result?.text).toContain(
+      "While workshop stations give members somewhere to finish projects after class, weekend classes can help beginners learn repair skills.",
+    );
+    expect(reviewRewrite(passage, result!.text)).toEqual([]);
+    expect(
+      reviewRewrite(
+        passage,
+        result!.text.replace("help beginners", "help members"),
+      ),
+    ).toContain(
+      "Protected qualified claim changed. Retain its original subjects and their separate actions.",
+    );
+  });
+
+  it("retries an overlapping sentence when the trained review flags a role change", async () => {
+    const source =
+      "The safety officer gave the new instructions to the workers before closing.";
+    const swapped =
+      "The workers gave the new instructions to the safety officer before closing.";
+    const revised =
+      "Before closing, the safety officer handed the new instructions to the workers.";
+    expect(flagsPossibleMeaningChange(source, swapped)).toBe(true);
+    expect(flagsPossibleMeaningChange(source, revised)).toBe(false);
+    const passage = [
+      "Training at the facility included discussion and an exercise in which people practiced responding to a spill.",
+      source,
+      "Everyone at the facility received a copy of the safety materials.",
+      "After lunch, the class returned to the training room on the ground floor to finish the exercise with a discussion about emergency equipment.",
+    ].join(" ");
+    const generate = vi.fn(async (request: ParagraphRequest) =>
+      JSON.stringify({ s2: request.attempt > 0 ? revised : swapped }),
+    );
+    const result = await rewriteParagraph({
+      text: passage,
+      mode: "standard",
+      terms: [],
+      protectedRanges: [],
+      generate,
+      onRetry: () => {},
+    });
+    expect(generate.mock.calls[1]![0].userPrompt).toContain(
+      "Check who does each action",
+    );
+    expect(result?.text).toContain(revised);
+    expect(result?.text).not.toContain(swapped);
   });
 
   it("retains the original frequency in a connected rewrite", () => {
